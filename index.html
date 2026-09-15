@@ -123,3 +123,13 @@
   </footer>
 </body>
 </html>
+
+  <!-- Load Supabase client and initialize -->
+  <script src="supabase-client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.KnowledgeBase) {
+        window.KnowledgeBase.loadAnswers('featured-answers', 3);
+      }
+    });
+  </script>
