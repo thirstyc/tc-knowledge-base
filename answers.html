@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Every Answer — Thirsty Cunt Knowledge Base</title>
-<meta name="description" content="217 wine answers, each one re-read and re-verified." />
+<meta name="description" content="387 wine answers, each one fresh from Supabase." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -26,10 +26,10 @@
   <main>
     <div class="wrap">
       <p class="breadcrumb"><a href="index.html">Home</a> / Answers</p>
-      <h1 class="page-title">Every Answer We’ve Written</h1>
-      <p class="lede sm">217 of them, and counting. Each one gets re-read and re-verified, because wine advice ages badly.</p>
+      <h1 class="page-title">Every Answer We've Written</h1>
+      <p class="lede sm" id="answerCount">Loading knowledge base...</p>
 
-      <form action="answers.html" method="get" style="margin-bottom: 36px">
+      <form action="search.html" method="get" style="margin-bottom: 36px">
         <input class="search-input" type="search" name="q" placeholder="search all answers" />
       </form>
 
@@ -40,120 +40,8 @@
         <a class="chip" href="difficulty-advanced.html">Advanced</a>
       </div>
 
-      <p class="count">8 Results</p>
-      <div class="grid stack">
-        <a class="answer-card" href="answer-grenache-alcohol-tannin.html">
-          <span class="meta">
-            <span class="id">ANS-0142</span>
-            <span class="badge high">High Confidence</span>
-            <span class="difficulty">Intermediate</span>
-          </span>
-          <h3>Why Grenache Gets You Tipsy Without Grabbing Your Gums</h3>
-          <p>Sugar lives in the pulp, tannin lives in the skins. Grenache ripens fat and sweet with skins thin enough to keep the finish soft.</p>
-          <span class="chip-row">
-            <span class="tag">Grenache</span>
-            <span class="tag">Phenolics</span>
-            <span class="tag">Alcohol</span>
-          </span>
-        </a>
-        <a class="answer-card" href="answer-warm-vs-cool-grenache.html">
-          <span class="meta">
-            <span class="id">ANS-0138</span>
-            <span class="badge high">High Confidence</span>
-            <span class="difficulty">Beginner</span>
-          </span>
-          <h3>Warm Grenache, Cool Grenache: Same Grape, Different Wine</h3>
-          <p>Heat decides how ripe the fruit gets and which flavours turn up. Warm sites give dark fruit and more alcohol; cooler ones stay red-fruited and light on their feet.</p>
-          <span class="chip-row">
-            <span class="tag">Grenache</span>
-            <span class="tag">Rhône</span>
-            <span class="tag">Climate</span>
-          </span>
-        </a>
-        <a class="answer-card" href="answer-old-vine-grenache-value.html">
-          <span class="meta">
-            <span class="id">ANS-0129</span>
-            <span class="badge moderate">Moderate Confidence</span>
-            <span class="difficulty">Intermediate</span>
-          </span>
-          <h3>Is Old-Vine Grenache Worth The Money?</h3>
-          <p>Often, yes — old vines give less fruit and more concentration. But age alone guarantees nothing. Who farmed it and where matters more than the number on the label.</p>
-          <span class="chip-row">
-            <span class="tag">Grenache</span>
-            <span class="tag">Value</span>
-            <span class="tag">Old Vines</span>
-          </span>
-        </a>
-        <a class="answer-card" href="answer-wine-smells-like-barn.html">
-          <span class="meta">
-            <span class="id">ANS-0117</span>
-            <span class="badge high">High Confidence</span>
-            <span class="difficulty">Beginner</span>
-          </span>
-          <h3>Why Does My Wine Smell Like A Barn?</h3>
-          <p>Usually brettanomyces, a yeast that makes barnyard and band-aid smells. A little reads as savoury complexity. A lot ruins the bottle, and it’s not going to blow off.</p>
-          <span class="chip-row">
-            <span class="tag">Faults</span>
-            <span class="tag">Brett</span>
-            <span class="tag">Aroma</span>
-          </span>
-        </a>
-        <a class="answer-card" href="answer-sulphites-headache.html">
-          <span class="meta">
-            <span class="id">ANS-0103</span>
-            <span class="badge review">Needs Review</span>
-            <span class="difficulty">Beginner</span>
-          </span>
-          <h3>Sulphites Are Probably Not Giving You A Headache</h3>
-          <p>Dried apricots carry far more sulphite than wine and nobody blames them. The likelier culprits are histamines, tannin sensitivity, dehydration, and volume.</p>
-          <span class="chip-row">
-            <span class="tag">Sulphites</span>
-            <span class="tag">Health</span>
-            <span class="tag">Additives</span>
-          </span>
-        </a>
-        <a class="answer-card" href="answer-oak-versus-fruit.html">
-          <span class="meta">
-            <span class="id">ANS-0098</span>
-            <span class="badge high">High Confidence</span>
-            <span class="difficulty">Intermediate</span>
-          </span>
-          <h3>How To Tell Oak From Fruit In A Glass</h3>
-          <p>Vanilla, baking spice, coconut and toast come from the barrel, not the grape. Once you can separate the two, half of wine tasting stops being mysterious.</p>
-          <span class="chip-row">
-            <span class="tag">Oak</span>
-            <span class="tag">Tasting</span>
-            <span class="tag">Winemaking</span>
-          </span>
-        </a>
-        <a class="answer-card" href="answer-native-yeast.html">
-          <span class="meta">
-            <span class="id">ANS-0091</span>
-            <span class="badge moderate">Moderate Confidence</span>
-            <span class="difficulty">Advanced</span>
-          </span>
-          <h3>What Native Yeast Actually Changes</h3>
-          <p>Wild ferments are slower, less predictable, and often more aromatic. They can also stall. It’s a risk some producers take on purpose.</p>
-          <span class="chip-row">
-            <span class="tag">Fermentation</span>
-            <span class="tag">Yeast</span>
-            <span class="tag">Winemaking</span>
-          </span>
-        </a>
-        <a class="answer-card" href="answer-burgundy-hierarchy.html">
-          <span class="meta">
-            <span class="id">ANS-0084</span>
-            <span class="badge high">High Confidence</span>
-            <span class="difficulty">Advanced</span>
-          </span>
-          <h3>Village, Premier Cru, Grand Cru: What You Are Paying For</h3>
-          <p>The hierarchy grades the vineyard, not the winemaker. A good grower’s village wine routinely beats a lazy neighbour’s premier cru.</p>
-          <span class="chip-row">
-            <span class="tag">Burgundy</span>
-            <span class="tag">Classification</span>
-            <span class="tag">Value</span>
-          </span>
-        </a>
+      <div class="grid stack" id="answers-grid">
+        <p style="text-align: center; color: #999; grid-column: 1 / -1;">Loading answers...</p>
       </div>
     </div>
   </main>
@@ -193,5 +81,12 @@
       <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
     </div>
   </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.KnowledgeBase.loadAnswers('answers-grid', 100);
+    });
+  </script>
 </body>
 </html>

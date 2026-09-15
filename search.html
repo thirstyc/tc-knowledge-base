@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Search — Thirsty Cunt Knowledge Base</title>
-<meta name="description" content="Search the Thirsty Cunt wine knowledge base." />
+<meta name="description" content="Search 387 published wine knowledge chunks." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -26,48 +26,14 @@
   <main>
     <div class="wrap">
       <p class="breadcrumb"><a href="index.html">Home</a> / Search</p>
-      <form action="search.html" method="get" style="margin-bottom: 28px">
-        <input class="search-input lg" type="search" name="q" placeholder="ask it plainly" />
+      <h1 class="page-title">Search the Knowledge Base</h1>
+
+      <form action="search.html" method="get" style="margin-bottom: 44px">
+        <input class="search-input" type="search" id="searchQuery" name="q" placeholder="search all answers" autofocus />
       </form>
-      <p class="count">3 Results For &ldquo;grenache&rdquo;</p>
 
-      <div class="grid stack" style="margin-bottom: 80px">
-        <a class="answer-card" href="answer-grenache-alcohol-tannin.html">
-          <span class="meta">
-            <span class="id">ANS-0142</span>
-            <span class="badge high">High Confidence</span>
-            <span class="difficulty">Intermediate</span>
-          </span>
-          <h3>Why Grenache Gets You Tipsy Without Grabbing Your Gums</h3>
-          <p class="last">Sugar lives in the pulp, tannin lives in the skins. Grenache ripens fat and sweet with skins thin enough to keep the finish soft.</p>
-        </a>
-        <a class="answer-card" href="answer-warm-vs-cool-grenache.html">
-          <span class="meta">
-            <span class="id">ANS-0138</span>
-            <span class="badge high">High Confidence</span>
-            <span class="difficulty">Beginner</span>
-          </span>
-          <h3>Warm Grenache, Cool Grenache: Same Grape, Different Wine</h3>
-          <p class="last">Heat decides how ripe the fruit gets and which flavours turn up. Warm sites give dark fruit and more alcohol; cooler ones stay red-fruited and light on their feet.</p>
-        </a>
-        <a class="answer-card" href="answer-old-vine-grenache-value.html">
-          <span class="meta">
-            <span class="id">ANS-0129</span>
-            <span class="badge moderate">Moderate Confidence</span>
-            <span class="difficulty">Intermediate</span>
-          </span>
-          <h3>Is Old-Vine Grenache Worth The Money?</h3>
-          <p class="last">Often, yes — old vines give less fruit and more concentration. But age alone guarantees nothing. Who farmed it and where matters more than the number on the label.</p>
-        </a>
-      </div>
-
-      <!-- Empty state: render this instead of the results grid when a query returns nothing -->
-      <div class="empty">
-        <p class="k">Nothing Yet</p>
-        <p class="t">We Haven’t Written That One Down</p>
-        <p>Try fewer words, or a grape name. If it’s a real question, send it over — that’s how most of these got here.</p>
-        <a class="btn-outline" href="answers.html">Browse All Answers</a>
-      </div>
+      <p class="count" id="resultCount">Start typing to search...</p>
+      <div class="grid stack" id="results"></div>
     </div>
   </main>
   <footer class="site-footer">
@@ -106,5 +72,57 @@
       <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
     </div>
   </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const query = new URLSearchParams(window.location.search).get('q');
+      const searchInput = document.getElementById('searchQuery');
+      const resultCount = document.getElementById('resultCount');
+      const resultsDiv = document.getElementById('results');
+
+      if (query) {
+        if (searchInput) searchInput.value = query;
+        performSearch(query);
+      }
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const q = e.target.value.trim();
+          if (q.length > 0) {
+            performSearch(q);
+          } else {
+            resultCount.textContent = 'Start typing to search...';
+            resultsDiv.innerHTML = '';
+          }
+        });
+      }
+
+      async function performSearch(searchQuery) {
+        if (resultCount) resultCount.textContent = `Searching for "${searchQuery}"...`;
+        if (resultsDiv) resultsDiv.innerHTML = '';
+
+        const chunks = await window.KnowledgeBase.fetchPublishedChunks(50, searchQuery);
+
+        if (chunks.length === 0) {
+          if (resultCount) resultCount.textContent = `0 results for "${searchQuery}"`;
+          if (resultsDiv) resultsDiv.innerHTML = '<div class="empty"><p class="k">Nothing Yet</p></div>';
+          return;
+        }
+
+        if (resultCount) resultCount.textContent = `${chunks.length} result${chunks.length !== 1 ? 's' : ''} for "${searchQuery}"`;
+        if (resultsDiv) {
+          resultsDiv.innerHTML = chunks.map(chunk => {
+            const title = chunk.section_title || chunk.source_doc || 'Untitled';
+            const content = chunk.content || '';
+            const summary = chunk.summary || content.substring(0, 150) + '...';
+            const category = chunk.chunk_type || 'General';
+            const source = chunk.source_doc || 'knowledge';
+            return `<a class="answer-card" href="#" onclick="window.KnowledgeBase.showChunkDetail(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p class="last">${summary}</p></a>`;
+          }).join('');
+        }
+      }
+    });
+  </script>
 </body>
 </html>
