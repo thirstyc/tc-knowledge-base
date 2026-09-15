@@ -3,7 +3,7 @@ import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 
-const INTAKE_DIR = path.resolve('intake');
+const INTAKE_DIR = path.resolve('/Users/cathe/Documents/Thirsty Cunt/Knowledge Base');
 
 async function main() {
   await mkdir(INTAKE_DIR, { recursive: true });

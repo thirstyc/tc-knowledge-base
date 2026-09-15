@@ -7,7 +7,7 @@ import { supabase } from './lib/supabase.mjs';
 import { embed } from './lib/embeddings.mjs';
 import { chunkText } from './lib/chunking.mjs';
 
-const INTAKE_DIR = path.resolve('intake');
+const INTAKE_DIR = path.resolve('/Users/cathe/Documents/Thirsty Cunt/Knowledge Base');
 const ARCHIVE_DIR = path.resolve('archive');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -46,7 +46,7 @@ ${content}`,
 
 async function publish() {
   const { data, error } = await supabase
-    .from('knowledge_chunks')
+    .from('knowledge_base_chunks')
     .update({ status: 'published', published_at: new Date().toISOString() })
     .eq('status', 'draft')
     .select('id');
@@ -101,12 +101,12 @@ async function processIntake() {
 
     // Idempotent re-processing: clear any prior chunks for this source file.
     const { error: deleteError } = await supabase
-      .from('knowledge_chunks')
+      .from('knowledge_base_chunks')
       .delete()
       .eq('source_file', file);
     if (deleteError) throw deleteError;
 
-    const { error: insertError } = await supabase.from('knowledge_chunks').insert(rows);
+    const { error: insertError } = await supabase.from('knowledge_base_chunks').insert(rows);
     if (insertError) throw insertError;
 
     await rename(filePath, path.join(ARCHIVE_DIR, file));
