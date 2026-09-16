@@ -195,24 +195,54 @@ async function loadAnswers(containerId, limit = 3, searchQuery = null) {
   container.innerHTML = chunks.map(renderAnswerCard).join('');
 }
 
+function ensureModalStyles() {
+  if (document.getElementById('modal-styles')) return;
+  const styles = document.createElement('style');
+  styles.id = 'modal-styles';
+  styles.textContent = '.modal-overlay{display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000}.modal-content{background:white;border-radius:8px;padding:2rem;max-width:800px;max-height:80vh;overflow-y:auto}.modal-close{position:absolute;top:1rem;right:1rem;background:0;border:0;font-size:1.5rem;cursor:pointer}';
+  document.head.appendChild(styles);
+}
+
+function showModal(contentHtml) {
+  ensureModalStyles();
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = contentHtml;
+  document.body.appendChild(modal);
+}
+
 function showChunkDetail(chunk) {
   const title = deriveCardTitle(chunk);
   const content = chunk.content || '';
   const category = chunk.chunk_type || 'General';
   const source = chunk.source_doc || 'knowledge';
-  
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>${title}</h2><div class="modal-meta"><span class="badge">${category}</span><span class="source">${source}</span></div><div class="modal-body">${content}</div></div>`;
-  
-  if (!document.getElementById('modal-styles')) {
-    const styles = document.createElement('style');
-    styles.id = 'modal-styles';
-    styles.textContent = '.modal-overlay{display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000}.modal-content{background:white;border-radius:8px;padding:2rem;max-width:800px;max-height:80vh;overflow-y:auto}.modal-close{position:absolute;top:1rem;right:1rem;background:0;border:0;font-size:1.5rem;cursor:pointer}';
-    document.head.appendChild(styles);
-  }
-  
-  document.body.appendChild(modal);
+
+  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>${title}</h2><div class="modal-meta"><span class="badge">${category}</span><span class="source">${source}</span></div><div class="modal-body">${content}</div></div>`);
 }
+
+// The App Store link is iOS-only (Thirsty Cellar has no Android build), and
+// apps.apple.com has no install path at all on Android -- just the listing
+// page with no GET button. Rather than send Android visitors to a dead end,
+// relabel the button and show a modal instead of navigating there.
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
+function showAndroidComingSoonModal() {
+  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>Coming Soon for Android</h2><div class="modal-body"><p>Thirsty Cellar is an iPhone app right now, so there's nothing to install from here yet on Android. We're working on it -- check back soon.</p></div></div>`);
+}
+
+function guardAppStoreLinksOnAndroid() {
+  if (!isAndroid()) return;
+  document.querySelectorAll('a.btn-pill').forEach((link) => {
+    link.textContent = 'Android: coming soon';
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      showAndroidComingSoonModal();
+    });
+  });
+}
+
+guardAppStoreLinksOnAndroid();
 
 window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, resolveTopicSlug, getSearchParam, deriveCardTitle };
