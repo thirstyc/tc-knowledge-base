@@ -2,27 +2,32 @@
 const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
 
-async function fetchPublishedChunks(limit = 10, searchQuery = null) {
+async function fetchChunks(queryString) {
   try {
-    let url = `${SUPABASE_URL}/rest/v1/knowledge_chunks?select=*&order=created_at.desc&limit=${limit}`;
-    
-    if (searchQuery) {
-      url = `${SUPABASE_URL}/rest/v1/knowledge_chunks?select=*&or=(section_title.ilike.%25${encodeURIComponent(searchQuery)}%25,content.ilike.%25${encodeURIComponent(searchQuery)}%25)&order=created_at.desc&limit=${limit}`;
-    }
-    
-    const response = await fetch(url, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/knowledge_chunks?${queryString}`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
       },
     });
-    
+
     if (!response.ok) return [];
     return await response.json();
   } catch (error) {
     console.error('Error fetching chunks:', error);
     return [];
   }
+}
+
+async function fetchPublishedChunks(limit = 10, searchQuery = null) {
+  const columns = 'id,content,section_title,source_doc,chunk_type';
+  let query = `select=${columns}&order=created_at.desc&limit=${limit}`;
+
+  if (searchQuery) {
+    query = `select=${columns}&or=(section_title.ilike.%25${encodeURIComponent(searchQuery)}%25,content.ilike.%25${encodeURIComponent(searchQuery)}%25)&order=created_at.desc&limit=${limit}`;
+  }
+
+  return fetchChunks(query);
 }
 
 function getSearchParam(param) {
@@ -83,4 +88,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('answers-grid')) loadAnswers('answers-grid', 100);
 });
 
-window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, showChunkDetail, getSearchParam };
+window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, showChunkDetail, getSearchParam };

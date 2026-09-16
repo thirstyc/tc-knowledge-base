@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Grenache — Thirsty Cunt Knowledge Base</title>
-<meta name="description" content="Soft, generous, high in alcohol and low in grip. 42 answers on Grenache." />
+<meta name="description" content="Soft, generous, high in alcohol and low in grip. Everything we know about Grenache." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -28,44 +28,15 @@
       <p class="breadcrumb"><a href="index.html">Home</a> / <a href="topics.html">Topics</a> / Grenache</p>
       <div class="split">
         <div>
-          <p class="eyebrow">Red Grape / France, Spain</p>
-          <h1 class="display">Grenache</h1>
-          <p class="lede sm" style="margin: 0">Soft, generous, high in alcohol and low in grip. It’s the backbone of Châteauneuf-du-Pape, the whole point of Priorat, and the reason cheap rosé from the south of France tastes like strawberries. Garnacha if you’re in Spain.</p>
+          <p class="eyebrow" id="grape-eyebrow">Red Grape</p>
+          <h1 class="display" id="grape-name">Grenache</h1>
+          <p class="lede sm" id="grape-lede" style="margin: 0">Loading…</p>
         </div>
-        <dl class="facts">
-          <div><dt>Also Called</dt><dd>Garnacha, Cannonau</dd></div>
-          <div><dt>Typical Alcohol</dt><dd>14–16%</dd></div>
-          <div><dt>Tannin</dt><dd>Low</dd></div>
-          <div><dt>Homes</dt><dd>Rhône, Priorat, Sardinia</dd></div>
-        </dl>
+        <dl class="facts" id="grape-facts"></dl>
       </div>
 
-      <p class="list-head">42 Answers On Grenache</p>
-      <a class="row-item" href="answer-grenache-alcohol-tannin.html">
-        <span class="id">ANS-0142</span>
-        <span class="t">Why Grenache Gets You Tipsy Without Grabbing Your Gums</span>
-        <span class="k">Intermediate</span>
-      </a>
-      <a class="row-item" href="answer-warm-vs-cool-grenache.html">
-        <span class="id">ANS-0138</span>
-        <span class="t">Warm Grenache, Cool Grenache: Same Grape, Different Wine</span>
-        <span class="k">Beginner</span>
-      </a>
-      <a class="row-item" href="answer-old-vine-grenache-value.html">
-        <span class="id">ANS-0129</span>
-        <span class="t">Is Old-Vine Grenache Worth The Money?</span>
-        <span class="k">Intermediate</span>
-      </a>
-      <a class="row-item" href="answer-wine-smells-like-barn.html">
-        <span class="id">ANS-0117</span>
-        <span class="t">Why Does My Wine Smell Like A Barn?</span>
-        <span class="k">Beginner</span>
-      </a>
-      <a class="row-item" href="answer-sulphites-headache.html">
-        <span class="id">ANS-0103</span>
-        <span class="t">Sulphites Are Probably Not Giving You A Headache</span>
-        <span class="k">Beginner</span>
-      </a>
+      <p class="list-head" id="qa-count">Loading answers…</p>
+      <div id="qa-list"></div>
     </div>
   </main>
   <footer class="site-footer">
@@ -104,5 +75,58 @@
       <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
     </div>
   </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    const TOPIC_SOURCE_DOC = 'grape-grenache';
+    const TOPIC_NAME = 'Grenache';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const overviewRows = await window.KnowledgeBase.fetchChunks(
+        `select=content&chunk_type=eq.grape&source_doc=eq.${TOPIC_SOURCE_DOC}&section_title=eq.Overview&limit=1`
+      );
+
+      if (overviewRows.length > 0) {
+        const [eyebrow, name, lede, factsBlock] = overviewRows[0].content.split('\n\n');
+        document.getElementById('grape-eyebrow').textContent = eyebrow || '';
+        document.getElementById('grape-name').textContent = name || TOPIC_NAME;
+        document.getElementById('grape-lede').textContent = lede || '';
+
+        const factsEl = document.getElementById('grape-facts');
+        factsEl.innerHTML = (factsBlock || '').split('\n').map(line => {
+          const sep = line.indexOf(':');
+          if (sep === -1) return '';
+          const key = line.slice(0, sep).trim();
+          const value = line.slice(sep + 1).trim();
+          return `<div><dt>${key}</dt><dd>${value}</dd></div>`;
+        }).join('');
+      }
+
+      const qaRows = await window.KnowledgeBase.fetchChunks(
+        `select=id,content,source_doc,chunk_type&chunk_type=eq.qa&content=ilike.%25${encodeURIComponent(TOPIC_NAME)}%25&order=source_doc.asc&limit=100`
+      );
+
+      const countEl = document.getElementById('qa-count');
+      const listEl = document.getElementById('qa-list');
+
+      if (qaRows.length === 0) {
+        countEl.textContent = `No Answers Yet On ${TOPIC_NAME}`;
+        return;
+      }
+
+      countEl.textContent = `${qaRows.length} Answer${qaRows.length !== 1 ? 's' : ''} On ${TOPIC_NAME}`;
+      listEl.innerHTML = qaRows.map(chunk => {
+        const raw = (chunk.content || '').trim();
+        const qMark = raw.indexOf('? ');
+        const title = qMark !== -1 ? raw.slice(0, qMark + 1) : raw;
+        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
+        return `<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
+          <span class="id">${(chunk.source_doc || '').toUpperCase()}</span>
+          <span class="t">${title}</span>
+          <span class="k">${chunk.chunk_type.toUpperCase()}</span>
+        </a>`;
+      }).join('');
+    });
+  </script>
 </body>
 </html>
