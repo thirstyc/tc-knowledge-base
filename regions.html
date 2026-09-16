@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Regions — Thirsty Cunt Knowledge Base</title>
+<meta name="description" content="Every wine region we've written about, grouped and browsable." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><img src="assets/tc-monogram.png" alt="Thirsty Cunt" /></a>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="answers.html">Answers</a>
+      <a href="topics.html">Topics</a>
+      <a href="grapes.html">Grapes</a>
+      <a href="regions.html" aria-current="page">Regions</a>
+      <a href="guides.html">Guides</a>
+      <a href="search.html">Search</a>
+      <a href="about.html">About</a>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+      <a class="btn-pill" href="https://apps.apple.com/ca/app/thirsty-cellar/id6772614506">Get the app</a>
+    </nav>
+  </header>
+  <main>
+    <div class="wrap">
+      <p class="breadcrumb"><a href="index.html">Home</a> / Regions</p>
+      <h1 class="page-title">Wine Regions</h1>
+      <p class="lede sm" id="regionLede">Loading&hellip;</p>
+
+      <div id="regionGroups"></div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="assets/tc-monogram-white.png" alt="Thirsty Cunt" />
+        <p>A wine lifestyle brand built on the belief that wine should feel social, interesting, and grounded in lived experience.</p>
+      </div>
+      <div class="footer-col">
+        <p class="k">Explore</p>
+        <div class="links">
+          <a href="#">The App</a>
+          <a href="#">Tastings</a>
+          <a href="#">The Writing</a>
+          <a href="#">Instagram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Get In Touch</p>
+        <div class="links">
+          <a href="#">Contact</a>
+          <a href="mailto:hello@thirstyc.com">hello@thirstyc.com</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Legal</p>
+        <div class="links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Your Privacy Choices</a>
+          <a href="#">Terms &amp; Conditions</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="copy">&copy; 2026 Thirsty Cunt &middot; Drink Responsibly</span>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+    </div>
+  </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    // chunk_type='region' isn't one row per browsable region -- it's ~35
+    // macro-region "chapters" (source_doc, e.g. "region-italy-central"),
+    // each holding many section rows for its actual sub-regions (Chianti,
+    // Tuscany, Umbria, ...). There's no per-country label stored anywhere,
+    // so grouping/naming is derived mechanically from the source_doc slug
+    // rather than guessed at with a hardcoded country list that would only
+    // ever cover some of ~35 groups.
+    function humanizeSlug(slug) {
+      return slug
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+
+    function renderGroups(groups) {
+      const container = document.getElementById('regionGroups');
+      container.innerHTML = groups
+        .map((group, i) => {
+          const rows = group.rows
+            .map((chunk) => {
+              const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
+              return `<a class="row-item" href="#" onclick="window.KnowledgeBase.goToChunk(${safeChunk}); return false;">
+                <span class="id">${(chunk.source_doc || '').toUpperCase()}</span>
+                <span class="t">${chunk.section_title || 'Untitled'}</span>
+                <span class="k">${chunk.chunk_type.toUpperCase()}</span>
+              </a>`;
+            })
+            .join('');
+          return `<section style="margin-bottom: 20px">
+            <button type="button" class="list-head" style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--hairline-strong); cursor: pointer; display: flex; justify-content: space-between; color: inherit; font: inherit; padding-bottom: 12px" onclick="document.getElementById('group-${i}').hidden = !document.getElementById('group-${i}').hidden">
+              <span>${group.name}</span>
+              <span>${group.rows.length}</span>
+            </button>
+            <div id="group-${i}" hidden>${rows}</div>
+          </section>`;
+        })
+        .join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const rows = await window.KnowledgeBase.fetchChunks(
+        'select=id,content,source_doc,section_title,chunk_type&chunk_type=eq.region&order=source_doc.asc&limit=500'
+      );
+
+      const bySourceDoc = new Map();
+      for (const row of rows) {
+        if (!bySourceDoc.has(row.source_doc)) bySourceDoc.set(row.source_doc, []);
+        bySourceDoc.get(row.source_doc).push(row);
+      }
+
+      const groups = [...bySourceDoc.entries()]
+        .map(([sourceDoc, groupRows]) => ({
+          name: humanizeSlug(sourceDoc.replace(/^region-/, '')),
+          rows: groupRows,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      document.getElementById('regionLede').textContent =
+        `${groups.length} regions, ${rows.length} sub-topics between them. Expand one to browse.`;
+      renderGroups(groups);
+    });
+  </script>
+</body>
+</html>

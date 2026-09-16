@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Grapes — Thirsty Cunt Knowledge Base</title>
+<meta name="description" content="Every grape variety in the knowledge base, browsable by name." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><img src="assets/tc-monogram.png" alt="Thirsty Cunt" /></a>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="answers.html">Answers</a>
+      <a href="topics.html">Topics</a>
+      <a href="grapes.html" aria-current="page">Grapes</a>
+      <a href="regions.html">Regions</a>
+      <a href="guides.html">Guides</a>
+      <a href="search.html">Search</a>
+      <a href="about.html">About</a>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+      <a class="btn-pill" href="https://apps.apple.com/ca/app/thirsty-cellar/id6772614506">Get the app</a>
+    </nav>
+  </header>
+  <main>
+    <div class="wrap">
+      <p class="breadcrumb"><a href="index.html">Home</a> / Grapes</p>
+      <h1 class="page-title">All Grape Varieties</h1>
+      <p class="lede sm" id="grapeLede">Loading&hellip;</p>
+
+      <input class="search-input" type="search" id="grapeSearch" placeholder="search grapes" style="margin-bottom: 28px" />
+
+      <p class="count" id="grapeCount">Loading grapes&hellip;</p>
+      <div id="grapesGrid" class="grid tiles"></div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="assets/tc-monogram-white.png" alt="Thirsty Cunt" />
+        <p>A wine lifestyle brand built on the belief that wine should feel social, interesting, and grounded in lived experience.</p>
+      </div>
+      <div class="footer-col">
+        <p class="k">Explore</p>
+        <div class="links">
+          <a href="#">The App</a>
+          <a href="#">Tastings</a>
+          <a href="#">The Writing</a>
+          <a href="#">Instagram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Get In Touch</p>
+        <div class="links">
+          <a href="#">Contact</a>
+          <a href="mailto:hello@thirstyc.com">hello@thirstyc.com</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Legal</p>
+        <div class="links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Your Privacy Choices</a>
+          <a href="#">Terms &amp; Conditions</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="copy">&copy; 2026 Thirsty Cunt &middot; Drink Responsibly</span>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+    </div>
+  </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    // Grapes here means chunk_type='grape', section_title='Overview' -- the
+    // one canonical row per variety (188 of them). Non-Overview 'grape' rows
+    // are sub-topics of a variety (e.g. "Grenache -- New World") and aren't
+    // separate grapes, so they're excluded to avoid duplicate/near-duplicate
+    // tiles. Content shape is identical to what topic pages already parse:
+    // "{eyebrow}\n\n{name}\n\n{lede}\n\n{factsBlock}".
+    let allGrapes = [];
+
+    function parseGrape(row) {
+      const [eyebrow, name] = (row.content || '').split('\n\n');
+      const country = (eyebrow || '').split('/')[1]?.trim() || '';
+      const grapeName = (name || row.source_doc.replace(/^grape-/, '')).trim();
+      return {
+        name: grapeName,
+        country,
+        // deriveCardTitle()'s default branch (used by the modal when this
+        // grape has no dedicated topic page) shows section_title, which is
+        // literally "Overview" on every one of these rows -- override it
+        // with the parsed name so the modal title is actually useful.
+        chunk: { ...row, section_title: grapeName },
+      };
+    }
+
+    function renderGrapes(grapes) {
+      const grid = document.getElementById('grapesGrid');
+      const countEl = document.getElementById('grapeCount');
+
+      if (grapes.length === 0) {
+        countEl.textContent = 'No grapes match that search.';
+        grid.innerHTML = '';
+        return;
+      }
+
+      countEl.textContent = `${grapes.length} grape${grapes.length !== 1 ? 's' : ''}`;
+      grid.innerHTML = grapes
+        .map((g) => {
+          const safeChunk = JSON.stringify(g.chunk).replace(/"/g, '&quot;');
+          return `<a class="tile" href="#" onclick="window.KnowledgeBase.goToChunk(${safeChunk}); return false;">
+            <span class="name">${g.name}</span>
+            <span class="n">${g.country}</span>
+          </a>`;
+        })
+        .join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const rows = await window.KnowledgeBase.fetchChunks(
+        'select=id,content,source_doc,chunk_type&chunk_type=eq.grape&section_title=eq.Overview&order=source_doc.asc&limit=300'
+      );
+
+      allGrapes = rows.map(parseGrape).sort((a, b) => a.name.localeCompare(b.name));
+      document.getElementById('grapeLede').textContent =
+        `${allGrapes.length} varieties. Click one to see what we've written about it.`;
+      renderGrapes(allGrapes);
+
+      document.getElementById('grapeSearch').addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        renderGrapes(q ? allGrapes.filter((g) => g.name.toLowerCase().includes(q)) : allGrapes);
+      });
+    });
+  </script>
+</body>
+</html>

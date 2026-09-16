@@ -119,6 +119,14 @@ function resolveTopicSlug(chunk) {
       const slug = SOURCE_DOC_SLUG_OVERRIDES[doc] || doc.slice(prefix.length);
       if (TOPIC_PAGE_SLUGS.has(slug)) return slug;
     }
+    // Falling through to keyword-matching below would be wrong here: a
+    // grape/region/enology chunk's own descriptive content routinely
+    // mentions other topics' keywords incidentally (e.g. every grape's
+    // Overview says something about tannin/acidity/oak), which isn't the
+    // same as that chunk BEING about that topic the way a qa/region-qa
+    // answer's content is. No exact source_doc match means no page exists
+    // for this one -- the modal is correct, not a keyword guess.
+    return null;
   }
 
   const haystack = `${chunk.content || ''} ${chunk.section_title || ''}`;

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guides — Thirsty Cunt Knowledge Base</title>
+<meta name="description" content="How wine works, and how bottles compare, in longer form than a single answer." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><img src="assets/tc-monogram.png" alt="Thirsty Cunt" /></a>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="answers.html">Answers</a>
+      <a href="topics.html">Topics</a>
+      <a href="grapes.html">Grapes</a>
+      <a href="regions.html">Regions</a>
+      <a href="guides.html" aria-current="page">Guides</a>
+      <a href="search.html">Search</a>
+      <a href="about.html">About</a>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+      <a class="btn-pill" href="https://apps.apple.com/ca/app/thirsty-cellar/id6772614506">Get the app</a>
+    </nav>
+  </header>
+  <main>
+    <div class="wrap">
+      <p class="breadcrumb"><a href="index.html">Home</a> / Guides</p>
+      <h1 class="page-title">Guides &amp; Comparisons</h1>
+      <p class="lede sm" id="guidesLede">Loading&hellip;</p>
+
+      <div id="guidesGrid" class="grid answers-3"></div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="assets/tc-monogram-white.png" alt="Thirsty Cunt" />
+        <p>A wine lifestyle brand built on the belief that wine should feel social, interesting, and grounded in lived experience.</p>
+      </div>
+      <div class="footer-col">
+        <p class="k">Explore</p>
+        <div class="links">
+          <a href="#">The App</a>
+          <a href="#">Tastings</a>
+          <a href="#">The Writing</a>
+          <a href="#">Instagram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Get In Touch</p>
+        <div class="links">
+          <a href="#">Contact</a>
+          <a href="mailto:hello@thirstyc.com">hello@thirstyc.com</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Legal</p>
+        <div class="links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Your Privacy Choices</a>
+          <a href="#">Terms &amp; Conditions</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="copy">&copy; 2026 Thirsty Cunt &middot; Drink Responsibly</span>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+    </div>
+  </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    // guide/comparison chunks are grouped in 2-3 rows per source_doc (e.g.
+    // "Concept" + "Teaching", or "Overview" + "Practice"). One card per
+    // source_doc, using its first row as the click-through; clicking opens
+    // that row's full content in the existing modal rather than a new page
+    // -- these are 7 total groups, not enough to justify a detail-page
+    // generator the way qa/region-qa answers got one.
+    //
+    // enology rows are deliberately excluded: they already have 6 dedicated
+    // topic pages (Tannins, Fermentation, Biodynamic, Sulphites, Oak,
+    // Faults) plus a "How Wine Works" section on topics.html, so listing
+    // them again here would just duplicate that.
+    //
+    // Titles come from source_doc, not section_title: rows within a group
+    // use inconsistent suffix conventions ("— Concept"/"— Teaching" for
+    // comparisons, but arbitrary phrases like "Why Cabernet Franc wins" for
+    // guide-food-pairing-masterclass), so stripping a fixed suffix list
+    // missed cases. source_doc is a single per-group, always-present slug.
+    function titleFromSourceDoc(sourceDoc) {
+      return sourceDoc
+        .replace(/^(guide|comparison)-/, '')
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+
+    function renderGuides(groups) {
+      const grid = document.getElementById('guidesGrid');
+      grid.innerHTML = groups
+        .map((group) => {
+          const primary = group.rows[0];
+          const body = (primary.content || '').split('\n\n').slice(1).join(' ').trim();
+          const safeChunk = JSON.stringify({ ...primary, section_title: group.title }).replace(/"/g, '&quot;');
+          return `<a class="card topic" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
+            <span class="card-meta">${primary.chunk_type.toUpperCase()} &middot; ${group.rows.length} part${group.rows.length !== 1 ? 's' : ''}</span>
+            <span class="card-title sm">${group.title}</span>
+            <p>${body.slice(0, 160)}${body.length > 160 ? '…' : ''}</p>
+            <span class="more">Read &rarr;</span>
+          </a>`;
+        })
+        .join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const rows = await window.KnowledgeBase.fetchChunks(
+        'select=id,content,source_doc,section_title,chunk_type&chunk_type=in.(guide,comparison)&order=source_doc.asc&limit=200'
+      );
+
+      const bySourceDoc = new Map();
+      for (const row of rows) {
+        if (!bySourceDoc.has(row.source_doc)) bySourceDoc.set(row.source_doc, []);
+        bySourceDoc.get(row.source_doc).push(row);
+      }
+
+      const groups = [...bySourceDoc.entries()].map(([sourceDoc, groupRows]) => ({
+        title: titleFromSourceDoc(sourceDoc),
+        rows: groupRows,
+      }));
+
+      document.getElementById('guidesLede').textContent =
+        `${groups.length} guides and comparisons, ${rows.length} parts in total.`;
+      renderGuides(groups);
+    });
+  </script>
+</body>
+</html>
