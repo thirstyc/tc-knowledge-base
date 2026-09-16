@@ -2,9 +2,9 @@
 const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
 
-async function fetchChunks(queryString) {
+async function fetchTable(table, queryString) {
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/knowledge_chunks?${queryString}`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${queryString}`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
@@ -14,9 +14,13 @@ async function fetchChunks(queryString) {
     if (!response.ok) return [];
     return await response.json();
   } catch (error) {
-    console.error('Error fetching chunks:', error);
+    console.error(`Error fetching ${table}:`, error);
     return [];
   }
+}
+
+async function fetchChunks(queryString) {
+  return fetchTable('knowledge_chunks', queryString);
 }
 
 async function fetchPublishedChunks(limit = 10, searchQuery = null) {
@@ -30,9 +34,9 @@ async function fetchPublishedChunks(limit = 10, searchQuery = null) {
   return fetchChunks(query);
 }
 
-async function countChunks(queryString) {
+async function countTable(table, queryString = '') {
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/knowledge_chunks?${queryString}`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${queryString}`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
@@ -47,9 +51,13 @@ async function countChunks(queryString) {
     const total = range.split('/')[1];
     return total === '*' ? 0 : parseInt(total, 10);
   } catch (error) {
-    console.error('Error counting chunks:', error);
+    console.error(`Error counting ${table}:`, error);
     return 0;
   }
+}
+
+async function countChunks(queryString) {
+  return countTable('knowledge_chunks', queryString);
 }
 
 function getSearchParam(param) {
@@ -110,4 +118,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('answers-grid')) loadAnswers('answers-grid', 100);
 });
 
-window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, countChunks, showChunkDetail, getSearchParam };
+window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, getSearchParam };

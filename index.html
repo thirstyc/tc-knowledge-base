@@ -24,52 +24,65 @@
     </nav>
   </header>
   <main class="home">
-    <div class="wrap">
-      <section style="max-width: 760px; margin-bottom: 72px">
-        <p class="eyebrow">The Knowledge Base</p>
-        <h1 class="display">Everything We Know About Wine, Written Like We Actually Drink It</h1>
-        <p class="lede">Straight answers to the questions you'd ask a friend who happens to know a lot about wine. Accurate, never academic. Ask anything, or start with a topic.</p>
-        <form action="search.html" method="get" style="max-width: 640px">
-          <label class="sr-only" for="q" hidden>Search the knowledge base</label>
-          <input class="search-input" type="search" id="q" name="q" placeholder="why does my wine taste like a barn?" />
-        </form>
-      </section>
+    <section class="hero-band">
+      <div class="wrap">
+        <div style="max-width: 760px">
+          <p class="eyebrow">The Knowledge Base</p>
+          <h1 class="display">Wine Knowledge Built on Real Bottles</h1>
+          <p class="lede">667 Q&amp;As from independent tastings. 40 wines. No tasting-note theatre.</p>
+          <form action="search.html" method="get" style="max-width: 640px">
+            <label class="sr-only" for="q" hidden>Search the knowledge base</label>
+            <input class="search-input" type="search" id="q" name="q" placeholder="why does my wine taste like a barn?" />
+          </form>
+          <div class="hero-actions">
+            <a class="btn-solid" href="answers.html">Browse Answers</a>
+          </div>
+        </div>
+      </div>
+    </section>
 
-   <div class="stats">
-    <div><p class="n">387</p><p class="k">Knowledge Chunks Published</p></div>
-    <div><p class="n">40</p><p class="k">Teaching Wines Curated</p></div>
-    </div>
+    <div class="wrap">
+      <div class="stats">
+        <div><p class="n" id="stat-chunks">&hellip;</p><p class="k">Knowledge Chunks Published</p></div>
+        <div><p class="n">40</p><p class="k">Teaching Wines Curated</p></div>
+        <div><p class="n" id="stat-producers">&hellip;</p><p class="k">Independent Producers</p></div>
+      </div>
+
+      <div class="trust-band">
+        <p class="sub">Wine Regions We Cover</p>
+        <div class="trust-row" id="trust-regions"></div>
+      </div>
 
       <div class="section-head">
-        <h2>Start Somewhere</h2>
+        <h2>Explore By Topic</h2>
         <a href="topics.html">All Topics</a>
       </div>
       <div class="grid topics" style="margin-bottom: 80px">
         <a class="card topic" href="topic-grenache.html">
-          <span class="card-meta">42 Answers</span>
+          <span class="card-meta" id="topic-count-grenache">&hellip;</span>
           <span class="card-title">Grenache</span>
           <p>Soft, warm-climate reds with high alcohol and almost no grip. Why they taste the way they do.</p>
-          <span class="more">Explore The Topic &rarr;</span>
+          <span class="more">Explore Topic &rarr;</span>
         </a>
-        <a class="card topic" href="topics.html">
-          <span class="card-meta">38 Answers</span>
+        <a class="card topic" href="search.html?q=Rh%C3%B4ne">
+          <span class="card-meta" id="topic-count-rhone">&hellip;</span>
           <span class="card-title">Rhône Valley</span>
           <p>Syrah in the north, blends in the south, and the appellation rules that decide what goes in the bottle.</p>
-          <span class="more">Explore The Topic &rarr;</span>
+          <span class="more">Explore Topic &rarr;</span>
         </a>
-        <a class="card topic" href="topics.html">
-          <span class="card-meta">29 Answers</span>
+        <a class="card topic" href="search.html?q=Tannin">
+          <span class="card-meta" id="topic-count-tannins">&hellip;</span>
           <span class="card-title">Tannins</span>
           <p>Where grip comes from, why it dries your mouth, and how age and food change it.</p>
-          <span class="more">Explore The Topic &rarr;</span>
+          <span class="more">Explore Topic &rarr;</span>
         </a>
       </div>
 
       <div class="section-head">
-        <h2>Worth Reading First</h2>
+        <h2>Featured Answers</h2>
         <a href="answers.html">All Answers</a>
       </div>
-      <div class="grid answers-3" id="featured-answers" style="margin-bottom: 80px">
+      <div class="grid answers-3" id="featured-answers-rich" style="margin-bottom: 80px">
         <p style="text-align: center; color: #999; grid-column: 1 / -1;">Loading answers...</p>
       </div>
 
@@ -122,10 +135,104 @@
 
   <script src="supabase-client.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.KnowledgeBase) {
-        window.KnowledgeBase.loadAnswers('featured-answers', 3);
+    // Curated selection of real, well-developed QA chunks (ids from knowledge_chunks).
+    const FEATURED_ANSWER_IDS = [762, 773, 767, 771, 760, 757];
+
+    function deriveTopic(sourceDoc) {
+      const slug = (sourceDoc || '').replace(/^qa-/, '');
+      const firstWord = slug.split('-')[0] || 'Wine';
+      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+    }
+
+    function parseQA(content) {
+      const raw = (content || '').trim();
+      const blankLine = raw.indexOf('\n\n');
+      if (blankLine !== -1) {
+        return {
+          question: raw.slice(0, blankLine).trim(),
+          answer: raw.slice(blankLine + 2).trim(),
+        };
       }
+      const questionMark = raw.indexOf('? ');
+      if (questionMark !== -1) {
+        return {
+          question: raw.slice(0, questionMark + 1).trim(),
+          answer: raw.slice(questionMark + 1).trim(),
+        };
+      }
+      return { question: raw, answer: raw };
+    }
+
+    function firstSentences(text, count) {
+      const sentences = text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+/);
+      return sentences.slice(0, count).join(' ');
+    }
+
+    async function renderStats() {
+      const [chunkTotal, producerTotal] = await Promise.all([
+        window.KnowledgeBase.countChunks('select=id'),
+        window.KnowledgeBase.countTable('producers', 'select=id'),
+      ]);
+      const chunkEl = document.getElementById('stat-chunks');
+      if (chunkEl) chunkEl.textContent = chunkTotal || '—';
+      const producerEl = document.getElementById('stat-producers');
+      if (producerEl) producerEl.textContent = producerTotal || '—';
+    }
+
+    async function renderTrustRegions() {
+      const el = document.getElementById('trust-regions');
+      if (!el) return;
+      const regions = await window.KnowledgeBase.fetchTable('regions', 'select=name&order=name.asc&limit=6');
+      el.innerHTML = regions.map(r => `<span class="region">${r.name}</span>`).join('');
+    }
+
+    async function renderTopicCounts() {
+      const topics = [
+        { id: 'topic-count-grenache', term: 'Grenache' },
+        { id: 'topic-count-rhone', term: 'Rhône' },
+        { id: 'topic-count-tannins', term: 'Tannin' },
+      ];
+      topics.forEach(async ({ id, term }) => {
+        const count = await window.KnowledgeBase.countChunks(`select=id&chunk_type=eq.qa&content=ilike.%25${encodeURIComponent(term)}%25`);
+        const el = document.getElementById(id);
+        if (el) el.textContent = `${count} Answer${count !== 1 ? 's' : ''}`;
+      });
+    }
+
+    async function renderFeaturedAnswers() {
+      const container = document.getElementById('featured-answers-rich');
+      if (!container) return;
+
+      const chunks = await window.KnowledgeBase.fetchChunks(
+        `select=id,content,source_doc,chunk_type&id=in.(${FEATURED_ANSWER_IDS.join(',')})`
+      );
+
+      if (chunks.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; grid-column: 1 / -1;">Nothing featured yet.</p>';
+        return;
+      }
+
+      chunks.sort((a, b) => FEATURED_ANSWER_IDS.indexOf(a.id) - FEATURED_ANSWER_IDS.indexOf(b.id));
+
+      container.innerHTML = chunks.map(chunk => {
+        const { question, answer } = parseQA(chunk.content);
+        const preview = firstSentences(answer, 2);
+        const topic = deriveTopic(chunk.source_doc);
+        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
+        return `<a class="answer-card" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
+          <span class="meta"><span class="tag">${topic}</span></span>
+          <h3>${question}</h3>
+          <p class="last">${preview}</p>
+          <span class="read-more">Read Answer &rarr;</span>
+        </a>`;
+      }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStats();
+      renderTrustRegions();
+      renderTopicCounts();
+      renderFeaturedAnswers();
     });
   </script>
 </body>
