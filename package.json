@@ -5,7 +5,8 @@
   "scripts": {
     "add": "node add-intake.mjs",
     "process": "node process-knowledge-intake.mjs",
-    "publish": "node process-knowledge-intake.mjs --publish"
+    "publish": "node process-knowledge-intake.mjs --publish",
+    "generate:topics": "node generate-topic-pages.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
