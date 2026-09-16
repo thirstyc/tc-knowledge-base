@@ -37,10 +37,6 @@
           <div class="hero-actions">
             <a class="btn-solid" href="answers.html">Browse Answers</a>
           </div>
-          <div class="hero-stat">
-            <p class="n" id="stat-chunks">&hellip;</p>
-            <p class="k">Knowledge Chunks Published</p>
-          </div>
         </div>
       </div>
     </section>
@@ -166,12 +162,6 @@
       return sentences.slice(0, count).join(' ');
     }
 
-    async function renderStats() {
-      const chunkTotal = await window.KnowledgeBase.countChunks('select=id');
-      const chunkEl = document.getElementById('stat-chunks');
-      if (chunkEl) chunkEl.textContent = chunkTotal || '—';
-    }
-
     async function renderTrustRegions() {
       const el = document.getElementById('trust-regions');
       if (!el) return;
@@ -224,7 +214,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      renderStats();
       renderTrustRegions();
       renderTopicCounts();
       renderFeaturedAnswers();
