@@ -37,17 +37,15 @@
           <div class="hero-actions">
             <a class="btn-solid" href="answers.html">Browse Answers</a>
           </div>
+          <div class="hero-stat">
+            <p class="n" id="stat-chunks">&hellip;</p>
+            <p class="k">Knowledge Chunks Published</p>
+          </div>
         </div>
       </div>
     </section>
 
     <div class="wrap">
-      <div class="stats">
-        <div><p class="n" id="stat-chunks">&hellip;</p><p class="k">Knowledge Chunks Published</p></div>
-        <div><p class="n">40</p><p class="k">Teaching Wines Curated</p></div>
-        <div><p class="n" id="stat-producers">&hellip;</p><p class="k">Independent Producers</p></div>
-      </div>
-
       <div class="trust-band">
         <p class="sub">Wine Regions We Cover</p>
         <div class="trust-row" id="trust-regions"></div>
@@ -169,14 +167,9 @@
     }
 
     async function renderStats() {
-      const [chunkTotal, producerTotal] = await Promise.all([
-        window.KnowledgeBase.countChunks('select=id'),
-        window.KnowledgeBase.countTable('producers', 'select=id'),
-      ]);
+      const chunkTotal = await window.KnowledgeBase.countChunks('select=id');
       const chunkEl = document.getElementById('stat-chunks');
       if (chunkEl) chunkEl.textContent = chunkTotal || '—';
-      const producerEl = document.getElementById('stat-producers');
-      if (producerEl) producerEl.textContent = producerTotal || '—';
     }
 
     async function renderTrustRegions() {
