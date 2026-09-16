@@ -9,8 +9,12 @@
 // by topics.config.mjs, so adding a topic is one config entry instead of
 // copy-pasting and hand-editing an existing HTML file.
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { TOPICS } from './topics.config.mjs';
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function renderHead(topic) {
   return `<!DOCTYPE html>
@@ -252,3 +256,74 @@ for (const topic of TOPICS) {
 }
 
 console.log(`Generated ${TOPICS.length} topic page(s).`);
+
+// --- Answer-card routing table in supabase-client.js -----------------------
+// TOPIC_PAGE_SLUGS, SOURCE_DOC_SLUG_OVERRIDES, and TOPIC_KEYWORDS are all
+// derivable from the same config, so generate them here instead of
+// hand-maintaining a second list that has to be kept in sync manually.
+
+function wrapList(items, perLine = 6) {
+  const lines = [];
+  for (let i = 0; i < items.length; i += perLine) {
+    lines.push('  ' + items.slice(i, i + perLine).join(', ') + ',');
+  }
+  return lines.join('\n');
+}
+
+function renderTopicPageSlugs() {
+  const items = TOPICS.map((t) => `'${t.slug}'`);
+  return `const TOPIC_PAGE_SLUGS = new Set([\n${wrapList(items)}\n]);`;
+}
+
+function renderSourceDocSlugOverrides() {
+  const entries = TOPICS.filter((t) => {
+    const prefix = `${t.kind}-`;
+    return t.sourceDoc.startsWith(prefix) && t.sourceDoc.slice(prefix.length) !== t.slug;
+  }).map((t) => `  '${t.sourceDoc}': '${t.slug}',`);
+  return `const SOURCE_DOC_SLUG_OVERRIDES = {\n${entries.join('\n')}\n};`;
+}
+
+function renderTopicKeywords() {
+  const entries = TOPICS.map((t) => {
+    const pattern = t.keywordPattern ?? escapeRegex(t.topicName.toLowerCase());
+    return `  { pattern: /${pattern}/i, slug: '${t.slug}' },`;
+  });
+  return `const TOPIC_KEYWORDS = [\n${entries.join('\n')}\n];`;
+}
+
+const ROUTING_BLOCK_START = '// --- BEGIN GENERATED TOPIC ROUTING (source: topics.config.mjs; run `npm run generate:topics`) ---';
+const ROUTING_BLOCK_END = '// --- END GENERATED TOPIC ROUTING ---';
+
+function renderRoutingBlock() {
+  return [
+    ROUTING_BLOCK_START,
+    '// Topics with a dedicated topic-[slug].html page. Anything not resolved',
+    '// here falls back to the inline modal so a link never points at a 404.',
+    renderTopicPageSlugs(),
+    '',
+    '// Maps a region-/enology-prefixed source_doc to its topic slug when the two',
+    '// differ. Anything not listed here just strips the prefix as-is.',
+    renderSourceDocSlugOverrides(),
+    '',
+    '// Ordered longest-phrase-first (see topics.config.mjs) so e.g. "Chenin',
+    '// Blanc" matches before a shorter, coincidental single-word hit would.',
+    '// Used only for chunk_types that don\'t carry their own grape-/region-/',
+    '// enology-prefixed source_doc, or whose prefix lookup didn\'t resolve.',
+    renderTopicKeywords(),
+    ROUTING_BLOCK_END,
+  ].join('\n');
+}
+
+const clientPath = 'supabase-client.js';
+const clientSrc = readFileSync(clientPath, 'utf8');
+const blockRegex = new RegExp(
+  `${ROUTING_BLOCK_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${ROUTING_BLOCK_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+);
+
+if (!blockRegex.test(clientSrc)) {
+  console.error(`Could not find generated-routing markers in ${clientPath}. Skipping.`);
+} else {
+  const updated = clientSrc.replace(blockRegex, renderRoutingBlock());
+  writeFileSync(clientPath, updated);
+  console.log(`  -> ${clientPath} (routing table)`);
+}

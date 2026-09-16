@@ -1,5 +1,7 @@
-// Single source of truth for topic-*.html pages. Add an entry here and run
-// `npm run generate:topics` instead of hand-copying an existing page.
+// Single source of truth for topic-*.html pages AND for the answer-card
+// routing table in supabase-client.js (TOPIC_PAGE_SLUGS, SOURCE_DOC_SLUG_
+// OVERRIDES, TOPIC_KEYWORDS). Add an entry here and run
+// `npm run generate:topics` instead of hand-editing either.
 //
 // kind determines which Supabase query shape generate-topic-pages.mjs uses:
 //   - 'grape'    chunk_type=grape overview, single chunk_type=qa QA fetch
@@ -7,31 +9,28 @@
 //   - 'enology'  chunk_type=enology overview, QA fetch combines chunk_type=qa
 //                 + chunk_type=enology (section_title != Overview) matches
 //
-// matchTerm defaults to topicName if omitted. excludeTerm is rare (only
-// cabernet-sauvignon needs it, to keep "Cabernet Franc" mentions out of the
-// Cabernet Sauvignon page).
+// matchTerm (topic page's own QA content filter) defaults to topicName if
+// omitted. excludeTerm is rare (only cabernet-sauvignon needs it, to keep
+// "Cabernet Franc" mentions out of the Cabernet Sauvignon page).
 //
-// NOTE: adding a topic here and regenerating does NOT make it linkable from
-// search/homepage cards automatically — TOPIC_PAGE_SLUGS and TOPIC_KEYWORDS
-// in supabase-client.js are a second, manually-maintained list that routes
-// chunk cards to the right topic page. Update those too for a genuinely new
-// topic.
+// keywordPattern (regex source, no slashes, always case-insensitive) is what
+// supabase-client.js uses to route an arbitrary answer card to this topic
+// page when its source_doc doesn't already resolve one. Defaults to the
+// escaped topicName when omitted — only set it when that default would be
+// wrong (topicName has an extra word the content doesn't use, like "Niagara
+// Peninsula", or needs to allow for a spelling/boundary variant).
+//
+// Array order matters here: it becomes TOPIC_KEYWORDS' match order, and
+// multi-word patterns must come before single-word ones so e.g. "Chenin
+// Blanc" matches before a shorter, coincidental single-word hit would.
 
 export const TOPICS = [
   {
-    slug: 'biodynamic',
-    kind: 'enology',
-    topicName: 'Biodynamic Wine',
-    sourceDoc: 'enology-biodynamic',
-    metaDescription: 'Farming by the lunar calendar. Everything we know about biodynamic wine.',
-    matchTerm: 'Biodynamic',
-  },
-  {
-    slug: 'burgundy',
-    kind: 'region',
-    topicName: 'Burgundy',
-    sourceDoc: 'region-burgundy',
-    metaDescription: "The world's most detailed expression of terroir. Everything we know about Burgundy.",
+    slug: 'chenin-blanc',
+    kind: 'grape',
+    topicName: 'Chenin Blanc',
+    sourceDoc: 'grape-chenin-blanc',
+    metaDescription: 'Bone-dry to lusciously sweet, one grape doing it all. Everything we know about Chenin Blanc.',
   },
   {
     slug: 'cabernet-sauvignon',
@@ -47,54 +46,13 @@ export const TOPICS = [
       'the exact phrase (which was missing ~32 of the 40 real matches).',
   },
   {
-    slug: 'chenin-blanc',
-    kind: 'grape',
-    topicName: 'Chenin Blanc',
-    sourceDoc: 'grape-chenin-blanc',
-    metaDescription: 'Bone-dry to lusciously sweet, one grape doing it all. Everything we know about Chenin Blanc.',
-  },
-  {
-    slug: 'etna',
+    slug: 'rhone-valley',
     kind: 'region',
-    topicName: 'Etna',
-    sourceDoc: 'region-etna',
-    metaDescription: "Volcanic wine from the slopes of Sicily's active volcano. Everything we know about Etna.",
-  },
-  {
-    slug: 'faults',
-    kind: 'enology',
-    topicName: 'Wine Faults',
-    sourceDoc: 'enology-faults',
-    metaDescription: 'Flaw or style choice? Everything we know about wine faults.',
-    matchTerm: 'Fault',
-  },
-  {
-    slug: 'fermentation',
-    kind: 'enology',
-    topicName: 'Fermentation',
-    sourceDoc: 'enology-fermentation',
-    metaDescription: 'How grape juice becomes wine. Everything we know about fermentation.',
-  },
-  {
-    slug: 'gamay',
-    kind: 'grape',
-    topicName: 'Gamay',
-    sourceDoc: 'grape-gamay',
-    metaDescription: 'Light, juicy, chillable red from Beaujolais. Everything we know about Gamay.',
-  },
-  {
-    slug: 'grenache',
-    kind: 'grape',
-    topicName: 'Grenache',
-    sourceDoc: 'grape-grenache',
-    metaDescription: 'Soft, generous, high in alcohol and low in grip. Everything we know about Grenache.',
-  },
-  {
-    slug: 'jura',
-    kind: 'region',
-    topicName: 'Jura',
-    sourceDoc: 'region-jura',
-    metaDescription: "France's strangest, most beloved region. Everything we know about Jura.",
+    topicName: 'Rhône Valley',
+    sourceDoc: 'region-rhone',
+    metaDescription: 'Syrah in the north, Gren­ache blends in the south. Everything we know about the Rhône Valley.',
+    matchTerm: 'Rhône',
+    keywordPattern: 'rh[oô]ne',
   },
   {
     slug: 'nebbiolo',
@@ -104,34 +62,12 @@ export const TOPICS = [
     metaDescription: 'Pale in color, ferociously tannic. Everything we know about Nebbiolo.',
   },
   {
-    slug: 'niagara',
-    kind: 'region',
-    topicName: 'Niagara Peninsula',
-    sourceDoc: 'region-niagara',
-    metaDescription: "Canada's cool-climate Riesling and ice wine country. Everything we know about Niagara.",
-    matchTerm: 'Niagara',
-  },
-  {
-    slug: 'oak',
-    kind: 'enology',
-    topicName: 'Oak',
-    sourceDoc: 'enology-oak',
-    metaDescription: 'Vanilla, spice, and texture from the barrel. Everything we know about oak.',
-  },
-  {
-    slug: 'priorat',
-    kind: 'region',
-    topicName: 'Priorat',
-    sourceDoc: 'region-priorat',
-    metaDescription: 'Dark, mineral reds off steep Spanish slate. Everything we know about Priorat.',
-  },
-  {
-    slug: 'rhone-valley',
-    kind: 'region',
-    topicName: 'Rhône Valley',
-    sourceDoc: 'region-rhone',
-    metaDescription: 'Syrah in the north, Gren­ache blends in the south. Everything we know about the Rhône Valley.',
-    matchTerm: 'Rhône',
+    slug: 'gamay',
+    kind: 'grape',
+    topicName: 'Gamay',
+    sourceDoc: 'grape-gamay',
+    metaDescription: 'Light, juicy, chillable red from Beaujolais. Everything we know about Gamay.',
+    keywordPattern: '\\bgamay\\b',
   },
   {
     slug: 'riesling',
@@ -141,12 +77,75 @@ export const TOPICS = [
     metaDescription: 'Aromatic and misunderstood. Everything we know about Riesling.',
   },
   {
+    slug: 'burgundy',
+    kind: 'region',
+    topicName: 'Burgundy',
+    sourceDoc: 'region-burgundy',
+    metaDescription: "The world's most detailed expression of terroir. Everything we know about Burgundy.",
+  },
+  {
+    slug: 'priorat',
+    kind: 'region',
+    topicName: 'Priorat',
+    sourceDoc: 'region-priorat',
+    metaDescription: 'Dark, mineral reds off steep Spanish slate. Everything we know about Priorat.',
+  },
+  {
+    slug: 'jura',
+    kind: 'region',
+    topicName: 'Jura',
+    sourceDoc: 'region-jura',
+    metaDescription: "France's strangest, most beloved region. Everything we know about Jura.",
+    keywordPattern: '\\bjura\\b',
+  },
+  {
+    slug: 'etna',
+    kind: 'region',
+    topicName: 'Etna',
+    sourceDoc: 'region-etna',
+    metaDescription: "Volcanic wine from the slopes of Sicily's active volcano. Everything we know about Etna.",
+    keywordPattern: '\\betna\\b',
+  },
+  {
+    slug: 'niagara',
+    kind: 'region',
+    topicName: 'Niagara Peninsula',
+    sourceDoc: 'region-niagara',
+    metaDescription: "Canada's cool-climate Riesling and ice wine country. Everything we know about Niagara.",
+    matchTerm: 'Niagara',
+    keywordPattern: 'niagara',
+  },
+  {
+    slug: 'grenache',
+    kind: 'grape',
+    topicName: 'Grenache',
+    sourceDoc: 'grape-grenache',
+    metaDescription: 'Soft, generous, high in alcohol and low in grip. Everything we know about Grenache.',
+  },
+  {
+    slug: 'biodynamic',
+    kind: 'enology',
+    topicName: 'Biodynamic Wine',
+    sourceDoc: 'enology-biodynamic',
+    metaDescription: 'Farming by the lunar calendar. Everything we know about biodynamic wine.',
+    matchTerm: 'Biodynamic',
+    keywordPattern: 'biodynamic',
+  },
+  {
+    slug: 'fermentation',
+    kind: 'enology',
+    topicName: 'Fermentation',
+    sourceDoc: 'enology-fermentation',
+    metaDescription: 'How grape juice becomes wine. Everything we know about fermentation.',
+  },
+  {
     slug: 'sulphites',
     kind: 'enology',
     topicName: 'Sulphites',
     sourceDoc: 'enology-sulphites',
     metaDescription: "The winemaker's essential preservative, and the headache myth around it. Everything we know about sulphites.",
     matchTerm: 'Sulfite',
+    keywordPattern: 'sulf?ite',
   },
   {
     slug: 'tannins',
@@ -155,5 +154,23 @@ export const TOPICS = [
     sourceDoc: 'enology-tannins',
     metaDescription: "Where grip comes from, and why it fades with age. Everything we know about tannins.",
     matchTerm: 'Tannin',
+    keywordPattern: '\\btannins?\\b',
+  },
+  {
+    slug: 'oak',
+    kind: 'enology',
+    topicName: 'Oak',
+    sourceDoc: 'enology-oak',
+    metaDescription: 'Vanilla, spice, and texture from the barrel. Everything we know about oak.',
+    keywordPattern: '\\boak\\b',
+  },
+  {
+    slug: 'faults',
+    kind: 'enology',
+    topicName: 'Wine Faults',
+    sourceDoc: 'enology-faults',
+    metaDescription: 'Flaw or style choice? Everything we know about wine faults.',
+    matchTerm: 'Fault',
+    keywordPattern: '\\bfault(s|y)?\\b',
   },
 ];

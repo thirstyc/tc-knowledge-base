@@ -68,27 +68,25 @@ function getSearchParam(param) {
   return params.get(param);
 }
 
-// Topics with a dedicated topic-[slug].html page. Add to this set (and to
-// TOPIC_KEYWORDS below, if it's not a grape/region source_doc) as more pages
-// get built. Anything not resolved here falls back to the inline modal so a
-// link never points at a page that doesn't exist.
+// --- BEGIN GENERATED TOPIC ROUTING (source: topics.config.mjs; run `npm run generate:topics`) ---
+// Topics with a dedicated topic-[slug].html page. Anything not resolved
+// here falls back to the inline modal so a link never points at a 404.
 const TOPIC_PAGE_SLUGS = new Set([
-  'grenache', 'cabernet-sauvignon', 'chenin-blanc', 'nebbiolo', 'gamay', 'riesling',
-  'rhone-valley', 'burgundy', 'priorat', 'jura', 'etna', 'niagara',
-  'tannins', 'fermentation', 'biodynamic', 'sulphites', 'oak', 'faults',
+  'chenin-blanc', 'cabernet-sauvignon', 'rhone-valley', 'nebbiolo', 'gamay', 'riesling',
+  'burgundy', 'priorat', 'jura', 'etna', 'niagara', 'grenache',
+  'biodynamic', 'fermentation', 'sulphites', 'tannins', 'oak', 'faults',
 ]);
 
 // Maps a region-/enology-prefixed source_doc to its topic slug when the two
-// differ (e.g. the region source_doc is "region-rhone" but the page is
-// "rhone-valley"). Anything not listed here just strips the prefix as-is.
+// differ. Anything not listed here just strips the prefix as-is.
 const SOURCE_DOC_SLUG_OVERRIDES = {
   'region-rhone': 'rhone-valley',
 };
 
-// Ordered longest-phrase-first so e.g. "Chenin Blanc" matches before a
-// shorter, coincidental single-word hit would. Used only for chunk_types
-// (qa, region-qa, ...) that don't carry their own grape-/region-/enology-
-// prefixed source_doc, or whose prefix lookup didn't resolve.
+// Ordered longest-phrase-first (see topics.config.mjs) so e.g. "Chenin
+// Blanc" matches before a shorter, coincidental single-word hit would.
+// Used only for chunk_types that don't carry their own grape-/region-/
+// enology-prefixed source_doc, or whose prefix lookup didn't resolve.
 const TOPIC_KEYWORDS = [
   { pattern: /chenin blanc/i, slug: 'chenin-blanc' },
   { pattern: /cabernet sauvignon/i, slug: 'cabernet-sauvignon' },
@@ -109,6 +107,7 @@ const TOPIC_KEYWORDS = [
   { pattern: /\boak\b/i, slug: 'oak' },
   { pattern: /\bfault(s|y)?\b/i, slug: 'faults' },
 ];
+// --- END GENERATED TOPIC ROUTING ---
 
 function resolveTopicSlug(chunk) {
   if (!chunk) return null;
