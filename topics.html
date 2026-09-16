@@ -34,27 +34,27 @@
         <div class="grid tiles">
           <a class="tile" href="topic-grenache.html">
             <span class="name">Grenache</span>
-            <span class="n">42</span>
+            <span class="n" id="count-grenache">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Cabernet Sauvignon</span>
-            <span class="n">56</span>
+            <span class="n" id="count-cabernet-sauvignon">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Chenin Blanc</span>
-            <span class="n">31</span>
+            <span class="n" id="count-chenin-blanc">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Nebbiolo</span>
-            <span class="n">24</span>
+            <span class="n" id="count-nebbiolo">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Gamay</span>
-            <span class="n">19</span>
+            <span class="n" id="count-gamay">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Riesling</span>
-            <span class="n">27</span>
+            <span class="n" id="count-riesling">…</span>
           </a>
         </div>
       </section>
@@ -63,27 +63,27 @@
         <div class="grid tiles">
           <a class="tile" href="topics.html">
             <span class="name">Rhône Valley</span>
-            <span class="n">38</span>
+            <span class="n" id="count-rhone-valley">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Burgundy</span>
-            <span class="n">44</span>
+            <span class="n" id="count-burgundy">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Priorat</span>
-            <span class="n">12</span>
+            <span class="n" id="count-priorat">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Jura</span>
-            <span class="n">15</span>
+            <span class="n" id="count-jura">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Etna</span>
-            <span class="n">11</span>
+            <span class="n" id="count-etna">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Niagara</span>
-            <span class="n">9</span>
+            <span class="n" id="count-niagara">…</span>
           </a>
         </div>
       </section>
@@ -92,27 +92,27 @@
         <div class="grid tiles">
           <a class="tile" href="topics.html">
             <span class="name">Tannins</span>
-            <span class="n">29</span>
+            <span class="n" id="count-tannins">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Fermentation</span>
-            <span class="n">34</span>
+            <span class="n" id="count-fermentation">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Biodynamic</span>
-            <span class="n">18</span>
+            <span class="n" id="count-biodynamic">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Sulphites</span>
-            <span class="n">16</span>
+            <span class="n" id="count-sulphites">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Oak</span>
-            <span class="n">22</span>
+            <span class="n" id="count-oak">…</span>
           </a>
           <a class="tile" href="topics.html">
             <span class="name">Faults</span>
-            <span class="n">26</span>
+            <span class="n" id="count-faults">…</span>
           </a>
         </div>
       </section>
@@ -154,5 +154,55 @@
       <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
     </div>
   </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    // Grenache has a dedicated page (topic-grenache.html) that only lists QA
+    // chunks, so its count is scoped to chunk_type='qa' to match what that
+    // page shows. Every other topic has no dedicated page yet, so its count
+    // matches what the Search page would show for that term (all chunk types).
+    const QA_ONLY_TOPICS = [
+      { id: 'count-grenache', term: 'Grenache' },
+    ];
+
+    const ALL_TYPE_TOPICS = [
+      { id: 'count-cabernet-sauvignon', term: 'Cabernet Sauvignon' },
+      { id: 'count-chenin-blanc', term: 'Chenin Blanc' },
+      { id: 'count-nebbiolo', term: 'Nebbiolo' },
+      { id: 'count-gamay', term: 'Gamay' },
+      { id: 'count-riesling', term: 'Riesling' },
+      { id: 'count-rhone-valley', term: 'Rhône' },
+      { id: 'count-burgundy', term: 'Burgundy' },
+      { id: 'count-priorat', term: 'Priorat' },
+      { id: 'count-jura', term: 'Jura' },
+      { id: 'count-etna', term: 'Etna' },
+      { id: 'count-niagara', term: 'Niagara' },
+      { id: 'count-tannins', term: 'Tannin' },
+      { id: 'count-fermentation', term: 'Fermentation' },
+      { id: 'count-biodynamic', term: 'Biodynamic' },
+      { id: 'count-sulphites', term: 'Sulfite' },
+      { id: 'count-oak', term: 'Oak' },
+      { id: 'count-faults', term: 'Fault' },
+    ];
+
+    async function setCount(id, count) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = count;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      QA_ONLY_TOPICS.forEach(({ id, term }) => {
+        window.KnowledgeBase
+          .countChunks(`select=id&chunk_type=eq.qa&content=ilike.%25${encodeURIComponent(term)}%25`)
+          .then(count => setCount(id, count));
+      });
+
+      ALL_TYPE_TOPICS.forEach(({ id, term }) => {
+        window.KnowledgeBase
+          .countChunks(`select=id&or=(content.ilike.%25${encodeURIComponent(term)}%25,section_title.ilike.%25${encodeURIComponent(term)}%25)`)
+          .then(count => setCount(id, count));
+      });
+    });
+  </script>
 </body>
 </html>

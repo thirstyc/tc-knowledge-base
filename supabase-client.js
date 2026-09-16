@@ -30,6 +30,28 @@ async function fetchPublishedChunks(limit = 10, searchQuery = null) {
   return fetchChunks(query);
 }
 
+async function countChunks(queryString) {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/knowledge_chunks?${queryString}`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact',
+        'Range': '0-0',
+      },
+    });
+
+    if (!response.ok) return 0;
+    const range = response.headers.get('content-range');
+    if (!range) return 0;
+    const total = range.split('/')[1];
+    return total === '*' ? 0 : parseInt(total, 10);
+  } catch (error) {
+    console.error('Error counting chunks:', error);
+    return 0;
+  }
+}
+
 function getSearchParam(param) {
   const params = new URLSearchParams(window.location.search);
   return params.get(param);
@@ -88,4 +110,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('answers-grid')) loadAnswers('answers-grid', 100);
 });
 
-window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, showChunkDetail, getSearchParam };
+window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, countChunks, showChunkDetail, getSearchParam };
