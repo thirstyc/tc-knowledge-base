@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TC Wine Knowledge Base</title>
+<style>
+  :root {
+    --ink: #2a1f22;
+    --muted: #7a6b6e;
+    --accent: #7b1e3a;
+    --border: #e8e0e2;
+    --bg: #faf7f8;
+    --card-bg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 1.25rem 1.5rem;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 .25rem;
+    font-size: 1.6rem;
+    letter-spacing: .01em;
+  }
+  header p.subtitle {
+    margin: 0 0 1.25rem;
+    color: var(--muted);
+    font-size: .95rem;
+  }
+  .search-wrap {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  #search {
+    width: 100%;
+    padding: .75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    outline: none;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  #search:focus {
+    border-color: var(--accent);
+  }
+  .count-line {
+    max-width: 560px;
+    margin: .6rem auto 0;
+    font-size: .8rem;
+    color: var(--muted);
+    text-align: left;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+  }
+  .status {
+    text-align: center;
+    color: var(--muted);
+    padding: 3rem 1rem;
+    font-size: .95rem;
+  }
+  .qa-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: .9rem;
+  }
+  .qa-card h2 {
+    margin: 0 0 .4rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .qa-card p {
+    margin: 0 0 .6rem;
+    color: #4a3f42;
+    font-size: .92rem;
+  }
+  .qa-card .source {
+    display: inline-block;
+    font-size: .72rem;
+    color: var(--accent);
+    background: rgba(123, 30, 58, .07);
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    letter-spacing: .02em;
+  }
+  footer {
+    text-align: center;
+    padding: 2rem 1rem 3rem;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  footer a:hover {
+    text-decoration: underline;
+  }
+  @media (max-width: 480px) {
+    header { padding: 1.5rem 1rem 1.25rem; }
+    header h1 { font-size: 1.35rem; }
+    main { padding: 1.25rem .9rem 2.5rem; }
+    .qa-card { padding: .95rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TC Wine Knowledge Base</h1>
+  <p class="subtitle">667 wine questions, answered straight.</p>
+  <div class="search-wrap">
+    <input id="search" type="text" placeholder="Search by grape, region, or topic (e.g. Grenache, Riesling)…" autocomplete="off">
+  </div>
+  <div class="count-line" id="count-line"></div>
+</header>
+
+<main>
+  <div id="results"></div>
+</main>
+
+<footer>
+  <a href="https://thirstyc.com">← Back to thirstyc.com</a>
+</footer>
+
+<script>
+(function () {
+  const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
+
+  const resultsEl = document.getElementById('results');
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('count-line');
+
+  let allChunks = [];
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Longer entries store "Question\n\nAnswer body…". Shorter ones pack the
+  // question and answer into one sentence, e.g. "What pairs with X? Answer."
+  function parseChunk(content, sourceDoc) {
+    const raw = (content || '').trim();
+
+    const blankLine = raw.indexOf('\n\n');
+    if (blankLine !== -1) {
+      return {
+        question: raw.slice(0, blankLine).trim(),
+        answer: raw.slice(blankLine + 2).trim()
+      };
+    }
+
+    const questionMark = raw.indexOf('? ');
+    if (questionMark !== -1) {
+      return {
+        question: raw.slice(0, questionMark + 1).trim(),
+        answer: raw.slice(questionMark + 1).trim()
+      };
+    }
+
+    const title = (sourceDoc || 'Wine Note')
+      .replace(/^qa-/, '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+    return { question: title, answer: raw };
+  }
+
+  function snippet(text, len) {
+    const clean = text.replace(/\s+/g, ' ').trim();
+    return clean.length > len ? clean.slice(0, len).trim() + '…' : clean;
+  }
+
+  function render(chunks) {
+    if (chunks.length === 0) {
+      resultsEl.innerHTML = '<div class="status">No matches. Try a different grape, region, or word.</div>';
+      return;
+    }
+    resultsEl.innerHTML = chunks.map(chunk => {
+      const { question, answer } = parseChunk(chunk.content, chunk.source_doc);
+      return `<div class="qa-card">
+        <h2>${escapeHtml(question)}</h2>
+        <p>${escapeHtml(snippet(answer, 200))}</p>
+        <span class="source">${escapeHtml(chunk.source_doc || 'knowledge')}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function updateCount(shown) {
+    countEl.textContent = shown === allChunks.length
+      ? `${allChunks.length} entries`
+      : `${shown} of ${allChunks.length} entries`;
+  }
+
+  function applySearch(query) {
+    const q = query.trim().toLowerCase();
+    const filtered = !q ? allChunks : allChunks.filter(chunk =>
+      (chunk.content || '').toLowerCase().includes(q) ||
+      (chunk.source_doc || '').toLowerCase().includes(q)
+    );
+    updateCount(filtered.length);
+    render(filtered);
+  }
+
+  let debounceTimer;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => applySearch(searchEl.value), 120);
+  });
+
+  async function loadChunks() {
+    resultsEl.innerHTML = '<div class="status">Loading the cellar…</div>';
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/knowledge_chunks?select=content,source_doc&chunk_type=eq.qa&order=source_doc.asc&limit=1000`;
+      const res = await fetch(url, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      allChunks = await res.json();
+      updateCount(allChunks.length);
+      render(allChunks);
+    } catch (err) {
+      resultsEl.innerHTML = '<div class="status">Couldn\'t load the knowledge base right now. Please refresh.</div>';
+      console.error('Failed to load knowledge_chunks:', err);
+    }
+  }
+
+  loadChunks();
+})();
+</script>
+
+</body>
+</html>
