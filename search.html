@@ -113,7 +113,7 @@
         if (resultCount) resultCount.textContent = `${chunks.length} result${chunks.length !== 1 ? 's' : ''} for "${searchQuery}"`;
         if (resultsDiv) {
           resultsDiv.innerHTML = chunks.map(chunk => {
-            const title = chunk.section_title || chunk.source_doc || 'Untitled';
+            const title = window.KnowledgeBase.deriveCardTitle(chunk);
             const content = chunk.content || '';
             const summary = chunk.summary || content.substring(0, 150) + '...';
             const category = chunk.chunk_type || 'General';

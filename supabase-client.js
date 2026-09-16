@@ -139,9 +139,27 @@ function goToChunk(chunk) {
   }
 }
 
+// section_title is only a real title for grape/region/enology/guide/producer/
+// comparison chunks (e.g. "Overview", "Malolactic conversion (MLF)"). For qa
+// and region-qa chunks it's always a difficulty label ("Beginner" /
+// "Intermediate") instead -- every one of the 883 qa/region-qa rows in
+// knowledge_chunks confirms this, no exceptions. Using it as a title there
+// showed "Intermediate" as the headline instead of the actual question.
+function deriveCardTitle(chunk) {
+  if (chunk.chunk_type === 'qa' || chunk.chunk_type === 'region-qa') {
+    const raw = (chunk.content || '').trim();
+    const qMark = raw.indexOf('? ');
+    return qMark !== -1 ? raw.slice(0, qMark + 1) : raw;
+  }
+  if (chunk.chunk_type === 'enology') {
+    return chunk.section_title || (chunk.content || '').split('\n')[0];
+  }
+  return chunk.section_title || chunk.source_doc || 'Untitled';
+}
+
 function renderAnswerCard(chunk) {
   if (!chunk || !chunk.id) return '';
-  const title = chunk.section_title || chunk.source_doc || 'Untitled';
+  const title = deriveCardTitle(chunk);
   const content = chunk.content || '';
   const summary = chunk.summary || content.substring(0, 150) + '...';
   const category = chunk.chunk_type || 'General';
@@ -166,7 +184,7 @@ async function loadAnswers(containerId, limit = 3, searchQuery = null) {
 }
 
 function showChunkDetail(chunk) {
-  const title = chunk.section_title || chunk.source_doc || 'Untitled';
+  const title = deriveCardTitle(chunk);
   const content = chunk.content || '';
   const category = chunk.chunk_type || 'General';
   const source = chunk.source_doc || 'knowledge';
@@ -185,11 +203,4 @@ function showChunkDetail(chunk) {
   document.body.appendChild(modal);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('featured-answers')) loadAnswers('featured-answers', 3);
-  const searchQuery = getSearchParam('q');
-  if (document.getElementById('results') && searchQuery) loadAnswers('results', 50, searchQuery);
-  if (document.getElementById('answers-grid')) loadAnswers('answers-grid', 100);
-});
-
-window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, resolveTopicSlug, getSearchParam };
+window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, resolveTopicSlug, getSearchParam, deriveCardTitle };

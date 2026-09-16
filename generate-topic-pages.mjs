@@ -153,14 +153,7 @@ function renderQaFetchAndList(topic) {
       const qaRows = [...qaMatches, ...enologyMatches];
 
 ${RENDER_LIST_JS}
-        let title;
-        if (chunk.chunk_type === 'enology') {
-          title = chunk.section_title || (chunk.content || '').split('\\n')[0];
-        } else {
-          const raw = (chunk.content || '').trim();
-          const qMark = raw.indexOf('? ');
-          title = qMark !== -1 ? raw.slice(0, qMark + 1) : raw;
-        }
+        const title = window.KnowledgeBase.deriveCardTitle(chunk);
         const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
         return \`<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(\${safeChunk}); return false;">
           <span class="id">\${(chunk.source_doc || '').toUpperCase()}</span>
@@ -179,9 +172,7 @@ ${RENDER_LIST_JS}
       );
 
 ${RENDER_LIST_JS}
-        const raw = (chunk.content || '').trim();
-        const qMark = raw.indexOf('? ');
-        const title = qMark !== -1 ? raw.slice(0, qMark + 1) : raw;
+        const title = window.KnowledgeBase.deriveCardTitle(chunk);
         const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
         return \`<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(\${safeChunk}); return false;">
           <span class="id">\${(chunk.source_doc || '').toUpperCase()}</span>
