@@ -46,7 +46,7 @@ ${content}`,
 
 async function publish() {
   const { data, error } = await supabase
-    .from('knowledge_base_chunks')
+    .from('knowledge_chunks')
     .update({ status: 'published', published_at: new Date().toISOString() })
     .eq('status', 'draft')
     .select('id');
@@ -87,13 +87,13 @@ async function processIntake() {
     for (let i = 0; i < chunks.length; i++) {
       const embedding = await embed(chunks[i]);
       rows.push({
-        source_file: file,
+        source_doc: file,
         chunk_index: i,
-        title: data.title,
+        section_title: data.title,
         content: chunks[i],
         summary,
         tags,
-        category,
+        chunk_type: category ?? 'atlas',
         embedding,
         status: 'draft',
       });
@@ -101,12 +101,12 @@ async function processIntake() {
 
     // Idempotent re-processing: clear any prior chunks for this source file.
     const { error: deleteError } = await supabase
-      .from('knowledge_base_chunks')
+      .from('knowledge_chunks')
       .delete()
-      .eq('source_file', file);
+      .eq('source_doc', file);
     if (deleteError) throw deleteError;
 
-    const { error: insertError } = await supabase.from('knowledge_base_chunks').insert(rows);
+    const { error: insertError } = await supabase.from('knowledge_chunks').insert(rows);
     if (insertError) throw insertError;
 
     await rename(filePath, path.join(ARCHIVE_DIR, file));

@@ -44,11 +44,11 @@ function parseMarkdownChunks(content, sourceFile) {
       const body = lines.slice(1).join("\n").trim();
 
       chunks.push({
-        source_file: sourceFile,
+        source_doc: sourceFile,
         chunk_index: index,
-        title: title,
+        section_title: title,
         content: body,
-        category: determineCategoryFromTitle(title),
+        chunk_type: determineCategoryFromTitle(title),
         tags: extractTags(body),
         status: "draft",
       });
@@ -101,11 +101,11 @@ async function enrichGrapeWithWines(grapeName, chunks) {
       .join("\n");
 
     const teachingChunk = {
-      source_file: `grapes/${grapeName}`,
+      source_doc: `grapes/${grapeName}`,
       chunk_index: chunks.length,
-      title: `Teaching Wines: ${grapeName}`,
+      section_title: `Teaching Wines: ${grapeName}`,
       content: `These wines exemplify ${grapeName}:\n\n${wineList}`,
-      category: "teaching_wines",
+      chunk_type: "teaching_wines",
       tags: [grapeName, "curated"],
       status: "draft",
     };
@@ -117,31 +117,31 @@ async function enrichGrapeWithWines(grapeName, chunks) {
 }
 
 // =========================================================================
-// Upsert chunks to knowledge_base_chunks
+// Upsert chunks to knowledge_chunks
 // =========================================================================
 async function upsertChunks(chunks) {
   console.log(`\n📤 Upserting ${chunks.length} chunks to Supabase...`);
 
   for (const chunk of chunks) {
-    const { error } = await supabase.from("knowledge_base_chunks").upsert(
+    const { error } = await supabase.from("knowledge_chunks").upsert(
       [
         {
-          source_file: chunk.source_file,
+          source_doc: chunk.source_doc,
           chunk_index: chunk.chunk_index,
-          title: chunk.title,
+          section_title: chunk.section_title,
           content: chunk.content,
-          category: chunk.category,
+          chunk_type: chunk.chunk_type,
           tags: chunk.tags,
           status: chunk.status,
         },
       ],
-      { onConflict: "source_file,chunk_index" }
+      { onConflict: "source_doc,chunk_index" }
     );
 
     if (error) {
-      console.error(`❌ Error upserting chunk "${chunk.title}":`, error.message);
+      console.error(`❌ Error upserting chunk "${chunk.section_title}":`, error.message);
     } else {
-      console.log(`  ✓ ${chunk.title}`);
+      console.log(`  ✓ ${chunk.section_title}`);
     }
   }
 }
@@ -168,8 +168,8 @@ async function testSangiovese() {
 
   console.log("\n✅ Test complete!");
   console.log("\n📍 Check Supabase:");
-  console.log("1. Go to knowledge_base_chunks table");
-  console.log("2. Filter by source_file = 'grapes/Sangiovese'");
+  console.log("1. Go to knowledge_chunks table");
+  console.log("2. Filter by source_doc = 'grapes/Sangiovese'");
   console.log("3. Verify chunks + wine enrichment");
 }
 

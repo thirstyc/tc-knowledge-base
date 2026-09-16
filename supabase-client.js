@@ -19,8 +19,11 @@ async function fetchTable(table, queryString) {
   }
 }
 
+// knowledge_chunks only: every caller gets the published-only filter for
+// free, instead of each of the ~20 pages that build their own query string
+// having to remember to add it.
 async function fetchChunks(queryString) {
-  return fetchTable('knowledge_chunks', queryString);
+  return fetchTable('knowledge_chunks', `${queryString}&status=eq.published`);
 }
 
 async function fetchPublishedChunks(limit = 10, searchQuery = null) {
@@ -57,7 +60,7 @@ async function countTable(table, queryString = '') {
 }
 
 async function countChunks(queryString) {
-  return countTable('knowledge_chunks', queryString);
+  return countTable('knowledge_chunks', `${queryString}&status=eq.published`);
 }
 
 function getSearchParam(param) {
