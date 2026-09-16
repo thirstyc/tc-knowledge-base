@@ -1,21 +1,27 @@
-name: Generate content (vault-scan / qa-gen / wine-gen)
+name: Generate content (qa-gen / wine-gen)
 
+# Manual dispatch only — no schedule. vault-scan is deliberately NOT an
+# option here: content-generator.mjs's VAULTS point at absolute paths on
+# Cath's own Mac (her Obsidian vaults), which don't exist anywhere in this
+# git repo. A GitHub Actions runner only has what `actions/checkout` pulls
+# from the repo, so vault-scan silently finds nothing and no-ops there
+# ("Added 0 new chunks", exit 0 — confirmed by actually running it).
+# vault-scan still works fine locally: `npm run content -- --mode=vault-scan`.
+#
+# qa-gen and wine-gen don't touch the local filesystem (Claude API +
+# Supabase only), so those are the only modes that make sense to run from
+# CI. No schedule because both need a specific --topic/--region a human
+# picks, and (per the original design) Claude-authored content generation
+# is meant to require an explicit human decision, not run unattended.
 on:
-  schedule:
-    # Thursdays 10am UTC. Scheduled runs get no workflow_dispatch inputs, so
-    # they default to vault-scan below — ingesting real, human-written vault
-    # content. qa-gen/wine-gen (Claude-authored content) are reserved for an
-    # explicit manual dispatch, not run unattended.
-    - cron: '0 10 * * 4'
   workflow_dispatch:
     inputs:
       mode:
-        description: 'vault-scan | qa-gen | wine-gen'
+        description: 'qa-gen | wine-gen'
         required: true
-        default: 'vault-scan'
+        default: 'qa-gen'
         type: choice
         options:
-          - vault-scan
           - qa-gen
           - wine-gen
       topic:
@@ -49,9 +55,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          MODE="${{ inputs.mode || 'vault-scan' }}"
           node scripts/content-generator.mjs \
-            --mode="$MODE" \
+            --mode="${{ inputs.mode }}" \
             --topic="${{ inputs.topic }}" \
             --difficulty="${{ inputs.difficulty }}" \
             --region="${{ inputs.region }}"

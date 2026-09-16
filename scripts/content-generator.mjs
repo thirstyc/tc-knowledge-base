@@ -37,6 +37,14 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // Both vault paths already exist elsewhere in this repo (add-intake.mjs /
 // process-knowledge-intake.mjs use the first; process-obsidian-to-supabase.js
 // uses the second) — this is the first script that reads both in one pass.
+//
+// LOCAL USE ONLY. These are absolute paths on the machine running the
+// script, not anything checked into this repo — confirmed by actually
+// running vault-scan in GitHub Actions: both dirs come back ENOENT and it
+// silently reports "Added 0 new chunks" (exit 0, no error). That's why
+// generate-content.yml's workflow_dispatch only offers qa-gen/wine-gen.
+// Run this mode with `npm run content -- --mode=vault-scan` on your own
+// machine instead.
 
 const VAULTS = [
   { tag: 'kb', dir: '/Users/cathe/Documents/Thirsty Cunt/Knowledge Base' },
