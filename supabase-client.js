@@ -65,6 +65,64 @@ function getSearchParam(param) {
   return params.get(param);
 }
 
+// Topics with a dedicated topic-[slug].html page. Add to this set (and to
+// TOPIC_KEYWORDS below, if it's not a grape/region source_doc) as more pages
+// get built. Anything not resolved here falls back to the inline modal so a
+// link never points at a page that doesn't exist.
+const TOPIC_PAGE_SLUGS = new Set([
+  'grenache',
+]);
+
+// Ordered longest-phrase-first so e.g. "Chenin Blanc" matches before a
+// shorter, coincidental single-word hit would. Used only for chunk_types
+// (qa, region-qa, enology, ...) that don't carry their own grape-/region-
+// prefixed source_doc.
+const TOPIC_KEYWORDS = [
+  { pattern: /chenin blanc/i, slug: 'chenin-blanc' },
+  { pattern: /cabernet sauvignon/i, slug: 'cabernet-sauvignon' },
+  { pattern: /rh[oô]ne/i, slug: 'rhone-valley' },
+  { pattern: /nebbiolo/i, slug: 'nebbiolo' },
+  { pattern: /\bgamay\b/i, slug: 'gamay' },
+  { pattern: /riesling/i, slug: 'riesling' },
+  { pattern: /burgundy/i, slug: 'burgundy' },
+  { pattern: /priorat/i, slug: 'priorat' },
+  { pattern: /\bjura\b/i, slug: 'jura' },
+  { pattern: /\betna\b/i, slug: 'etna' },
+  { pattern: /niagara/i, slug: 'niagara' },
+  { pattern: /grenache/i, slug: 'grenache' },
+];
+
+function resolveTopicSlug(chunk) {
+  if (!chunk) return null;
+  const doc = chunk.source_doc || '';
+
+  if (chunk.chunk_type === 'grape' && doc.startsWith('grape-')) {
+    const slug = doc.slice('grape-'.length);
+    return TOPIC_PAGE_SLUGS.has(slug) ? slug : null;
+  }
+  if (chunk.chunk_type === 'region' && doc.startsWith('region-')) {
+    const slug = doc.slice('region-'.length);
+    return TOPIC_PAGE_SLUGS.has(slug) ? slug : null;
+  }
+
+  const haystack = `${chunk.content || ''} ${chunk.section_title || ''}`;
+  for (const { pattern, slug } of TOPIC_KEYWORDS) {
+    if (TOPIC_PAGE_SLUGS.has(slug) && pattern.test(haystack)) return slug;
+  }
+  return null;
+}
+
+// Navigate to a chunk's dedicated topic page when one exists; otherwise fall
+// back to the inline modal so we never link to a 404.
+function goToChunk(chunk) {
+  const slug = resolveTopicSlug(chunk);
+  if (slug) {
+    window.location.href = `topic-${slug}.html`;
+  } else {
+    showChunkDetail(chunk);
+  }
+}
+
 function renderAnswerCard(chunk) {
   if (!chunk || !chunk.id) return '';
   const title = chunk.section_title || chunk.source_doc || 'Untitled';
@@ -72,8 +130,8 @@ function renderAnswerCard(chunk) {
   const summary = chunk.summary || content.substring(0, 150) + '...';
   const category = chunk.chunk_type || 'General';
   const source = chunk.source_doc || 'knowledge';
-  
-  return `<a class="answer-card" href="#chunk-${chunk.id}" onclick="showChunkDetail(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p>${summary}</p></a>`;
+
+  return `<a class="answer-card" href="#chunk-${chunk.id}" onclick="window.KnowledgeBase.goToChunk(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p>${summary}</p></a>`;
 }
 
 async function loadAnswers(containerId, limit = 3, searchQuery = null) {
@@ -118,4 +176,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('answers-grid')) loadAnswers('answers-grid', 100);
 });
 
-window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, getSearchParam };
+window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, resolveTopicSlug, getSearchParam };

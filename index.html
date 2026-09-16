@@ -29,7 +29,7 @@
         <div style="max-width: 760px">
           <p class="eyebrow">The Knowledge Base</p>
           <h1 class="display">Wine Knowledge Built on Real Bottles</h1>
-          <p class="lede">667 Q&amp;As from independent tastings. 40 wines. No tasting-note theatre.</p>
+          <p class="lede" id="hero-stats">667 Q&amp;As from independent tastings. 40 wines. No tasting-note theatre.</p>
           <form action="search.html" method="get" style="max-width: 640px">
             <label class="sr-only" for="q" hidden>Search the knowledge base</label>
             <input class="search-input" type="search" id="q" name="q" placeholder="why does my wine taste like a barn?" />
@@ -162,6 +162,41 @@
       return sentences.slice(0, count).join(' ');
     }
 
+    // Live hero stats, computed from knowledge_chunks + wines rather than
+    // hardcoded. Region count merges the region-qa layer (topic slugs like
+    // "napa", "burgundy") with the older region overview layer (source_docs
+    // like "region-burgundy"), de-duplicated by slug, since a region can
+    // exist in either or both.
+    async function renderHeroStats() {
+      const heroEl = document.getElementById('hero-stats');
+      if (!heroEl) return;
+
+      try {
+        const [qaCount, wineCount, grapeDocs, regionQaDocs, regionDocs] = await Promise.all([
+          window.KnowledgeBase.countChunks('select=id&chunk_type=eq.qa'),
+          window.KnowledgeBase.countTable('wines'),
+          window.KnowledgeBase.fetchChunks('select=source_doc&chunk_type=eq.grape&limit=1000'),
+          window.KnowledgeBase.fetchChunks('select=source_doc&chunk_type=eq.region-qa&limit=1000'),
+          window.KnowledgeBase.fetchChunks('select=source_doc&chunk_type=eq.region&limit=1000'),
+        ]);
+
+        const grapeTopics = new Set(grapeDocs.map(r => r.source_doc)).size;
+
+        const stripSuffix = (doc, prefix) =>
+          doc.replace(new RegExp(`^${prefix}`), '').replace(/-(style|pairing|positioning)$/, '');
+        const regionSlugs = new Set([
+          ...regionQaDocs.map(r => stripSuffix(r.source_doc, 'qa-region-')),
+          ...regionDocs.map(r => stripSuffix(r.source_doc, 'region-')),
+        ]);
+
+        if (qaCount && grapeTopics && regionSlugs.size) {
+          heroEl.textContent = `${qaCount.toLocaleString()} Q&As from independent tastings. ${grapeTopics} grape topics. ${regionSlugs.size}+ wine regions. ${wineCount || 40} teaching wines. No tasting-note theatre.`;
+        }
+      } catch (error) {
+        console.error('Error loading hero stats, keeping fallback text:', error);
+      }
+    }
+
     async function renderTrustRegions() {
       const el = document.getElementById('trust-regions');
       if (!el) return;
@@ -214,6 +249,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      renderHeroStats();
       renderTrustRegions();
       renderTopicCounts();
       renderFeaturedAnswers();

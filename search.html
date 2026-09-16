@@ -118,7 +118,7 @@
             const summary = chunk.summary || content.substring(0, 150) + '...';
             const category = chunk.chunk_type || 'General';
             const source = chunk.source_doc || 'knowledge';
-            return `<a class="answer-card" href="#" onclick="window.KnowledgeBase.showChunkDetail(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p class="last">${summary}</p></a>`;
+            return `<a class="answer-card" href="#" onclick="window.KnowledgeBase.goToChunk(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p class="last">${summary}</p></a>`;
           }).join('');
         }
       }
