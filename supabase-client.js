@@ -229,7 +229,7 @@ function isAndroid() {
 }
 
 function showAndroidComingSoonModal() {
-  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>Coming Soon for Android</h2><div class="modal-body"><p>Thirsty Cellar is an iPhone app right now, so there's nothing to install from here yet on Android. We're working on it -- check back soon.</p></div></div>`);
+  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>Android's Coming, Just Not Yet</h2><div class="modal-body"><p>Thirsty Cellar lives on iPhone right now. Android's on the way — we just haven't finished pouring it yet.</p></div></div>`);
 }
 
 function guardAppStoreLinksOnAndroid() {
