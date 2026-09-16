@@ -78,3 +78,5 @@ Disallow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://knowledge.thirstyc.com/sitemap.xml

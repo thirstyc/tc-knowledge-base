@@ -24,6 +24,23 @@
 // multi-word patterns must come before single-word ones so e.g. "Chenin
 // Blanc" matches before a shorter, coincidental single-word hit would.
 
+export const BASE_URL = 'https://knowledge.thirstyc.com';
+
+// Static (non-topic) pages included in sitemap.xml, as paths relative to
+// the site root ('' = homepage). Deliberately excludes:
+//   - search.html, 404.html: standard practice, not real content pages.
+//   - difficulty-intermediate.html, audience-enthusiast.html: hand-built
+//     mockups with fabricated placeholder answers and dead links to pages
+//     that don't exist -- indexing them would put fake content in search
+//     results. Add them back once their rebuild-or-remove fate is decided.
+export const STATIC_PAGES = [
+  '',
+  'about.html',
+  'answers.html',
+  'topics.html',
+  'answer-grenache-alcohol-tannin.html',
+];
+
 export const TOPICS = [
   {
     slug: 'chenin-blanc',
