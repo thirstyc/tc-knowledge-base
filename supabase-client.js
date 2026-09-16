@@ -235,7 +235,7 @@ function showAndroidComingSoonModal() {
 function guardAppStoreLinksOnAndroid() {
   if (!isAndroid()) return;
   document.querySelectorAll('a.btn-pill').forEach((link) => {
-    link.textContent = 'Android: coming soon';
+    link.textContent = 'Android soon';
     link.addEventListener('click', (e) => {
       e.preventDefault();
       showAndroidComingSoonModal();
