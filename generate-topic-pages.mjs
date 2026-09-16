@@ -11,40 +11,21 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { TOPICS, STATIC_PAGES, BASE_URL } from './topics.config.mjs';
+import { renderHead as renderHeadShell, renderHeader as renderHeaderShell, renderFooter as renderFooterShell } from './lib/page-shell.mjs';
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function renderHead(topic) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${topic.topicName} — Thirsty Cunt Knowledge Base</title>
-<meta name="description" content="${topic.metaDescription}" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css" />
-</head>`;
+  return renderHeadShell({
+    title: `${topic.topicName} — Thirsty Cunt Knowledge Base`,
+    description: topic.metaDescription,
+  });
 }
 
 function renderHeader() {
-  return `<body>
-  <header class="site-header">
-    <a class="brand" href="index.html"><img src="assets/tc-monogram.png" alt="Thirsty Cunt" /></a>
-    <nav class="nav">
-      <a href="index.html">Home</a>
-      <a href="answers.html">Answers</a>
-      <a href="topics.html" aria-current="page">Topics</a>
-      <a href="search.html">Search</a>
-      <a href="about.html">About</a>
-      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
-      <a class="btn-pill" href="#">Get the app</a>
-    </nav>
-  </header>`;
+  return renderHeaderShell('topics.html');
 }
 
 function renderMain(topic) {
@@ -67,42 +48,7 @@ function renderMain(topic) {
 }
 
 function renderFooter() {
-  return `  <footer class="site-footer">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <img src="assets/tc-monogram-white.png" alt="Thirsty Cunt" />
-        <p>A wine lifestyle brand built on the belief that wine should feel social, interesting, and grounded in lived experience.</p>
-      </div>
-      <div class="footer-col">
-        <p class="k">Explore</p>
-        <div class="links">
-          <a href="#">The App</a>
-          <a href="#">Tastings</a>
-          <a href="#">The Writing</a>
-          <a href="#">Instagram</a>
-        </div>
-      </div>
-      <div class="footer-col">
-        <p class="k">Get In Touch</p>
-        <div class="links">
-          <a href="#">Contact</a>
-          <a href="mailto:hello@thirstyc.com">hello@thirstyc.com</a>
-        </div>
-      </div>
-      <div class="footer-col">
-        <p class="k">Legal</p>
-        <div class="links">
-          <a href="#">Privacy Policy</a>
-          <a href="#">Your Privacy Choices</a>
-          <a href="#">Terms &amp; Conditions</a>
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span class="copy">&copy; 2026 Thirsty Cunt &middot; Drink Responsibly</span>
-      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
-    </div>
-  </footer>`;
+  return renderFooterShell();
 }
 
 // Shared by every kind: fetch the Overview chunk and paint eyebrow/name/lede/facts.

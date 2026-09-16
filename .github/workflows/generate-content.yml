@@ -1,0 +1,57 @@
+name: Generate content (vault-scan / qa-gen / wine-gen)
+
+on:
+  schedule:
+    # Thursdays 10am UTC. Scheduled runs get no workflow_dispatch inputs, so
+    # they default to vault-scan below — ingesting real, human-written vault
+    # content. qa-gen/wine-gen (Claude-authored content) are reserved for an
+    # explicit manual dispatch, not run unattended.
+    - cron: '0 10 * * 4'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'vault-scan | qa-gen | wine-gen'
+        required: true
+        default: 'vault-scan'
+        type: choice
+        options:
+          - vault-scan
+          - qa-gen
+          - wine-gen
+      topic:
+        description: 'qa-gen only: topic, e.g. "Chenin Blanc"'
+        required: false
+        type: string
+      difficulty:
+        description: 'qa-gen only: Beginner | Intermediate | Advanced'
+        required: false
+        type: string
+      region:
+        description: 'wine-gen only: region, e.g. "Priorat"'
+        required: false
+        type: string
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Run content generator
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          MODE="${{ inputs.mode || 'vault-scan' }}"
+          node scripts/content-generator.mjs \
+            --mode="$MODE" \
+            --topic="${{ inputs.topic }}" \
+            --difficulty="${{ inputs.difficulty }}" \
+            --region="${{ inputs.region }}"

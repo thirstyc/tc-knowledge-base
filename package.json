@@ -6,7 +6,10 @@
     "add": "node add-intake.mjs",
     "process": "node process-knowledge-intake.mjs",
     "publish": "node process-knowledge-intake.mjs --publish",
-    "generate:topics": "node generate-topic-pages.mjs"
+    "generate:topics": "node generate-topic-pages.mjs",
+    "generate:pages": "node scripts/generate-missing-pages.mjs",
+    "audit:links": "node scripts/audit-links.mjs",
+    "content": "node scripts/content-generator.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",

@@ -1,0 +1,58 @@
+name: Audit links & content health
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # 6am UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      # No secrets needed: audit-links.mjs reads Supabase with the public
+      # anon key (same one already committed in supabase-client.js) and
+      # crawls the public site.
+      - name: Run audit
+        id: audit
+        run: node scripts/audit-links.mjs
+        continue-on-error: true
+
+      - name: Open or update an issue on failure
+        if: steps.audit.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY_FILE=$(mktemp)
+          {
+            echo "Automated audit found issues — see \`audit-report.json\` below."
+            echo
+            echo '```json'
+            cat audit-report.json
+            echo '```'
+          } > "$BODY_FILE"
+
+          EXISTING=$(gh issue list --label automated-audit --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file "$BODY_FILE"
+          else
+            gh issue create \
+              --title "Knowledge base audit failed — $(date -u +%Y-%m-%d)" \
+              --body-file "$BODY_FILE" \
+              --label automated-audit
+          fi
+
+      - name: Fail the job if the audit failed
+        if: steps.audit.outcome == 'failure'
+        run: exit 1

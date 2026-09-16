@@ -148,8 +148,12 @@ function goToChunk(chunk) {
 function deriveCardTitle(chunk) {
   if (chunk.chunk_type === 'qa' || chunk.chunk_type === 'region-qa') {
     const raw = (chunk.content || '').trim();
-    const qMark = raw.indexOf('? ');
-    return qMark !== -1 ? raw.slice(0, qMark + 1) : raw;
+    // "?" followed by ANY whitespace, not just a literal space -- 9 of 904
+    // qa/region-qa rows separate question/answer with "?\n\n" instead of
+    // "? ", which indexOf('? ') missed entirely (fell through to the whole
+    // content blob as the "question").
+    const match = raw.match(/\?\s/);
+    return match ? raw.slice(0, match.index + 1) : raw;
   }
   if (chunk.chunk_type === 'enology') {
     return chunk.section_title || (chunk.content || '').split('\n')[0];
