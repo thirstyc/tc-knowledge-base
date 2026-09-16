@@ -1,6 +1,6 @@
 // Supabase Client for TC Knowledge Base
 const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuelp2bWZ3dGsiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY5NjM0NjE3MSwiZXhwIjoxNzI3ODgyMTcxfQ.YOI9vfPILa9_Tz_gJ4pK3kN_M6mL8zR9xQ2pT5vU1wY';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
 
 async function fetchPublishedChunks(limit = 10, searchQuery = null) {
   try {
