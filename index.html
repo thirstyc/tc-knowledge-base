@@ -58,13 +58,13 @@
           <p>Soft, warm-climate reds with high alcohol and almost no grip. Why they taste the way they do.</p>
           <span class="more">Explore Topic &rarr;</span>
         </a>
-        <a class="card topic" href="search.html?q=Rh%C3%B4ne">
+        <a class="card topic" href="topic-rhone-valley.html">
           <span class="card-meta" id="topic-count-rhone">&hellip;</span>
           <span class="card-title">Rhône Valley</span>
           <p>Syrah in the north, blends in the south, and the appellation rules that decide what goes in the bottle.</p>
           <span class="more">Explore Topic &rarr;</span>
         </a>
-        <a class="card topic" href="search.html?q=Tannin">
+        <a class="card topic" href="topic-tannins.html">
           <span class="card-meta" id="topic-count-tannins">&hellip;</span>
           <span class="card-title">Tannins</span>
           <p>Where grip comes from, why it dries your mouth, and how age and food change it.</p>
@@ -208,12 +208,12 @@
 
     async function renderTopicCounts() {
       const topics = [
-        { id: 'topic-count-grenache', term: 'Grenache' },
-        { id: 'topic-count-rhone', term: 'Rhône' },
-        { id: 'topic-count-tannins', term: 'Tannin' },
+        { id: 'topic-count-grenache', term: 'Grenache', chunkType: 'qa' },
+        { id: 'topic-count-rhone', term: 'Rhône', chunkType: 'region-qa' },
+        { id: 'topic-count-tannins', term: 'Tannin', chunkType: 'qa' },
       ];
-      topics.forEach(async ({ id, term }) => {
-        const count = await window.KnowledgeBase.countChunks(`select=id&chunk_type=eq.qa&content=ilike.%25${encodeURIComponent(term)}%25`);
+      topics.forEach(async ({ id, term, chunkType }) => {
+        const count = await window.KnowledgeBase.countChunks(`select=id&chunk_type=eq.${chunkType}&content=ilike.%25${encodeURIComponent(term)}%25`);
         const el = document.getElementById(id);
         if (el) el.textContent = `${count} Answer${count !== 1 ? 's' : ''}`;
       });

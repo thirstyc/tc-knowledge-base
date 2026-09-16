@@ -70,13 +70,22 @@ function getSearchParam(param) {
 // get built. Anything not resolved here falls back to the inline modal so a
 // link never points at a page that doesn't exist.
 const TOPIC_PAGE_SLUGS = new Set([
-  'grenache',
+  'grenache', 'cabernet-sauvignon', 'chenin-blanc', 'nebbiolo', 'gamay', 'riesling',
+  'rhone-valley', 'burgundy', 'priorat', 'jura', 'etna', 'niagara',
+  'tannins', 'fermentation', 'biodynamic', 'sulphites', 'oak', 'faults',
 ]);
+
+// Maps a region-/enology-prefixed source_doc to its topic slug when the two
+// differ (e.g. the region source_doc is "region-rhone" but the page is
+// "rhone-valley"). Anything not listed here just strips the prefix as-is.
+const SOURCE_DOC_SLUG_OVERRIDES = {
+  'region-rhone': 'rhone-valley',
+};
 
 // Ordered longest-phrase-first so e.g. "Chenin Blanc" matches before a
 // shorter, coincidental single-word hit would. Used only for chunk_types
-// (qa, region-qa, enology, ...) that don't carry their own grape-/region-
-// prefixed source_doc.
+// (qa, region-qa, ...) that don't carry their own grape-/region-/enology-
+// prefixed source_doc, or whose prefix lookup didn't resolve.
 const TOPIC_KEYWORDS = [
   { pattern: /chenin blanc/i, slug: 'chenin-blanc' },
   { pattern: /cabernet sauvignon/i, slug: 'cabernet-sauvignon' },
@@ -90,19 +99,24 @@ const TOPIC_KEYWORDS = [
   { pattern: /\betna\b/i, slug: 'etna' },
   { pattern: /niagara/i, slug: 'niagara' },
   { pattern: /grenache/i, slug: 'grenache' },
+  { pattern: /biodynamic/i, slug: 'biodynamic' },
+  { pattern: /fermentation/i, slug: 'fermentation' },
+  { pattern: /sulf?ite/i, slug: 'sulphites' },
+  { pattern: /\btannins?\b/i, slug: 'tannins' },
+  { pattern: /\boak\b/i, slug: 'oak' },
+  { pattern: /\bfault(s|y)?\b/i, slug: 'faults' },
 ];
 
 function resolveTopicSlug(chunk) {
   if (!chunk) return null;
   const doc = chunk.source_doc || '';
 
-  if (chunk.chunk_type === 'grape' && doc.startsWith('grape-')) {
-    const slug = doc.slice('grape-'.length);
-    return TOPIC_PAGE_SLUGS.has(slug) ? slug : null;
-  }
-  if (chunk.chunk_type === 'region' && doc.startsWith('region-')) {
-    const slug = doc.slice('region-'.length);
-    return TOPIC_PAGE_SLUGS.has(slug) ? slug : null;
+  if (['grape', 'region', 'enology'].includes(chunk.chunk_type)) {
+    const prefix = `${chunk.chunk_type}-`;
+    if (doc.startsWith(prefix)) {
+      const slug = SOURCE_DOC_SLUG_OVERRIDES[doc] || doc.slice(prefix.length);
+      if (TOPIC_PAGE_SLUGS.has(slug)) return slug;
+    }
   }
 
   const haystack = `${chunk.content || ''} ${chunk.section_title || ''}`;

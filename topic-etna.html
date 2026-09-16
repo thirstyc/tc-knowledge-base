@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Etna — Thirsty Cunt Knowledge Base</title>
+<meta name="description" content="Volcanic wine from the slopes of Sicily's active volcano. Everything we know about Etna." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><img src="assets/tc-monogram.png" alt="Thirsty Cunt" /></a>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="answers.html">Answers</a>
+      <a href="topics.html" aria-current="page">Topics</a>
+      <a href="search.html">Search</a>
+      <a href="about.html">About</a>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+      <a class="btn-pill" href="#">Get the app</a>
+    </nav>
+  </header>
+  <main>
+    <div class="wrap">
+      <p class="breadcrumb"><a href="index.html">Home</a> / <a href="topics.html">Topics</a> / Etna</p>
+      <div class="split">
+        <div>
+          <p class="eyebrow" id="grape-eyebrow">Loading&hellip;</p>
+          <h1 class="display" id="grape-name">Etna</h1>
+          <p class="lede sm" id="grape-lede" style="margin: 0">Loading&hellip;</p>
+        </div>
+        <dl class="facts" id="grape-facts"></dl>
+      </div>
+
+      <p class="list-head" id="qa-count">Loading answers&hellip;</p>
+      <div id="qa-list"></div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="assets/tc-monogram-white.png" alt="Thirsty Cunt" />
+        <p>A wine lifestyle brand built on the belief that wine should feel social, interesting, and grounded in lived experience.</p>
+      </div>
+      <div class="footer-col">
+        <p class="k">Explore</p>
+        <div class="links">
+          <a href="#">The App</a>
+          <a href="#">Tastings</a>
+          <a href="#">The Writing</a>
+          <a href="#">Instagram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Get In Touch</p>
+        <div class="links">
+          <a href="#">Contact</a>
+          <a href="mailto:hello@thirstyc.com">hello@thirstyc.com</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Legal</p>
+        <div class="links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Your Privacy Choices</a>
+          <a href="#">Terms &amp; Conditions</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="copy">&copy; 2026 Thirsty Cunt &middot; Drink Responsibly</span>
+      <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
+    </div>
+  </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    const TOPIC_CHUNK_TYPE = 'region';
+    const TOPIC_SOURCE_DOC = 'region-etna';
+    const TOPIC_NAME = 'Etna';
+    const QA_CHUNK_TYPE = 'region-qa';
+    const QA_MATCH_TERM = 'Etna';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const overviewRows = await window.KnowledgeBase.fetchChunks(
+        `select=content&chunk_type=eq.${TOPIC_CHUNK_TYPE}&source_doc=eq.${TOPIC_SOURCE_DOC}&section_title=eq.Overview&limit=1`
+      );
+
+      if (overviewRows.length > 0) {
+        const [eyebrow, name, lede, factsBlock] = overviewRows[0].content.split('\n\n');
+        document.getElementById('grape-eyebrow').textContent = eyebrow || '';
+        document.getElementById('grape-name').textContent = name || TOPIC_NAME;
+        document.getElementById('grape-lede').textContent = lede || '';
+
+        const factsEl = document.getElementById('grape-facts');
+        factsEl.innerHTML = (factsBlock || '').split('\n').map(line => {
+          const sep = line.indexOf(':');
+          if (sep === -1) return '';
+          const key = line.slice(0, sep).trim();
+          const value = line.slice(sep + 1).trim();
+          return `<div><dt>${key}</dt><dd>${value}</dd></div>`;
+        }).join('');
+      }
+
+      const qaRows = await window.KnowledgeBase.fetchChunks(
+        `select=id,content,source_doc,chunk_type&chunk_type=eq.${QA_CHUNK_TYPE}&content=ilike.%25${encodeURIComponent(QA_MATCH_TERM)}%25&order=source_doc.asc&limit=100`
+      );
+
+      const countEl = document.getElementById('qa-count');
+      const listEl = document.getElementById('qa-list');
+
+      if (qaRows.length === 0) {
+        countEl.textContent = `No Answers Yet On ${TOPIC_NAME}`;
+        return;
+      }
+
+      countEl.textContent = `${qaRows.length} Answer${qaRows.length !== 1 ? 's' : ''} On ${TOPIC_NAME}`;
+      listEl.innerHTML = qaRows.map(chunk => {
+        const raw = (chunk.content || '').trim();
+        const qMark = raw.indexOf('? ');
+        const title = qMark !== -1 ? raw.slice(0, qMark + 1) : raw;
+        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
+        return `<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
+          <span class="id">${(chunk.source_doc || '').toUpperCase()}</span>
+          <span class="t">${title}</span>
+          <span class="k">${chunk.chunk_type.toUpperCase()}</span>
+        </a>`;
+      }).join('');
+    });
+  </script>
+</body>
+</html>
