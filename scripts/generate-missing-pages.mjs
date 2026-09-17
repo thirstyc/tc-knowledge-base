@@ -244,8 +244,11 @@ function renderDifficultyPage(difficultyLabelEn, slug, rows, lang) {
   const schema = collectionPageSchema({
     name: isFr ? `Réponses ${difficultyLabel}` : `${difficultyLabelEn} Answers`,
     description,
-    url: path,
-    items: rows.map((r) => ({ name: deriveQuestion(r.content), url: answerPagePath(r.source_doc) })),
+    url: isFr ? `fr/${path}` : path,
+    items: rows.map((r) => ({
+      name: deriveQuestion(r.content),
+      url: `${isFr ? 'fr/' : ''}${answerPagePath(r.source_doc)}`,
+    })),
     lang,
   });
 
@@ -265,7 +268,7 @@ function renderDifficultyPage(difficultyLabelEn, slug, rows, lang) {
       currentNav: 'answers.html',
       lang,
       assetPrefix: ap,
-      frHref: isFr ? null : path,
+      frHref: isFr ? null : `fr/${path}`,
       enHref: isFr ? `../${path}` : null,
     }),
     `  <main>
@@ -287,7 +290,7 @@ ${rowItems}
     renderFooter({
       lang,
       assetPrefix: ap,
-      frHref: isFr ? null : path,
+      frHref: isFr ? null : `fr/${path}`,
       enHref: isFr ? `../${path}` : null,
     }),
     `</body>\n</html>\n`,
