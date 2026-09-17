@@ -224,9 +224,10 @@ main.has-hero { padding-top: 0; }
 .card .tag-row { margin-top: auto; padding-top: 6px; }
 
 .tile { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 20px; background: var(--card); border: 1px solid var(--hairline); color: var(--vintage); }
+.tile[hidden] { display: none; }
 .tile:hover { border-color: var(--deep-turquoise); background: #f4f0ea; color: var(--vintage); }
 .tile .name { font-family: var(--serif); font-size: 25px; line-height: 1.1; letter-spacing: -0.5px; }
-.tile .n { font-family: var(--mono); font-size: 11px; color: var(--muted); flex: none; }
+.tile .n { font-family: var(--mono); font-size: 11px; color: var(--muted); flex: 0 1 auto; min-width: 0; text-align: right; }
 
 .answer-card {
   display: flex;
@@ -372,3 +373,9 @@ main.notfound .lede { max-width: 48ch; margin-bottom: 40px; }
   .trust-row { gap: 16px 24px; }
   .card.topic { padding: var(--spacing-base); min-height: 0; }
 }
+
+/* regions.html collapsible groups (scripts/generate-catalog-pages.mjs) */
+.region-group { margin-bottom: 20px; }
+.region-group > summary { display: flex; justify-content: space-between; cursor: pointer; list-style: none; }
+.region-group > summary::-webkit-details-marker { display: none; }
+.region-group > summary:hover { color: var(--burnt-sunset); }

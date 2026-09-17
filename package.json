@@ -9,6 +9,7 @@
     "generate:topics": "node generate-topic-pages.mjs",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
     "generate:redirects": "node scripts/generate-redirects.mjs",
+    "generate:catalogs": "node scripts/generate-catalog-pages.mjs",
     "generate:pages": "node scripts/generate-missing-pages.mjs",
     "audit:links": "node scripts/audit-links.mjs",
     "content": "node scripts/content-generator.mjs",
