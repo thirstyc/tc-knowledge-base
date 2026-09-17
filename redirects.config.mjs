@@ -11,8 +11,8 @@
 
 export const REDIRECTS = {
   // answer-region-adour-positioning.html / answer-region-alentejo-style.html
-  // don't exist (no answer-region-* pages at all), so these go to the
-  // regions archive until real region answer pages are generated.
+  // don't exist (no Adour or Alentejo answer pages have been generated), so
+  // these go to the regions archive until they are.
   'answer-region-adour-pairing.html': 'regions.html',
   'answer-region-alentejo-audience.html': 'regions.html',
   'answer-pairing-riesling-thai.html': 'topic-riesling.html',

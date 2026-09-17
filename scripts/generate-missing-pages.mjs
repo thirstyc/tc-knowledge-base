@@ -27,7 +27,7 @@ import { createClient } from '@supabase/supabase-js';
 import { fetchAllRows } from '../lib/pagination.mjs';
 import { renderHead, renderHeader, renderFooter, deriveQuestion, slugify, escapeHtml } from '../lib/page-shell.mjs';
 import { TOPICS } from '../topics.config.mjs';
-import { faqPageSchema } from '../lib/schema-markup-templates.js';
+import { faqPageSchema, collectionPageSchema } from '../lib/schema-markup-templates.js';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 // Deliberately overwrite a hand-authored file this one time. Not for
@@ -139,10 +139,19 @@ function renderDifficultyPage(difficultyLabel, slug, rows) {
     )
     .join('\n');
 
+  const description = `${rows.length} answers written at ${difficultyLabel.toLowerCase()} depth.`;
+  const schema = collectionPageSchema({
+    name: `${difficultyLabel} Answers`,
+    description,
+    url: `difficulty-${slug}.html`,
+    items: rows.map((r) => ({ name: deriveQuestion(r.content), url: `answer-${answerSlug(r.source_doc)}.html` })),
+  });
+
   return [
     renderHead({
       title: `${difficultyLabel} Answers — Thirsty Cunt Knowledge Base`,
-      description: `${rows.length} answers written at ${difficultyLabel.toLowerCase()} depth.`,
+      description,
+      jsonLd: [schema],
     }),
     GENERATED_MARKER,
     renderHeader({ currentNav: 'answers.html' }),
