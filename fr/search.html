@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rechercher — Thirsty Cunt</title>
+<meta name="description" content="Recherchez parmi 1 491 fragments de connaissances sur le vin publiés." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="alternate" hreflang="en" href="https://knowledge.thirstyc.com/search.html" />
+<link rel="alternate" hreflang="fr" href="https://knowledge.thirstyc.com/fr/search.html" />
+<link rel="alternate" hreflang="x-default" href="https://knowledge.thirstyc.com/search.html" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><img src="../assets/tc-monogram.png" alt="Thirsty Cunt" /></a>
+    <nav class="nav">
+      <a href="index.html">Accueil</a>
+      <a href="answers.html">Réponses</a>
+      <a href="grapes.html">Cépages</a>
+      <a href="regions.html">Régions</a>
+      <a href="guides.html">Guides</a>
+      <a href="search.html" aria-current="page">Rechercher</a>
+      <a href="about.html">À propos</a>
+      <span class="lang"><a class="off" href="../search.html" hreflang="en" lang="en">En</a><span class="sep">|</span><span class="current" aria-current="true">Fr</span></span>
+      <a class="btn-pill" href="https://apps.apple.com/ca/app/thirsty-cellar/id6772614506">Télécharger l'app</a>
+    </nav>
+  </header>
+  <main>
+    <div class="wrap">
+      <p class="breadcrumb"><a href="index.html">Accueil</a> / Rechercher</p>
+      <h1 class="page-title">Rechercher Dans La Base De Connaissances</h1>
+
+      <form action="search.html" method="get" style="margin-bottom: 44px">
+        <input class="search-input" type="search" id="searchQuery" name="q" placeholder="rechercher dans toutes les réponses" autofocus />
+      </form>
+
+      <p class="count" id="resultCount">Commencez à taper pour rechercher...</p>
+      <div class="grid stack" id="results"></div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="../assets/tc-monogram-white.png" alt="Thirsty Cunt" />
+        <p>Une marque de style de vie autour du vin, fondée sur l'idée que le vin devrait être social, intéressant et ancré dans le vécu.</p>
+      </div>
+      <div class="footer-col">
+        <p class="k">Explorer</p>
+        <div class="links">
+          <a href="#">L'app</a>
+          <a href="#">Dégustations</a>
+          <a href="#">Les écrits</a>
+          <a href="#">Instagram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Nous contacter</p>
+        <div class="links">
+          <a href="#">Contact</a>
+          <a href="mailto:hello@thirstyc.com">hello@thirstyc.com</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <p class="k">Mentions légales</p>
+        <div class="links">
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">Vos choix de confidentialité</a>
+          <a href="#">Conditions générales</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="copy">&copy; 2026 Thirsty Cunt &middot; À consommer avec modération</span>
+      <span class="lang"><a class="off" href="../search.html" hreflang="en" lang="en">En</a><span class="sep">|</span><span class="current" aria-current="true">Fr</span></span>
+    </div>
+  </footer>
+
+  <script src="../supabase-client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const query = new URLSearchParams(window.location.search).get('q');
+      const searchInput = document.getElementById('searchQuery');
+      const resultCount = document.getElementById('resultCount');
+      const resultsDiv = document.getElementById('results');
+
+      if (query) {
+        if (searchInput) searchInput.value = query;
+        performSearch(query);
+      }
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const q = e.target.value.trim();
+          if (q.length > 0) {
+            performSearch(q);
+          } else {
+            resultCount.textContent = 'Commencez à taper pour rechercher...';
+            resultsDiv.innerHTML = '';
+          }
+        });
+      }
+
+      async function performSearch(searchQuery) {
+        if (resultCount) resultCount.textContent = `Recherche de "${searchQuery}"...`;
+        if (resultsDiv) resultsDiv.innerHTML = '';
+
+        // fetchPublishedChunks caps at 50 rows, so a broad term (e.g. "vin",
+        // hundreds of real matches) would silently say "50 résultats" -- true,
+        // but reads as if that's the total. Fetch the real total in parallel
+        // and say so explicitly when the display is actually capped.
+        const orFilter = `or=(section_title.ilike.%25${encodeURIComponent(searchQuery)}%25,content.ilike.%25${encodeURIComponent(searchQuery)}%25)`;
+        const [chunks, total] = await Promise.all([
+          window.KnowledgeBase.fetchPublishedChunks(50, searchQuery),
+          window.KnowledgeBase.countChunks(`select=id&${orFilter}`),
+        ]);
+
+        if (chunks.length === 0) {
+          if (resultCount) resultCount.textContent = `0 résultat pour "${searchQuery}"`;
+          if (resultsDiv) resultsDiv.innerHTML = '<div class="empty"><p class="k">Rien Pour L\'instant</p></div>';
+          return;
+        }
+
+        // total==0 here means the count request failed (see countTable in
+        // supabase-client.js), not that there are genuinely zero matches --
+        // chunks.length > 0 already proves matches exist. Fall back to the
+        // plain count rather than claim a bogus "sur 0".
+        const label = total > chunks.length
+          ? `Affichage de ${chunks.length} sur ${total.toLocaleString()} résultats pour "${searchQuery}"`
+          : `${chunks.length} résultat${chunks.length !== 1 ? 's' : ''} pour "${searchQuery}"`;
+        if (resultCount) resultCount.textContent = label;
+        if (resultsDiv) {
+          resultsDiv.innerHTML = chunks.map(chunk => {
+            const title = window.KnowledgeBase.deriveCardTitle(chunk);
+            const content = chunk.content || '';
+            const summary = chunk.summary || content.substring(0, 150) + '...';
+            const category = chunk.chunk_type || 'General';
+            const source = chunk.source_doc || 'knowledge';
+            return `<a class="answer-card" ${window.KnowledgeBase.chunkLinkAttrs(chunk)}><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p class="last">${summary}</p></a>`;
+          }).join('');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
