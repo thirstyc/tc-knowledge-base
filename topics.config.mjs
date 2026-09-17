@@ -301,4 +301,35 @@ export const TOPICS = [
     frReady: true,
     metaDescriptionFr: 'Défaut ou choix de style ? Tout ce que nous savons sur les défauts du vin.',
   },
+  {
+    slug: 'sparkling',
+    kind: 'enology',
+    topicName: 'Sparkling Wine',
+    sourceDoc: 'enology-sparkling',
+    metaDescription: 'How the bubbles get in, and what each method tastes like. Everything we know about sparkling wine.',
+    matchTerm: 'sparkling',
+    keywordPattern: '\\bsparkling\\b',
+    // French uses several words for the category depending on pressure and
+    // style ("mousseux", "effervescent", "pétillant"), none of them cognates.
+    matchTermFr: ['mousseux', 'effervescent', 'pétillant'],
+    keywordPatternFr: '\\bmousseux\\b|\\beffervescents?\\b|\\bp[ée]tillants?\\b',
+    topicNameFr: 'Vins effervescents',
+    frReady: true,
+    metaDescriptionFr: "D'où viennent les bulles, et ce que chaque méthode donne dans le verre. Tout ce que nous savons sur les vins effervescents.",
+  },
+  {
+    slug: 'fortified',
+    kind: 'enology',
+    topicName: 'Fortified Wine',
+    sourceDoc: 'enology-fortified',
+    metaDescription: 'Port, Sherry, Madeira and the rest: what adding spirit does. Everything we know about fortified wine.',
+    matchTerm: 'fortified',
+    keywordPattern: '\\bfortified\\b',
+    // "muté" is the French technical term; "fortifié" is common in Quebec.
+    matchTermFr: ['fortifié', 'muté'],
+    keywordPatternFr: '\\bfortifi[ée]e?s?\\b|\\bmut[ée]e?s?\\b',
+    topicNameFr: 'Vins fortifiés',
+    frReady: true,
+    metaDescriptionFr: "Porto, xérès, madère : ce que l'ajout d'eau-de-vie change. Tout ce que nous savons sur les vins fortifiés.",
+  },
 ];

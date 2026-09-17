@@ -88,6 +88,7 @@ const TOPIC_PAGE_SLUGS = new Set([
   'chenin-blanc', 'cabernet-sauvignon', 'rhone-valley', 'nebbiolo', 'gamay', 'riesling',
   'burgundy', 'priorat', 'jura', 'etna', 'niagara', 'grenache',
   'biodynamic', 'fermentation', 'sulphites', 'tannins', 'oak', 'faults',
+  'sparkling', 'fortified',
 ]);
 
 // Maps a region-/enology-prefixed source_doc to its topic slug when the two
@@ -119,6 +120,8 @@ const TOPIC_KEYWORDS = [
   { pattern: /(?:\btannins?\b)|(?:\btanins?\b)/i, slug: 'tannins' },
   { pattern: /(?:\boak\b)|(?:\bch[êe]ne\b|\bbois[ée]s?\b|\bf[uû]ts?\b)/i, slug: 'oak' },
   { pattern: /(?:\bfault(s|y)?\b)|(?:d[ée]fauts?)/i, slug: 'faults' },
+  { pattern: /(?:\bsparkling\b)|(?:\bmousseux\b|\beffervescents?\b|\bp[ée]tillants?\b)/i, slug: 'sparkling' },
+  { pattern: /(?:\bfortified\b)|(?:\bfortifi[ée]e?s?\b|\bmut[ée]e?s?\b)/i, slug: 'fortified' },
 ];
 // --- END GENERATED TOPIC ROUTING ---
 
