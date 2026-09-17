@@ -254,14 +254,17 @@ async function loadAnswers(containerId, limit = 3, searchQuery = null, chunkType
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  container.innerHTML = '<p style="text-align: center; color: #999;">Loading...</p>';
+  const isFr = currentLang() === 'fr';
+  container.innerHTML = `<p style="text-align: center; color: #999;">${isFr ? 'Chargement...' : 'Loading...'}</p>`;
   const chunks = await fetchPublishedChunks(limit, searchQuery, chunkTypeFilter);
-  
+
   if (chunks.length === 0) {
-    container.innerHTML = '<div class="empty"><p class="k">Nothing Yet</p><p class="t">We Haven\'t Written That One Down</p><p>Try fewer words, or a topic name.</p></div>';
+    container.innerHTML = isFr
+      ? '<div class="empty"><p class="k">Rien Pour L\'instant</p><p class="t">Nous N\'avons Pas Encore Écrit Cette Réponse</p><p>Essayez moins de mots, ou un nom de thème.</p></div>'
+      : '<div class="empty"><p class="k">Nothing Yet</p><p class="t">We Haven\'t Written That One Down</p><p>Try fewer words, or a topic name.</p></div>';
     return;
   }
-  
+
   container.innerHTML = chunks.map(renderAnswerCard).join('');
 }
 
@@ -350,13 +353,19 @@ function isAndroid() {
 }
 
 function showAndroidComingSoonModal() {
-  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>Android's Coming, Just Not Yet</h2><div class="modal-body"><p>Thirsty Cellar lives on iPhone right now. Android's on the way — we just haven't finished pouring it yet.</p></div></div>`);
+  const isFr = currentLang() === 'fr';
+  const heading = isFr ? "Android Arrive, Mais Pas Encore" : "Android's Coming, Just Not Yet";
+  const body = isFr
+    ? "Thirsty Cellar vit sur iPhone pour le moment. Android arrive — on n'a juste pas fini de le préparer."
+    : "Thirsty Cellar lives on iPhone right now. Android's on the way — we just haven't finished pouring it yet.";
+  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>${heading}</h2><div class="modal-body"><p>${body}</p></div></div>`);
 }
 
 function guardAppStoreLinksOnAndroid() {
   if (!isAndroid()) return;
+  const label = currentLang() === 'fr' ? 'Android bientôt' : 'Android soon';
   document.querySelectorAll('a.btn-pill').forEach((link) => {
-    link.textContent = 'Android soon';
+    link.textContent = label;
     link.addEventListener('click', (e) => {
       e.preventDefault();
       showAndroidComingSoonModal();
