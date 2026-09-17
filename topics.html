@@ -60,7 +60,14 @@
             <span class="n" id="count-riesling">…</span>
           </a>
         </div>
-        <a class="btn-outline" href="grapes.html" style="margin-top: 20px">See All Grapes &rarr;</a>
+      </section>
+
+      <section style="margin-bottom: 64px">
+        <h2 class="sub" style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline-strong)">All Grapes</h2>
+        <p class="lede sm" id="allGrapesLede" style="margin-bottom: 20px">Loading&hellip;</p>
+        <input class="search-input" type="search" id="allGrapesSearch" placeholder="search grapes" style="margin-bottom: 28px" />
+        <p class="count" id="allGrapesCount">Loading grapes&hellip;</p>
+        <div id="allGrapesGrid" class="grid tiles"></div>
       </section>
       <section style="margin-bottom: 64px">
         <h2 class="sub" style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline-strong)">Places</h2>
@@ -90,7 +97,12 @@
             <span class="n" id="count-niagara">…</span>
           </a>
         </div>
-        <a class="btn-outline" href="regions.html" style="margin-top: 20px">See All Wine Regions &rarr;</a>
+      </section>
+
+      <section style="margin-bottom: 64px">
+        <h2 class="sub" style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline-strong)">All Wine Regions</h2>
+        <p class="lede sm" id="allRegionsLede" style="margin-bottom: 20px">Loading&hellip;</p>
+        <div id="allRegionsGroups"></div>
       </section>
       <section style="margin-bottom: 64px">
         <h2 class="sub" style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline-strong)">How Wine Works</h2>
@@ -120,7 +132,12 @@
             <span class="n" id="count-faults">…</span>
           </a>
         </div>
-        <a class="btn-outline" href="guides.html" style="margin-top: 20px">See All Guides &amp; Comparisons &rarr;</a>
+      </section>
+
+      <section style="margin-bottom: 64px">
+        <h2 class="sub" style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline-strong)">All Guides &amp; Comparisons</h2>
+        <p class="lede sm" id="allGuidesLede" style="margin-bottom: 20px">Loading&hellip;</p>
+        <div id="allGuidesGrid" class="grid answers-3"></div>
       </section>
     </div>
   </main>
@@ -226,6 +243,17 @@
         ]);
         setCount(id, qaCount + enologyCount);
       });
+
+      // Full catalogs -- same shared renderers grapes.html/regions.html/
+      // guides.html use, just pointed at this page's own element ids.
+      window.KnowledgeBase.renderGrapesCatalog({
+        gridId: 'allGrapesGrid',
+        countId: 'allGrapesCount',
+        ledeId: 'allGrapesLede',
+        searchInputId: 'allGrapesSearch',
+      });
+      window.KnowledgeBase.renderRegionsCatalog({ containerId: 'allRegionsGroups', ledeId: 'allRegionsLede' });
+      window.KnowledgeBase.renderGuidesCatalog({ gridId: 'allGuidesGrid', ledeId: 'allGuidesLede' });
     });
   </script>
 </body>

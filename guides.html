@@ -74,67 +74,8 @@
 
   <script src="supabase-client.js"></script>
   <script>
-    // guide/comparison chunks are grouped in 2-3 rows per source_doc (e.g.
-    // "Concept" + "Teaching", or "Overview" + "Practice"). One card per
-    // source_doc, using its first row as the click-through; clicking opens
-    // that row's full content in the existing modal rather than a new page
-    // -- these are 7 total groups, not enough to justify a detail-page
-    // generator the way qa/region-qa answers got one.
-    //
-    // enology rows are deliberately excluded: they already have 6 dedicated
-    // topic pages (Tannins, Fermentation, Biodynamic, Sulphites, Oak,
-    // Faults) plus a "How Wine Works" section on topics.html, so listing
-    // them again here would just duplicate that.
-    //
-    // Titles come from source_doc, not section_title: rows within a group
-    // use inconsistent suffix conventions ("— Concept"/"— Teaching" for
-    // comparisons, but arbitrary phrases like "Why Cabernet Franc wins" for
-    // guide-food-pairing-masterclass), so stripping a fixed suffix list
-    // missed cases. source_doc is a single per-group, always-present slug.
-    function titleFromSourceDoc(sourceDoc) {
-      return sourceDoc
-        .replace(/^(guide|comparison)-/, '')
-        .split('-')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-    }
-
-    function renderGuides(groups) {
-      const grid = document.getElementById('guidesGrid');
-      grid.innerHTML = groups
-        .map((group) => {
-          const primary = group.rows[0];
-          const body = (primary.content || '').split('\n\n').slice(1).join(' ').trim();
-          const safeChunk = JSON.stringify({ ...primary, section_title: group.title }).replace(/"/g, '&quot;');
-          return `<a class="card topic" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
-            <span class="card-meta">${primary.chunk_type.toUpperCase()} &middot; ${group.rows.length} part${group.rows.length !== 1 ? 's' : ''}</span>
-            <span class="card-title sm">${group.title}</span>
-            <p>${body.slice(0, 160)}${body.length > 160 ? '…' : ''}</p>
-            <span class="more">Read &rarr;</span>
-          </a>`;
-        })
-        .join('');
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const rows = await window.KnowledgeBase.fetchChunks(
-        'select=id,content,source_doc,section_title,chunk_type&chunk_type=in.(guide,comparison)&order=source_doc.asc&limit=200'
-      );
-
-      const bySourceDoc = new Map();
-      for (const row of rows) {
-        if (!bySourceDoc.has(row.source_doc)) bySourceDoc.set(row.source_doc, []);
-        bySourceDoc.get(row.source_doc).push(row);
-      }
-
-      const groups = [...bySourceDoc.entries()].map(([sourceDoc, groupRows]) => ({
-        title: titleFromSourceDoc(sourceDoc),
-        rows: groupRows,
-      }));
-
-      document.getElementById('guidesLede').textContent =
-        `${groups.length} guides and comparisons, ${rows.length} parts in total.`;
-      renderGuides(groups);
+    document.addEventListener('DOMContentLoaded', () => {
+      window.KnowledgeBase.renderGuidesCatalog({ gridId: 'guidesGrid', ledeId: 'guidesLede' });
     });
   </script>
 </body>

@@ -74,66 +74,8 @@
 
   <script src="supabase-client.js"></script>
   <script>
-    // chunk_type='region' isn't one row per browsable region -- it's ~35
-    // macro-region "chapters" (source_doc, e.g. "region-italy-central"),
-    // each holding many section rows for its actual sub-regions (Chianti,
-    // Tuscany, Umbria, ...). There's no per-country label stored anywhere,
-    // so grouping/naming is derived mechanically from the source_doc slug
-    // rather than guessed at with a hardcoded country list that would only
-    // ever cover some of ~35 groups.
-    function humanizeSlug(slug) {
-      return slug
-        .split('-')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-    }
-
-    function renderGroups(groups) {
-      const container = document.getElementById('regionGroups');
-      container.innerHTML = groups
-        .map((group, i) => {
-          const rows = group.rows
-            .map((chunk) => {
-              const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
-              return `<a class="row-item" href="#" onclick="window.KnowledgeBase.goToChunk(${safeChunk}); return false;">
-                <span class="id">${(chunk.source_doc || '').toUpperCase()}</span>
-                <span class="t">${chunk.section_title || 'Untitled'}</span>
-                <span class="k">${chunk.chunk_type.toUpperCase()}</span>
-              </a>`;
-            })
-            .join('');
-          return `<section style="margin-bottom: 20px">
-            <button type="button" class="list-head" style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--hairline-strong); cursor: pointer; display: flex; justify-content: space-between; color: inherit; font: inherit; padding-bottom: 12px" onclick="document.getElementById('group-${i}').hidden = !document.getElementById('group-${i}').hidden">
-              <span>${group.name}</span>
-              <span>${group.rows.length}</span>
-            </button>
-            <div id="group-${i}" hidden>${rows}</div>
-          </section>`;
-        })
-        .join('');
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const rows = await window.KnowledgeBase.fetchChunks(
-        'select=id,content,source_doc,section_title,chunk_type&chunk_type=eq.region&order=source_doc.asc&limit=500'
-      );
-
-      const bySourceDoc = new Map();
-      for (const row of rows) {
-        if (!bySourceDoc.has(row.source_doc)) bySourceDoc.set(row.source_doc, []);
-        bySourceDoc.get(row.source_doc).push(row);
-      }
-
-      const groups = [...bySourceDoc.entries()]
-        .map(([sourceDoc, groupRows]) => ({
-          name: humanizeSlug(sourceDoc.replace(/^region-/, '')),
-          rows: groupRows,
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      document.getElementById('regionLede').textContent =
-        `${groups.length} regions, ${rows.length} sub-topics between them. Expand one to browse.`;
-      renderGroups(groups);
+    document.addEventListener('DOMContentLoaded', () => {
+      window.KnowledgeBase.renderRegionsCatalog({ containerId: 'regionGroups', ledeId: 'regionLede' });
     });
   </script>
 </body>

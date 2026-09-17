@@ -77,64 +77,12 @@
 
   <script src="supabase-client.js"></script>
   <script>
-    // Grapes here means chunk_type='grape', section_title='Overview' -- the
-    // one canonical row per variety (188 of them). Non-Overview 'grape' rows
-    // are sub-topics of a variety (e.g. "Grenache -- New World") and aren't
-    // separate grapes, so they're excluded to avoid duplicate/near-duplicate
-    // tiles. Content shape is identical to what topic pages already parse:
-    // "{eyebrow}\n\n{name}\n\n{lede}\n\n{factsBlock}".
-    let allGrapes = [];
-
-    function parseGrape(row) {
-      const [eyebrow, name] = (row.content || '').split('\n\n');
-      const country = (eyebrow || '').split('/')[1]?.trim() || '';
-      const grapeName = (name || row.source_doc.replace(/^grape-/, '')).trim();
-      return {
-        name: grapeName,
-        country,
-        // deriveCardTitle()'s default branch (used by the modal when this
-        // grape has no dedicated topic page) shows section_title, which is
-        // literally "Overview" on every one of these rows -- override it
-        // with the parsed name so the modal title is actually useful.
-        chunk: { ...row, section_title: grapeName },
-      };
-    }
-
-    function renderGrapes(grapes) {
-      const grid = document.getElementById('grapesGrid');
-      const countEl = document.getElementById('grapeCount');
-
-      if (grapes.length === 0) {
-        countEl.textContent = 'No grapes match that search.';
-        grid.innerHTML = '';
-        return;
-      }
-
-      countEl.textContent = `${grapes.length} grape${grapes.length !== 1 ? 's' : ''}`;
-      grid.innerHTML = grapes
-        .map((g) => {
-          const safeChunk = JSON.stringify(g.chunk).replace(/"/g, '&quot;');
-          return `<a class="tile" href="#" onclick="window.KnowledgeBase.goToChunk(${safeChunk}); return false;">
-            <span class="name">${g.name}</span>
-            <span class="n">${g.country}</span>
-          </a>`;
-        })
-        .join('');
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const rows = await window.KnowledgeBase.fetchChunks(
-        'select=id,content,source_doc,chunk_type&chunk_type=eq.grape&section_title=eq.Overview&order=source_doc.asc&limit=300'
-      );
-
-      allGrapes = rows.map(parseGrape).sort((a, b) => a.name.localeCompare(b.name));
-      document.getElementById('grapeLede').textContent =
-        `${allGrapes.length} varieties. Click one to see what we've written about it.`;
-      renderGrapes(allGrapes);
-
-      document.getElementById('grapeSearch').addEventListener('input', (e) => {
-        const q = e.target.value.trim().toLowerCase();
-        renderGrapes(q ? allGrapes.filter((g) => g.name.toLowerCase().includes(q)) : allGrapes);
+    document.addEventListener('DOMContentLoaded', () => {
+      window.KnowledgeBase.renderGrapesCatalog({
+        gridId: 'grapesGrid',
+        countId: 'grapeCount',
+        ledeId: 'grapeLede',
+        searchInputId: 'grapeSearch',
       });
     });
   </script>
