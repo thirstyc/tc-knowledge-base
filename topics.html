@@ -212,6 +212,12 @@
     ];
 
     async function setCount(id, count) {
+      // countChunks returns 0 both for a genuine zero-result count and for
+      // a failed request (see countTable in supabase-client.js). None of
+      // these 18 topics has ever had a real zero count, so a literal 0
+      // here means the request failed -- leave the "…" placeholder rather
+      // than show a confidently wrong "0".
+      if (!count) return;
       const el = document.getElementById(id);
       if (el) el.textContent = count;
     }
