@@ -101,7 +101,7 @@ const SOURCE_DOC_SLUG_OVERRIDES = {
 // Used only for chunk_types that don't carry their own grape-/region-/
 // enology-prefixed source_doc, or whose prefix lookup didn't resolve.
 const TOPIC_KEYWORDS = [
-  { pattern: /chenin blanc/i, slug: 'chenin-blanc' },
+  { pattern: /(?:chenin blanc)|(?:chenins? blancs?)/i, slug: 'chenin-blanc' },
   { pattern: /cabernet sauvignon/i, slug: 'cabernet-sauvignon' },
   { pattern: /rh[oô]ne/i, slug: 'rhone-valley' },
   { pattern: /nebbiolo/i, slug: 'nebbiolo' },

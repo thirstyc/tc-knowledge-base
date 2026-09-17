@@ -76,6 +76,11 @@ export const TOPICS = [
     topicName: 'Chenin Blanc',
     sourceDoc: 'grape-chenin-blanc',
     metaDescription: 'Bone-dry to lusciously sweet, one grape doing it all. Everything we know about Chenin Blanc.',
+    // French sometimes pluralizes both words as a common noun ("des chenins
+    // blancs"), which the default escaped-exact-phrase pattern doesn't
+    // match -- found via a cross-topic answer-page audit (a region-qa row
+    // mentioning the grape only in passing, not the grape's own topic page).
+    keywordPatternFr: 'chenins? blancs?',
     frReady: true,
     metaDescriptionFr: 'Du plus sec au plus liquoreux, un seul cépage sait tout faire. Tout ce que nous savons sur le Chenin Blanc.',
   },
