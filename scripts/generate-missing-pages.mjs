@@ -177,6 +177,10 @@ async function main() {
       .select('id, content, source_doc, section_title, chunk_type')
       .in('chunk_type', ['qa', 'region-qa'])
       .eq('status', 'published')
+      // English only: French translations share source_doc with their
+      // English row, so without this they'd overwrite answer-*.html (and
+      // pad the difficulty archives) with French content.
+      .eq('lang', 'en')
   );
 
   let written = 0;

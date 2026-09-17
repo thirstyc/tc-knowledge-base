@@ -98,6 +98,8 @@ main.home { padding-top: 0; }
 .lang a.off { color: var(--muted); }
 .lang a:hover { color: var(--deep-turquoise); }
 .lang span { color: var(--mineral); }
+.lang .current { color: var(--vintage); }
+.lang .unavailable { color: var(--muted); opacity: 0.55; cursor: not-allowed; }
 .btn-pill {
   font-size: 15px;
   font-weight: 500;
@@ -348,6 +350,8 @@ main.notfound .lede { max-width: 48ch; margin-bottom: 40px; }
 .footer-bottom .lang a { color: var(--beige); }
 .footer-bottom .lang a.off { color: var(--mineral); }
 .footer-bottom .lang span { color: var(--muted); }
+.footer-bottom .lang .current { color: var(--beige); }
+.footer-bottom .lang .unavailable { color: var(--mineral); }
 
 @media (max-width: 640px) {
   main { padding-bottom: 80px; }
