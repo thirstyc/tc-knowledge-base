@@ -294,6 +294,9 @@ async function main() {
       .select('id, content, source_doc, section_title, chunk_type, lang')
       .in('chunk_type', ['qa', 'region-qa'])
       .eq('status', 'published')
+      // Without an explicit order, .range() pages can skip or repeat rows,
+      // and list order shifts whenever a row is edited.
+      .order('id')
   );
 
   // Rows whose page is listed in redirects.config.mjs are retired: no page,

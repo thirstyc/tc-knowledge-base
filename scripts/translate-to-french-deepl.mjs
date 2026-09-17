@@ -8,6 +8,10 @@
 // --topic limits the run to one topics.config.mjs topic (what its page
 // shows); --pilot is kept as an alias for --topic grenache.
 //
+// node scripts/translate-to-french-deepl.mjs [--dry-run] --retranslate <id,id,...>
+// re-translates those English rows after their content was edited and
+// updates their existing French rows in place.
+//
 // Unlike the Claude backend (scripts/translate-to-french.mjs), DeepL is a
 // dedicated MT engine, not an LLM -- there's no prompt to give it structural
 // instructions, so this relies on DeepL's own paragraph/line-break
@@ -24,7 +28,7 @@
 // translations before scaling to the full catalog.
 
 import 'dotenv/config';
-import { runTranslationPipeline } from '../lib/french-translation-pipeline.mjs';
+import { runTranslationPipeline, retranslateRows } from '../lib/french-translation-pipeline.mjs';
 
 const { DEEPL_API_KEY } = process.env;
 if (!DEEPL_API_KEY) {
@@ -41,6 +45,13 @@ const TOPIC_SLUG = topicArgIndex !== -1 ? process.argv[topicArgIndex + 1] : proc
 // A bare --topic must not fall through to a full-catalog run.
 if (topicArgIndex !== -1 && (!TOPIC_SLUG || TOPIC_SLUG.startsWith('--'))) {
   throw new Error('--topic needs a slug, e.g. --topic riesling');
+}
+
+const retranslateArgIndex = process.argv.indexOf('--retranslate');
+const RETRANSLATE_IDS =
+  retranslateArgIndex !== -1 ? (process.argv[retranslateArgIndex + 1] ?? '').split(',').filter(Boolean).map(Number) : null;
+if (RETRANSLATE_IDS && (RETRANSLATE_IDS.length === 0 || RETRANSLATE_IDS.some((id) => !Number.isInteger(id)))) {
+  throw new Error('--retranslate needs a comma-separated list of English row ids, e.g. --retranslate 528,529');
 }
 
 const GLOSSARY_NAME = 'tc-wine-glossary-en-fr';
@@ -113,9 +124,10 @@ async function translateRow(row, glossaryId) {
 const glossaryId = await ensureGlossary();
 console.log(`Using DeepL glossary ${glossaryId} (${GLOSSARY_NAME}).`);
 
-runTranslationPipeline({ topicSlug: TOPIC_SLUG, dryRun: DRY_RUN, translateRow: (row) => translateRow(row, glossaryId) }).catch(
-  (err) => {
-    console.error(err);
-    process.exit(1);
-  }
-);
+const run = RETRANSLATE_IDS
+  ? retranslateRows({ ids: RETRANSLATE_IDS, dryRun: DRY_RUN, translateRow: (row) => translateRow(row, glossaryId) })
+  : runTranslationPipeline({ topicSlug: TOPIC_SLUG, dryRun: DRY_RUN, translateRow: (row) => translateRow(row, glossaryId) });
+run.catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
