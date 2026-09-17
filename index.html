@@ -227,7 +227,7 @@
         ]);
 
         if (qaCount && grapeTopics && regionSlugs.size && wineCount) {
-          heroEl.textContent = `${qaCount.toLocaleString()} Q&As from independent tastings. ${grapeTopics} grape topics. ${regionSlugs.size}+ wine regions. ${wineCount} teaching wines. No tasting-note theatre.`;
+          heroEl.textContent = `${qaCount.toLocaleString('en-US')} Q&As from independent tastings. ${grapeTopics} grape topics. ${regionSlugs.size}+ wine regions. ${wineCount} teaching wines. No tasting-note theatre.`;
         }
       } catch (error) {
         console.error('Error loading hero stats, keeping fallback text:', error);

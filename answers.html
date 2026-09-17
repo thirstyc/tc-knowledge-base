@@ -99,7 +99,7 @@
       const total = await window.KnowledgeBase.countChunks('select=id&chunk_type=in.(qa,region-qa)');
       const countEl = document.getElementById('answerCount');
       if (countEl && total) {
-        countEl.textContent = `${total.toLocaleString()} answers. Showing the 100 most recent below -- search for the rest.`;
+        countEl.textContent = `${total.toLocaleString('en-US')} answers. Showing the 100 most recent below -- search for the rest.`;
       }
     });
   </script>

@@ -227,7 +227,7 @@
         ]);
 
         if (qaCount && grapeTopics && regionSlugs.size && wineCount) {
-          heroEl.textContent = `${qaCount.toLocaleString()} questions-réponses issues de dégustations indépendantes. ${grapeTopics} cépages traités. ${regionSlugs.size}+ régions viticoles. ${wineCount} vins pédagogiques. Aucune mise en scène de notes de dégustation.`;
+          heroEl.textContent = `${qaCount.toLocaleString('fr-FR')} questions-réponses issues de dégustations indépendantes. ${grapeTopics} cépages traités. ${regionSlugs.size}+ régions viticoles. ${wineCount} vins pédagogiques. Aucune mise en scène de notes de dégustation.`;
         }
       } catch (error) {
         console.error('Error loading hero stats, keeping fallback text:', error);

@@ -128,7 +128,7 @@
         // chunks.length > 0 already proves matches exist. Fall back to the
         // plain count rather than claim a bogus "of 0".
         const label = total > chunks.length
-          ? `Showing ${chunks.length} of ${total.toLocaleString()} results for "${searchQuery}"`
+          ? `Showing ${chunks.length} of ${total.toLocaleString('en-US')} results for "${searchQuery}"`
           : `${chunks.length} result${chunks.length !== 1 ? 's' : ''} for "${searchQuery}"`;
         if (resultCount) resultCount.textContent = label;
         if (resultsDiv) {
