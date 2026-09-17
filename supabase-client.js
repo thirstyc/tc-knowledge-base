@@ -202,10 +202,13 @@ function goToChunk(chunk) {
   showChunkDetail(chunk);
 }
 
-// section_title is only a real title for grape/region/enology/guide/producer/
-// comparison chunks (e.g. "Overview", "Malolactic conversion (MLF)"). For qa
-// and region-qa chunks it's always a difficulty label ("Beginner" /
-// "Intermediate") instead -- every one of the 883 qa/region-qa rows in
+// section_title is the English join key back to a row's source (see
+// lib/french-translation-pipeline.mjs) -- it's never translated, so using it
+// as a title on a French page showed the English heading verbatim (e.g. a
+// French search result for a new "Chardonnay -- What To Know" grape section
+// titled itself in English while its own body text was correctly French).
+// For qa/region-qa it's always a difficulty label ("Beginner"/"Intermediate")
+// instead of a title at all -- every one of the 883 qa/region-qa rows in
 // knowledge_chunks confirms this, no exceptions. Using it as a title there
 // showed "Intermediate" as the headline instead of the actual question.
 function deriveCardTitle(chunk) {
@@ -218,9 +221,21 @@ function deriveCardTitle(chunk) {
     const match = raw.match(/\?\s/);
     return match ? raw.slice(0, match.index + 1) : raw;
   }
-  if (chunk.chunk_type === 'enology') {
-    return chunk.section_title || (chunk.content || '').split('\n')[0];
+  if (['grape', 'region', 'enology'].includes(chunk.chunk_type) && chunk.section_title === 'Overview') {
+    // "eyebrow\n\nname\n\nlede\n\nfacts" -- name is the real title, not the
+    // literal lookup key "Overview" (mirrors parseOverview() in
+    // generate-topic-pages.mjs / generate-catalog-pages.mjs).
+    const name = (chunk.content || '').split('\n\n')[1];
+    return (name && name.trim()) || chunk.section_title;
   }
+  // Every other type (grape/region/enology non-Overview sections, guide,
+  // comparison) opens with its own translated heading line, then a blank
+  // line and the body (mirrors splitHeading() in generate-catalog-pages.mjs)
+  // -- prefer that over the untranslated section_title. A handful of rows
+  // dropped that line in translation (content starts straight into the
+  // body), so only a short single first line counts as a heading.
+  const firstLine = (chunk.content || '').split('\n')[0].trim();
+  if (firstLine && firstLine.length <= 120) return firstLine;
   return chunk.section_title || chunk.source_doc || 'Untitled';
 }
 
