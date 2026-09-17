@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { TOPICS, BASE_URL } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
+import { topicSchema } from './lib/schema-markup-templates.js';
 import { renderHead as renderHeadShell, renderHeader as renderHeaderShell, renderFooter as renderFooterShell } from './lib/page-shell.mjs';
 
 function escapeRegex(str) {
@@ -31,7 +32,16 @@ function topicName(topic, lang) {
 function renderHead(topic, lang) {
   const title = lang === 'fr' ? `${topicName(topic, lang)} — Thirsty Cunt` : `${topic.topicName} — Thirsty Cunt Knowledge Base`;
   const description = lang === 'fr' ? topic.metaDescriptionFr ?? topic.metaDescription : topic.metaDescription;
-  return renderHeadShell({ title, description, lang, assetPrefix: assetPrefixFor(lang), alternates: hreflangAlternates(topic) });
+  const jsonLd = [
+    topicSchema({
+      name: topicName(topic, lang),
+      description,
+      url: `${lang === 'fr' ? 'fr/' : ''}topic-${topic.slug}.html`,
+      kind: topic.kind,
+      lang,
+    }),
+  ];
+  return renderHeadShell({ title, description, lang, assetPrefix: assetPrefixFor(lang), alternates: hreflangAlternates(topic), jsonLd });
 }
 
 // EN and FR pages of a frReady topic both carry the same full set of

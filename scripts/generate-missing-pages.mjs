@@ -27,6 +27,7 @@ import { createClient } from '@supabase/supabase-js';
 import { fetchAllRows } from '../lib/pagination.mjs';
 import { renderHead, renderHeader, renderFooter, deriveQuestion, slugify, escapeHtml } from '../lib/page-shell.mjs';
 import { TOPICS } from '../topics.config.mjs';
+import { faqPageSchema } from '../lib/schema-markup-templates.js';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 // Deliberately overwrite a hand-authored file this one time. Not for
@@ -68,6 +69,7 @@ function resolveTopicLink(content, sectionTitle) {
 }
 
 function renderAnswerPage(row, related) {
+  const path = `answer-${answerSlug(row.source_doc)}.html`;
   const question = deriveQuestion(row.content);
   const answerBody = row.content.slice(question.length).trim();
   const topic = resolveTopicLink(row.content, row.section_title);
@@ -90,6 +92,7 @@ function renderAnswerPage(row, related) {
     renderHead({
       title: `${escapeHtml(question)} — Thirsty Cunt`,
       description: escapeHtml(answerBody.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ')),
+      jsonLd: [faqPageSchema({ url: path, faqs: [{ question, answer: answerBody }] })],
     }),
     GENERATED_MARKER,
     renderHeader({ currentNav: 'answers.html' }),
