@@ -10,7 +10,7 @@
 // copy-pasting and hand-editing an existing HTML file.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { TOPICS } from './topics.config.mjs';
+import { TOPICS, BASE_URL } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
 import { renderHead as renderHeadShell, renderHeader as renderHeaderShell, renderFooter as renderFooterShell } from './lib/page-shell.mjs';
 
@@ -31,7 +31,19 @@ function topicName(topic, lang) {
 function renderHead(topic, lang) {
   const title = lang === 'fr' ? `${topicName(topic, lang)} — Thirsty Cunt` : `${topic.topicName} — Thirsty Cunt Knowledge Base`;
   const description = lang === 'fr' ? topic.metaDescriptionFr ?? topic.metaDescription : topic.metaDescription;
-  return renderHeadShell({ title, description, lang, assetPrefix: assetPrefixFor(lang) });
+  return renderHeadShell({ title, description, lang, assetPrefix: assetPrefixFor(lang), alternates: hreflangAlternates(topic) });
+}
+
+// EN and FR pages of a frReady topic both carry the same full set of
+// hreflang links; English is the x-default. Untranslated topics get none.
+function hreflangAlternates(topic) {
+  if (!topic.frReady) return [];
+  const pageFile = `topic-${topic.slug}.html`;
+  return [
+    { hreflang: 'en', href: `${BASE_URL}/${pageFile}` },
+    { hreflang: 'fr', href: `${BASE_URL}/fr/${pageFile}` },
+    { hreflang: 'x-default', href: `${BASE_URL}/${pageFile}` },
+  ];
 }
 
 // Topic pages don't have a single hub page anymore (topics.html was
