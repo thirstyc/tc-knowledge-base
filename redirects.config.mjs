@@ -9,10 +9,11 @@
 // Every target must be a page that exists — generate-redirects.mjs refuses
 // to write a stub that points at a 404.
 //
-// Listing a generated answer page here retires it: generate-missing-pages.mjs
-// and generate-topic-pages.mjs skip its row (even while it's still
-// published in knowledge_chunks), and generate-redirects.mjs replaces the
-// page with a stub. French pages need their own fr/ entry.
+// Listing a generated answer page here retires it: generate-missing-pages.mjs,
+// generate-topic-pages.mjs, and scripts/generate-catalog-pages.mjs all skip
+// its row (even while it's still published in knowledge_chunks) wherever
+// they'd otherwise link to it, and generate-redirects.mjs replaces the page
+// itself with a stub. French pages need their own fr/ entry.
 
 export const REDIRECTS = {
   // answer-region-adour-positioning.html / answer-region-alentejo-style.html
