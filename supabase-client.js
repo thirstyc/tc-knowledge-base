@@ -322,8 +322,17 @@ async function renderGrapesCatalog({ gridId, countId, ledeId, searchInputId }) {
   const allGrapes = rows.map(parseGrape).sort((a, b) => a.name.localeCompare(b.name));
 
   const ledeEl = ledeId && document.getElementById(ledeId);
-  if (ledeEl) ledeEl.textContent = `${allGrapes.length} varieties. Click one to see what we've written about it.`;
+  // fetchChunks/fetchTable return [] both for a genuinely empty result and
+  // for a failed request. There are always 180+ grapes, so an empty result
+  // on the *initial* load can only mean the request failed -- say so,
+  // rather than "0 varieties", and don't wire up search against an empty
+  // list (it would just repeat the same failure on every keystroke).
+  if (allGrapes.length === 0) {
+    if (ledeEl) ledeEl.textContent = "Couldn't load grapes right now — try refreshing.";
+    return;
+  }
 
+  if (ledeEl) ledeEl.textContent = `${allGrapes.length} varieties. Click one to see what we've written about it.`;
   render(allGrapes);
 
   const searchEl = searchInputId && document.getElementById(searchInputId);
@@ -395,6 +404,12 @@ async function renderRegionsCatalog({ containerId, ledeId }) {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const ledeEl = ledeId && document.getElementById(ledeId);
+  // Same fetch-failure-vs-genuinely-empty ambiguity as renderGrapesCatalog:
+  // there are always ~35 region groups, so 0 here means the request failed.
+  if (groups.length === 0) {
+    if (ledeEl) ledeEl.textContent = "Couldn't load regions right now — try refreshing.";
+    return;
+  }
   if (ledeEl) ledeEl.textContent = `${groups.length} regions, ${rows.length} sub-topics between them. Expand one to browse.`;
 
   render(groups, containerId);
@@ -459,6 +474,13 @@ async function renderGuidesCatalog({ gridId, ledeId }) {
   }));
 
   const ledeEl = ledeId && document.getElementById(ledeId);
+  // Same fetch-failure-vs-genuinely-empty ambiguity as renderGrapesCatalog:
+  // there are always 7 guide/comparison groups, so 0 here means the
+  // request failed.
+  if (groups.length === 0) {
+    if (ledeEl) ledeEl.textContent = "Couldn't load guides right now — try refreshing.";
+    return;
+  }
   if (ledeEl) ledeEl.textContent = `${groups.length} guides and comparisons, ${rows.length} parts in total.`;
 
   render(groups);
