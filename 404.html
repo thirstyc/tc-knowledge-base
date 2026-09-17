@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<!-- GitHub Pages only supports one global 404.html at the repo root -- a
+     broken URL under /fr/ still lands here, with the response's own URL
+     left untouched (no redirect happens server-side), so this reads that
+     path and bounces client-side to the real fr/404.html. Runs before any
+     rendering below, to avoid a flash of the English error page. -->
+<script>
+  if (window.location.pathname.startsWith('/fr/')) {
+    window.location.replace('/fr/404.html');
+  }
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Page Not Found — Thirsty Cunt Knowledge Base</title>
 <meta name="description" content="That page moved, got renamed, or never made it out of drafts." />
