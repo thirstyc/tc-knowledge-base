@@ -75,6 +75,13 @@ const OVERVIEW_JS = `      const overviewRows = await window.KnowledgeBase.fetch
           const value = line.slice(sep + 1).trim();
           return \`<div><dt>\${key}</dt><dd>\${value}</dd></div>\`;
         }).join('');
+      } else {
+        // Every topic in topics.config.mjs has real Overview content --
+        // an empty result here means the request failed, not that this
+        // topic has no overview. Without this, eyebrow/lede stay stuck on
+        // their initial "Loading…" text forever instead of ever resolving.
+        document.getElementById('grape-eyebrow').textContent = '';
+        document.getElementById('grape-lede').textContent = "Couldn't load this right now — try refreshing.";
       }`;
 
 // Shared by every kind: render the count line + answer list once qaRows is populated.
