@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 import { TOPICS, BASE_URL, effectiveKeywordPattern } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
 import { topicSchema } from './lib/schema-markup-templates.js';
+import { REDIRECTS } from './redirects.config.mjs';
 import {
   renderHead as renderHeadShell,
   renderHeader as renderHeaderShell,
@@ -141,7 +142,11 @@ async function fetchTopicData(topic, lang) {
   const failed = results.find((r) => r.error);
   if (failed) throw failed.error;
 
-  return { overview: parseOverview(overview.data[0].content), qaRows: results.flatMap((r) => r.data) };
+  // Answer rows whose page is retired in redirects.config.mjs aren't listed.
+  const isRetired = (r) =>
+    ['qa', 'region-qa'].includes(r.chunk_type) && `${lang === 'fr' ? 'fr/' : ''}${answerPagePath(r.source_doc)}` in REDIRECTS;
+  const qaRows = results.flatMap((r) => r.data).filter((r) => !isRetired(r));
+  return { overview: parseOverview(overview.data[0].content), qaRows };
 }
 
 // Overview content is "eyebrow\n\nname\n\nlede\n\nKey: value\nKey: value".

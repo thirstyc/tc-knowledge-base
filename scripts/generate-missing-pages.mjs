@@ -46,6 +46,7 @@ import {
 } from '../lib/page-shell.mjs';
 import { TOPICS, BASE_URL, effectiveKeywordPattern } from '../topics.config.mjs';
 import { faqPageSchema, collectionPageSchema } from '../lib/schema-markup-templates.js';
+import { REDIRECTS } from '../redirects.config.mjs';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 // Deliberately overwrite a hand-authored file this one time. Not for
@@ -96,6 +97,17 @@ function resolveTopicLink(content, sectionTitle, lang) {
   return lang === 'fr' ? { href: '../answers.html', label: 'Réponses' } : { href: 'answers.html', label: 'Answers' };
 }
 
+// Longer answers use blank lines between paragraphs; one-line answers
+// render exactly as before (a single <p>).
+function answerParagraphs(answerBody) {
+  return answerBody
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `          <p>${escapeHtml(paragraph)}</p>`)
+    .join('\n');
+}
+
 function renderAnswerPage(row, related, lang) {
   const isFr = lang === 'fr';
   const slugPath = answerPagePath(row.source_doc);
@@ -133,7 +145,7 @@ function renderAnswerPage(row, related, lang) {
   return [
     renderHead({
       title: `${escapeHtml(question)} — Thirsty Cunt`,
-      description: escapeHtml(answerBody.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ')),
+      description: escapeHtml(answerBody.replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).slice(0, 2).join(' ')),
       lang,
       assetPrefix: ap,
       alternates: hreflangAlternates(slugPath),
@@ -163,7 +175,7 @@ ${renderHeroBand({
 
         <div class="short-answer">
           <p class="k">${t.shortAnswer}</p>
-          <p>${escapeHtml(answerBody)}</p>
+${answerParagraphs(answerBody)}
         </div>
       </article>
 
@@ -276,13 +288,20 @@ function isSafeToWrite(path) {
 }
 
 async function main() {
-  const allRows = await fetchAllRows(() =>
+  const fetchedRows = await fetchAllRows(() =>
     supabase
       .from('knowledge_chunks')
       .select('id, content, source_doc, section_title, chunk_type, lang')
       .in('chunk_type', ['qa', 'region-qa'])
       .eq('status', 'published')
   );
+
+  // Rows whose page is listed in redirects.config.mjs are retired: no page,
+  // and no links to them from related cards or difficulty archives.
+  const pagePathFor = (row) => `${row.lang === 'fr' ? 'fr/' : ''}${answerPagePath(row.source_doc)}`;
+  const retired = fetchedRows.filter((row) => pagePathFor(row) in REDIRECTS);
+  const allRows = fetchedRows.filter((row) => !(pagePathFor(row) in REDIRECTS));
+  if (retired.length) console.log(`Skipped ${retired.length} redirected row(s): ${retired.map(pagePathFor).join(', ')}`);
 
   mkdirSync('fr', { recursive: true });
 
@@ -294,7 +313,7 @@ async function main() {
     const rows = allRows.filter((r) => r.lang === lang);
 
     for (const row of rows) {
-      const path = lang === 'fr' ? `fr/${answerPagePath(row.source_doc)}` : answerPagePath(row.source_doc);
+      const path = pagePathFor(row);
 
       if (!isSafeToWrite(path)) {
         skippedProtected.push(path);
