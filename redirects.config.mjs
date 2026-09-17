@@ -8,6 +8,11 @@
 //
 // Every target must be a page that exists — generate-redirects.mjs refuses
 // to write a stub that points at a 404.
+//
+// Listing a generated answer page here retires it: generate-missing-pages.mjs
+// and generate-topic-pages.mjs skip its row (even while it's still
+// published in knowledge_chunks), and generate-redirects.mjs replaces the
+// page with a stub. French pages need their own fr/ entry.
 
 export const REDIRECTS = {
   // answer-region-adour-positioning.html / answer-region-alentejo-style.html
@@ -21,4 +26,9 @@ export const REDIRECTS = {
   'audience-intermediate.html': 'difficulty-intermediate.html',
   'guide-tasting-notes.html': 'guides.html',
   'answer-oak-influence-age.html': 'topic-oak.html',
+  // Same question as answer-burgundy-pinot-pairing.html with a near-identical
+  // answer -- duplicate content. Unpublish qa-burgundy-pinot-premium-pairing
+  // in knowledge_chunks when convenient; this entry already retires the page.
+  'answer-burgundy-pinot-premium-pairing.html': 'answer-burgundy-pinot-pairing.html',
+  'fr/answer-burgundy-pinot-premium-pairing.html': 'fr/answer-burgundy-pinot-pairing.html',
 };
