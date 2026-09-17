@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Search — Thirsty Cunt Knowledge Base</title>
-<meta name="description" content="Search 387 published wine knowledge chunks." />
+<meta name="description" content="Search 1,491 published wine knowledge chunks." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -104,7 +104,15 @@
         if (resultCount) resultCount.textContent = `Searching for "${searchQuery}"...`;
         if (resultsDiv) resultsDiv.innerHTML = '';
 
-        const chunks = await window.KnowledgeBase.fetchPublishedChunks(50, searchQuery);
+        // fetchPublishedChunks caps at 50 rows, so a broad term (e.g. "wine",
+        // 588 real matches) would silently say "50 results" -- true, but
+        // reads as if that's the total. Fetch the real total in parallel and
+        // say so explicitly when the display is actually capped.
+        const orFilter = `or=(section_title.ilike.%25${encodeURIComponent(searchQuery)}%25,content.ilike.%25${encodeURIComponent(searchQuery)}%25)`;
+        const [chunks, total] = await Promise.all([
+          window.KnowledgeBase.fetchPublishedChunks(50, searchQuery),
+          window.KnowledgeBase.countChunks(`select=id&${orFilter}`),
+        ]);
 
         if (chunks.length === 0) {
           if (resultCount) resultCount.textContent = `0 results for "${searchQuery}"`;
@@ -112,7 +120,14 @@
           return;
         }
 
-        if (resultCount) resultCount.textContent = `${chunks.length} result${chunks.length !== 1 ? 's' : ''} for "${searchQuery}"`;
+        // total==0 here means the count request failed (see countTable in
+        // supabase-client.js), not that there are genuinely zero matches --
+        // chunks.length > 0 already proves matches exist. Fall back to the
+        // plain count rather than claim a bogus "of 0".
+        const label = total > chunks.length
+          ? `Showing ${chunks.length} of ${total.toLocaleString()} results for "${searchQuery}"`
+          : `${chunks.length} result${chunks.length !== 1 ? 's' : ''} for "${searchQuery}"`;
+        if (resultCount) resultCount.textContent = label;
         if (resultsDiv) {
           resultsDiv.innerHTML = chunks.map(chunk => {
             const title = window.KnowledgeBase.deriveCardTitle(chunk);
