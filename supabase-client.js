@@ -240,7 +240,7 @@ function ensureModalStyles() {
   if (document.getElementById('modal-styles')) return;
   const styles = document.createElement('style');
   styles.id = 'modal-styles';
-  styles.textContent = '.modal-overlay{display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000}.modal-content{background:white;border-radius:8px;padding:2rem;max-width:800px;max-height:80vh;overflow-y:auto}.modal-close{position:absolute;top:1rem;right:1rem;background:0;border:0;font-size:1.5rem;cursor:pointer}';
+  styles.textContent = '.modal-overlay{display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000}.modal-content{background:white;border-radius:8px;padding:2rem;max-width:800px;max-height:80vh;overflow-y:auto}.modal-close{position:absolute;top:1rem;right:1rem;background:0;border:0;font-size:1.5rem;cursor:pointer}.modal-body p{margin:0 0 1em}.modal-body ul,.modal-body ol{margin:0 0 1em;padding-left:1.4em}.modal-body li{margin-bottom:0.35em}';
   document.head.appendChild(styles);
 }
 
@@ -252,13 +252,64 @@ function showModal(contentHtml) {
   document.body.appendChild(modal);
 }
 
-function showChunkDetail(chunk) {
-  const title = deriveCardTitle(chunk);
-  const content = chunk.content || '';
-  const category = chunk.chunk_type || 'General';
-  const source = chunk.source_doc || 'knowledge';
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>${title}</h2><div class="modal-meta"><span class="badge">${category}</span><span class="source">${source}</span></div><div class="modal-body">${content}</div></div>`);
+function renderInlineMarkdown(escapedText) {
+  return escapedText
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\s][^*\n]*)\*(?!\*)/g, '$1<em>$2</em>');
+}
+
+// Chunk content is plain text using a small Markdown subset -- checked
+// across every published row: **bold**, *italic*, "- " bullets, "1. "
+// numbered lists, and blank-line paragraphs (no headings, links or code).
+// No stored row contains HTML, so the text is escaped first and only that
+// subset is turned into markup.
+function renderMarkdown(text) {
+  const html = [];
+  for (const block of (text || '').trim().split(/\n\s*\n/)) {
+    let paragraph = [];
+    let list = null;
+    const flushParagraph = () => {
+      if (paragraph.length) html.push(`<p>${paragraph.map(renderInlineMarkdown).join('<br>')}</p>`);
+      paragraph = [];
+    };
+    const flushList = () => {
+      if (list) html.push(`<${list.tag}>${list.items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</${list.tag}>`);
+      list = null;
+    };
+    for (const line of block.split('\n')) {
+      const item = escapeHtml(line).match(/^\s*(?:([-*•])|\d+[.)])\s+(.*)$/);
+      if (!item) {
+        flushList();
+        paragraph.push(escapeHtml(line));
+        continue;
+      }
+      const tag = item[1] ? 'ul' : 'ol';
+      flushParagraph();
+      if (list && list.tag !== tag) flushList();
+      if (!list) list = { tag, items: [] };
+      list.items.push(item[2]);
+    }
+    flushParagraph();
+    flushList();
+  }
+  return html.join('');
+}
+
+function showChunkDetail(chunk) {
+  const title = escapeHtml(deriveCardTitle(chunk));
+  const category = escapeHtml(chunk.chunk_type || 'General');
+  const source = escapeHtml(chunk.source_doc || 'knowledge');
+
+  showModal(`<div class="modal-content"><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button><h2>${title}</h2><div class="modal-meta"><span class="badge">${category}</span><span class="source">${source}</span></div><div class="modal-body">${renderMarkdown(chunk.content)}</div></div>`);
 }
 
 // The App Store link is iOS-only (Thirsty Cellar has no Android build), and
