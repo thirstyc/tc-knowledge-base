@@ -44,7 +44,7 @@
       </div>
 
       <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 24px">
-        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px">217</span><span class="card-meta">Answers Published</span></div>
+        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px" id="stat-answers">904</span><span class="card-meta">Answers Published</span></div>
         <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px">18</span><span class="card-meta">Topics Covered</span></div>
         <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px">2026</span><span class="card-meta">Last Full Re-Verification</span></div>
       </div>
@@ -86,5 +86,18 @@
       <span class="lang"><a href="#">En</a><span>|</span><a class="off" href="#">Fr</a></span>
     </div>
   </footer>
+
+  <script src="supabase-client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const total = await window.KnowledgeBase.countChunks('select=id&chunk_type=in.(qa,region-qa)');
+      // countChunks returns 0 both for a genuine zero and a failed request;
+      // there are always hundreds of real answers, so 0 here means the
+      // request failed -- leave the static snapshot number rather than
+      // show a confidently wrong "0".
+      const el = document.getElementById('stat-answers');
+      if (el && total) el.textContent = total.toLocaleString();
+    });
+  </script>
 </body>
 </html>
