@@ -2,6 +2,14 @@
 const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
 
+// A page is French if it's served from a /fr/ path. One check here means
+// every fetchChunks/countChunks caller (and everything built on them --
+// renderGrapesCatalog, goToChunk, etc.) is language-aware for free, instead
+// of every page needing to pass its own language down.
+function currentLang() {
+  return window.location.pathname.includes('/fr/') ? 'fr' : 'en';
+}
+
 async function fetchTable(table, queryString) {
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${queryString}`, {
@@ -23,7 +31,7 @@ async function fetchTable(table, queryString) {
 // free, instead of each of the ~20 pages that build their own query string
 // having to remember to add it.
 async function fetchChunks(queryString) {
-  return fetchTable('knowledge_chunks', `${queryString}&status=eq.published`);
+  return fetchTable('knowledge_chunks', `${queryString}&status=eq.published&lang=eq.${currentLang()}`);
 }
 
 // chunkTypeFilter (e.g. 'qa,region-qa') is optional and off by default so
@@ -65,7 +73,7 @@ async function countTable(table, queryString = '') {
 }
 
 async function countChunks(queryString) {
-  return countTable('knowledge_chunks', `${queryString}&status=eq.published`);
+  return countTable('knowledge_chunks', `${queryString}&status=eq.published&lang=eq.${currentLang()}`);
 }
 
 function getSearchParam(param) {

@@ -9,7 +9,8 @@
     "generate:topics": "node generate-topic-pages.mjs",
     "generate:pages": "node scripts/generate-missing-pages.mjs",
     "audit:links": "node scripts/audit-links.mjs",
-    "content": "node scripts/content-generator.mjs"
+    "content": "node scripts/content-generator.mjs",
+    "translate:fr": "node scripts/translate-to-french.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",

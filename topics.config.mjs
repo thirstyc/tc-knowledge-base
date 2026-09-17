@@ -150,6 +150,11 @@ export const TOPICS = [
     topicName: 'Grenache',
     sourceDoc: 'grape-grenache',
     metaDescription: 'Soft, generous, high in alcohol and low in grip. Everything we know about Grenache.',
+    // Pilot for French localization (see scripts/translate-to-french.mjs):
+    // this is the only topic with lang='fr' content translated so far.
+    // topicNameFr is unset because "Grenache" is unchanged in French.
+    frReady: true,
+    metaDescriptionFr: 'Souple, généreux, riche en alcool et peu tannique. Tout ce que nous savons sur le Grenache.',
   },
   {
     slug: 'biodynamic',

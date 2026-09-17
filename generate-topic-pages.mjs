@@ -9,7 +9,7 @@
 // by topics.config.mjs, so adding a topic is one config entry instead of
 // copy-pasting and hand-editing an existing HTML file.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { TOPICS, STATIC_PAGES, BASE_URL } from './topics.config.mjs';
 import { renderHead as renderHeadShell, renderHeader as renderHeaderShell, renderFooter as renderFooterShell } from './lib/page-shell.mjs';
 
@@ -17,47 +17,75 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function renderHead(topic) {
-  return renderHeadShell({
-    title: `${topic.topicName} — Thirsty Cunt Knowledge Base`,
-    description: topic.metaDescription,
-  });
+// French pages live at fr/topic-{slug}.html -- one directory deeper than
+// their English counterpart -- so every asset/nav href needs '../'.
+function assetPrefixFor(lang) {
+  return lang === 'fr' ? '../' : '';
+}
+
+function topicName(topic, lang) {
+  return lang === 'fr' ? topic.topicNameFr ?? topic.topicName : topic.topicName;
+}
+
+function renderHead(topic, lang) {
+  const title = lang === 'fr' ? `${topicName(topic, lang)} — Thirsty Cunt` : `${topic.topicName} — Thirsty Cunt Knowledge Base`;
+  const description = lang === 'fr' ? topic.metaDescriptionFr ?? topic.metaDescription : topic.metaDescription;
+  return renderHeadShell({ title, description, lang, assetPrefix: assetPrefixFor(lang) });
 }
 
 // Topic pages don't have a single hub page anymore (topics.html was
 // removed as duplicate content once grapes.html/regions.html/guides.html
 // existed as the real browse destinations) -- highlight whichever of those
 // this topic's kind maps to, or nothing for enology topics (no equivalent).
-function renderHeader(topic) {
-  const currentNav = { grape: 'grapes.html', region: 'regions.html' }[topic.kind] ?? null;
-  return renderHeaderShell(currentNav);
+// Only pages with a real translated counterpart (topic.frReady) get a
+// working EN|FR toggle; everything else keeps the inert '#' placeholder
+// it already had -- rewiring every page's toggle is a later, separate step.
+function langToggleHrefs(topic, lang) {
+  const pageFile = `topic-${topic.slug}.html`;
+  return {
+    frHref: lang === 'en' && topic.frReady ? `fr/${pageFile}` : null,
+    enHref: lang === 'fr' ? `../${pageFile}` : null,
+  };
 }
 
-function renderMain(topic) {
+function renderHeader(topic, lang) {
+  const currentNav = { grape: 'grapes.html', region: 'regions.html' }[topic.kind] ?? null;
+  return renderHeaderShell({ currentNav, lang, assetPrefix: assetPrefixFor(lang), ...langToggleHrefs(topic, lang) });
+}
+
+function renderMain(topic, lang) {
+  const name = topicName(topic, lang);
+  const home = lang === 'fr' ? 'Accueil' : 'Home';
+  const loading = lang === 'fr' ? 'Chargement&hellip;' : 'Loading&hellip;';
+  const loadingAnswers = lang === 'fr' ? 'Chargement des réponses&hellip;' : 'Loading answers&hellip;';
   return `  <main>
     <div class="wrap">
-      <p class="breadcrumb"><a href="index.html">Home</a> / ${topic.topicName}</p>
+      <p class="breadcrumb"><a href="${assetPrefixFor(lang)}index.html">${home}</a> / ${name}</p>
       <div class="split">
         <div>
-          <p class="eyebrow" id="grape-eyebrow">Loading&hellip;</p>
-          <h1 class="display" id="grape-name">${topic.topicName}</h1>
-          <p class="lede sm" id="grape-lede" style="margin: 0">Loading&hellip;</p>
+          <p class="eyebrow" id="grape-eyebrow">${loading}</p>
+          <h1 class="display" id="grape-name">${name}</h1>
+          <p class="lede sm" id="grape-lede" style="margin: 0">${loading}</p>
         </div>
         <dl class="facts" id="grape-facts"></dl>
       </div>
 
-      <p class="list-head" id="qa-count">Loading answers&hellip;</p>
+      <p class="list-head" id="qa-count">${loadingAnswers}</p>
       <div id="qa-list"></div>
     </div>
   </main>`;
 }
 
-function renderFooter() {
-  return renderFooterShell();
+function renderFooter(topic, lang) {
+  return renderFooterShell({ lang, assetPrefix: assetPrefixFor(lang), ...langToggleHrefs(topic, lang) });
 }
 
 // Shared by every kind: fetch the Overview chunk and paint eyebrow/name/lede/facts.
-const OVERVIEW_JS = `      const overviewRows = await window.KnowledgeBase.fetchChunks(
+function overviewJs(lang) {
+  const failedMsg = lang === 'fr'
+    ? "Impossible de charger cette page pour le moment — essayez de rafraîchir."
+    : "Couldn't load this right now — try refreshing.";
+  return `      const overviewRows = await window.KnowledgeBase.fetchChunks(
         \`select=content&chunk_type=eq.\${TOPIC_CHUNK_TYPE}&source_doc=eq.\${TOPIC_SOURCE_DOC}&section_title=eq.Overview&limit=1\`
       );
 
@@ -81,22 +109,28 @@ const OVERVIEW_JS = `      const overviewRows = await window.KnowledgeBase.fetch
         // topic has no overview. Without this, eyebrow/lede stay stuck on
         // their initial "Loading…" text forever instead of ever resolving.
         document.getElementById('grape-eyebrow').textContent = '';
-        document.getElementById('grape-lede').textContent = "Couldn't load this right now — try refreshing.";
+        document.getElementById('grape-lede').textContent = "${failedMsg}";
       }`;
+}
 
 // Shared by every kind: render the count line + answer list once qaRows is populated.
-const RENDER_LIST_JS = `      const countEl = document.getElementById('qa-count');
+function renderListJs(lang) {
+  const noAnswers = lang === 'fr' ? 'Pas Encore De Réponses Sur' : 'No Answers Yet On';
+  const answerWord = lang === 'fr' ? 'Réponse' : 'Answer';
+  const onWord = lang === 'fr' ? 'Sur' : 'On';
+  return `      const countEl = document.getElementById('qa-count');
       const listEl = document.getElementById('qa-list');
 
       if (qaRows.length === 0) {
-        countEl.textContent = \`No Answers Yet On \${TOPIC_NAME}\`;
+        countEl.textContent = \`${noAnswers} \${TOPIC_NAME}\`;
         return;
       }
 
-      countEl.textContent = \`\${qaRows.length} Answer\${qaRows.length !== 1 ? 's' : ''} On \${TOPIC_NAME}\`;
+      countEl.textContent = \`\${qaRows.length} ${answerWord}\${qaRows.length !== 1 ? 's' : ''} ${onWord} \${TOPIC_NAME}\`;
       listEl.innerHTML = qaRows.map(chunk => {`;
+}
 
-function renderQaFetchAndList(topic) {
+function renderQaFetchAndList(topic, lang) {
   const matchTerm = topic.matchTerm ?? topic.topicName;
 
   if (topic.kind === 'enology') {
@@ -110,7 +144,7 @@ function renderQaFetchAndList(topic) {
       ]);
       const qaRows = [...qaMatches, ...enologyMatches];
 
-${RENDER_LIST_JS}
+${renderListJs(lang)}
         const title = window.KnowledgeBase.deriveCardTitle(chunk);
         const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
         return \`<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(\${safeChunk}); return false;">
@@ -129,7 +163,7 @@ ${RENDER_LIST_JS}
         \`select=id,content,source_doc,chunk_type&chunk_type=eq.\${QA_CHUNK_TYPE}&content=ilike.%25\${encodeURIComponent(QA_MATCH_TERM)}%25${excludeClause}&order=source_doc.asc&limit=100\`
       );
 
-${RENDER_LIST_JS}
+${renderListJs(lang)}
         const title = window.KnowledgeBase.deriveCardTitle(chunk);
         const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
         return \`<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(\${safeChunk}); return false;">
@@ -158,28 +192,34 @@ function wrapComment(note, width = 70) {
   return lines.map((l) => `    // ${l}`).join('\n');
 }
 
-function renderScript(topic) {
+function renderScript(topic, lang) {
   const matchTerm = topic.matchTerm ?? topic.topicName;
   const qaChunkType = topic.kind === 'region' ? 'region-qa' : 'qa';
 
   const consts = [
     `    const TOPIC_CHUNK_TYPE = '${topic.kind}';`,
     `    const TOPIC_SOURCE_DOC = '${topic.sourceDoc}';`,
-    `    const TOPIC_NAME = '${topic.topicName}';`,
+    `    const TOPIC_NAME = '${topicName(topic, lang)}';`,
     `    const QA_CHUNK_TYPE = '${qaChunkType}';`,
   ];
   if (topic.note) consts.push(wrapComment(topic.note));
+  // The match term stays the English word even on French pages: fetchChunks
+  // already filters to lang=eq.fr, and for this pilot (Grenache) the term
+  // is an unchanged proper noun in French too. A topic whose French name
+  // diverges from the English match term (e.g. a translated concept name)
+  // will need its own matchTermFr field when it's translated -- not needed
+  // yet since only Grenache has French content so far.
   consts.push(`    const QA_MATCH_TERM = '${matchTerm}';`);
   if (topic.excludeTerm) consts.push(`    const QA_EXCLUDE_TERM = '${topic.excludeTerm}';`);
 
-  return `  <script src="supabase-client.js"></script>
+  return `  <script src="${assetPrefixFor(lang)}supabase-client.js"></script>
   <script>
 ${consts.join('\n')}
 
     document.addEventListener('DOMContentLoaded', async () => {
-${OVERVIEW_JS}
+${overviewJs(lang)}
 
-${renderQaFetchAndList(topic)}
+${renderQaFetchAndList(topic, lang)}
     });
   </script>
 </body>
@@ -187,24 +227,39 @@ ${renderQaFetchAndList(topic)}
 `;
 }
 
-function renderPage(topic) {
+function renderPage(topic, lang) {
   return [
-    renderHead(topic),
-    renderHeader(topic),
-    renderMain(topic),
-    renderFooter(),
+    renderHead(topic, lang),
+    renderHeader(topic, lang),
+    renderMain(topic, lang),
+    renderFooter(topic, lang),
     '',
-    renderScript(topic),
+    renderScript(topic, lang),
   ].join('\n');
 }
 
 for (const topic of TOPICS) {
   const outPath = `topic-${topic.slug}.html`;
-  writeFileSync(outPath, renderPage(topic));
+  writeFileSync(outPath, renderPage(topic, 'en'));
   console.log(`  -> ${outPath}`);
 }
 
 console.log(`Generated ${TOPICS.length} topic page(s).`);
+
+// French pages: only for topics with real translated content so far
+// (topic.frReady -- see scripts/translate-to-french.mjs). Generating a
+// French page for an untranslated topic would just ship the "no content"
+// fallback UI for no reason.
+const frTopics = TOPICS.filter((t) => t.frReady);
+if (frTopics.length > 0) {
+  mkdirSync('fr', { recursive: true });
+  for (const topic of frTopics) {
+    const outPath = `fr/topic-${topic.slug}.html`;
+    writeFileSync(outPath, renderPage(topic, 'fr'));
+    console.log(`  -> ${outPath}`);
+  }
+  console.log(`Generated ${frTopics.length} French topic page(s).`);
+}
 
 // --- Answer-card routing table in supabase-client.js -----------------------
 // TOPIC_PAGE_SLUGS, SOURCE_DOC_SLUG_OVERRIDES, and TOPIC_KEYWORDS are all

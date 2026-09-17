@@ -92,7 +92,7 @@ function renderAnswerPage(row, related) {
       description: escapeHtml(answerBody.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ')),
     }),
     GENERATED_MARKER,
-    renderHeader('answers.html'),
+    renderHeader({ currentNav: 'answers.html' }),
     `  <main>
     <div class="wrap">
       <p class="breadcrumb"><a href="index.html">Home</a> / <a href="answers.html">Answers</a> / ${escapeHtml(question)}</p>
@@ -142,7 +142,7 @@ function renderDifficultyPage(difficultyLabel, slug, rows) {
       description: `${rows.length} answers written at ${difficultyLabel.toLowerCase()} depth.`,
     }),
     GENERATED_MARKER,
-    renderHeader('answers.html'),
+    renderHeader({ currentNav: 'answers.html' }),
     `  <main>
     <div class="wrap">
       <p class="breadcrumb"><a href="index.html">Home</a> / <a href="answers.html">Answers</a> / Difficulty</p>
