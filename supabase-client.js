@@ -170,8 +170,8 @@ function chunkHref(chunk) {
   }
   const answerHref = resolveAnswerHref(chunk);
   if (answerHref) return answerHref;
-  // Region sections live on their chapter's region-*.html page.
-  if (chunk && chunk.chunk_type === 'region' && chunk.section_title !== 'Overview' && chunk.source_doc) {
+  // Region and enology sections live on their source_doc's page.
+  if (chunk && ['region', 'enology'].includes(chunk.chunk_type) && chunk.section_title !== 'Overview' && chunk.source_doc) {
     return `${chunk.source_doc}.html`;
   }
   const topicSlug = resolveTopicSlug(chunk);

@@ -17,6 +17,7 @@ import { TOPICS, BASE_URL, effectiveKeywordPattern } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
 import { topicSchema } from './lib/schema-markup-templates.js';
 import { REDIRECTS } from './redirects.config.mjs';
+import { isSectionRow, sectionPageHref } from './lib/sections.mjs';
 import {
   renderHead as renderHeadShell,
   renderHeader as renderHeaderShell,
@@ -177,9 +178,16 @@ function rowTitle(chunk) {
 // topic page and its qa row's French answer page are both siblings inside
 // fr/, so neither needs an assetPrefix; existsSync() below checks the real
 // on-disk location instead, which for a French row does need the fr/ prefix.
+// Answers link to their answer page, enology/region sections to their
+// section on the source_doc's page (scripts/generate-catalog-pages.mjs);
+// the modal is only a fallback for a page that doesn't exist yet.
 function renderRow(chunk, lang) {
-  const href = ['qa', 'region-qa'].includes(chunk.chunk_type) ? answerPagePath(chunk.source_doc) : null;
-  const onDisk = href && lang === 'fr' ? `fr/${href}` : href;
+  const href = ['qa', 'region-qa'].includes(chunk.chunk_type)
+    ? answerPagePath(chunk.source_doc)
+    : isSectionRow(chunk)
+      ? sectionPageHref({ ...chunk, lang })
+      : null;
+  const onDisk = href && `${lang === 'fr' ? 'fr/' : ''}${href.split('#')[0]}`;
   const linkAttrs =
     href && existsSync(onDisk)
       ? `href="${href}"`

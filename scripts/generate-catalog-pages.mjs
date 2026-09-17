@@ -25,6 +25,7 @@ import {
 import { renderMarkdown } from '../lib/markdown.mjs';
 import { articleSchema, topicSchema } from '../lib/schema-markup-templates.js';
 import { REDIRECTS } from '../redirects.config.mjs';
+import { englishSectionTitle, sectionAnchor, sectionPageHref } from '../lib/sections.mjs';
 import { TOPICS, BASE_URL, escapeRegex } from '../topics.config.mjs';
 
 // Public anon key, same as the other generators -- read-only, no secrets.
@@ -41,7 +42,7 @@ function fetchLangRows(applyFilter, lang) {
     applyFilter(
       supabase
         .from('knowledge_chunks')
-        .select('id, content, source_doc, section_title, chunk_type')
+        .select('id, content, source_doc, section_title, chunk_type, lang')
         .eq('status', 'published')
         .eq('lang', lang)
     )
@@ -58,7 +59,7 @@ async function fetchRows(applyFilter, lang) {
   const rows = await fetchLangRows(applyFilter, lang);
   if (lang === 'en') return rows;
 
-  const key = (r) => `${r.source_doc}\n${r.section_title}`;
+  const key = (r) => `${r.source_doc}\n${englishSectionTitle(r)}`;
   const englishId = new Map((await fetchLangRows(applyFilter, 'en')).map((r) => [key(r), r.id]));
   const docOrder = new Map();
   for (const r of rows) if (!docOrder.has(r.source_doc)) docOrder.set(r.source_doc, docOrder.size);
@@ -206,10 +207,6 @@ function guideTitleFr(strippedSlug) {
 //   - a region section: its region-*.html page, at that section's anchor
 function topicFor(chunk) {
   return TOPICS.find((t) => t.kind === chunk.chunk_type && t.sourceDoc === chunk.source_doc);
-}
-
-function regionPartAnchor(index) {
-  return `part-${index + 1}`;
 }
 
 function linkAttrs(href) {
@@ -364,7 +361,6 @@ async function buildRegions(lang) {
   const groups = groupBySourceDoc(rows)
     .map(([sourceDoc, groupRows]) => {
       const stripped = sourceDoc.replace(/^region-/, '');
-      const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
       return {
         name: isFr ? groupNameFr(stripped) : humanizeSlug(stripped),
         rows: groupRows.map((row) => {
@@ -372,7 +368,7 @@ async function buildRegions(lang) {
           const href =
             row.section_title === 'Overview' && topic
               ? `topic-${topic.slug}.html`
-              : `${sourceDoc}.html#${regionPartAnchor(sectionRows.indexOf(row))}`;
+              : sectionPageHref(row);
           return { ...row, title: rowTitle(row), href };
         }),
       };
@@ -702,65 +698,115 @@ ${renderAnswerRows(answers)}
   return pages;
 }
 
-// --- region-*.html -------------------------------------------------------------
-// One page per region chapter that has sections (the six region topics'
-// Overview rows stay on their topic pages). Sections get part-N anchors,
-// which regions.html links to.
+// --- region-*.html / enology-*.html ------------------------------------------
+// One page per region or enology source_doc that has sections (the region
+// and enology topics' Overview rows stay on their topic pages). Each
+// section gets an anchor from lib/sections.mjs, which regions.html and the
+// topic pages link to.
 
-async function buildRegionPages(lang) {
-  const isFr = lang === 'fr';
-  const ap = assetPrefixFor(lang);
-  const rows = await fetchRows((q) => q.eq('chunk_type', 'region'), lang);
-  const pages = [];
-  for (const [sourceDoc, groupRows] of groupBySourceDoc(rows)) {
-    const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
-    if (sectionRows.length === 0) continue;
+const ENOLOGY_DOC_NAMES = {
+  'enology-chemistry-phenolics-ageing': {
+    en: 'Wine Chemistry: Phenolics And Ageing',
+    fr: 'Chimie du vin : composés phénoliques et vieillissement',
+  },
+  'enology-fermentation-microbiology': {
+    en: 'Fermentation And Microbiology',
+    fr: 'Fermentation et microbiologie',
+  },
+};
 
-    const stripped = sourceDoc.replace(/^region-/, '');
-    const name = isFr ? groupNameFr(stripped) : humanizeSlug(stripped);
-    const parts = sectionRows.map((row, i) => ({ id: regionPartAnchor(i), ...splitHeading(row) }));
-    const topic = TOPICS.find((t) => t.kind === 'region' && t.sourceDoc === sourceDoc);
-    const file = `${sourceDoc}.html`;
-    const description = shorten(stripMarkdown(parts[0].body) || name);
-    const sectionWord = isFr
-      ? `${parts.length} section${parts.length !== 1 ? 's' : ''}`
-      : `${parts.length} section${parts.length !== 1 ? 's' : ''}`;
-    const toc = parts
-      .map(({ id, heading }) => `        <li><a href="#${id}">${escapeHtml(heading)}</a></li>`)
-      .join('\n');
-    const topicLink = topic
-      ? `      <p class="guide-back" style="margin-bottom: 40px"><a href="topic-${topic.slug}.html">${
-          isFr ? 'Toutes nos réponses sur cette région' : 'All our answers on this region'
-        } &rarr;</a></p>\n`
-      : '';
+const SECTION_PAGE_KINDS = {
+  region: {
+    nav: 'regions.html',
+    crumb: { en: 'Regions', fr: 'Régions', href: 'regions.html' },
+    eyebrow: { en: 'Wine Region', fr: 'Région viticole' },
+    back: { en: 'All regions', fr: 'Toutes les régions', href: 'regions.html' },
+    name: (sourceDoc, lang) => {
+      const stripped = sourceDoc.replace(/^region-/, '');
+      return lang === 'fr' ? groupNameFr(stripped) : humanizeSlug(stripped);
+    },
+    // The region topic whose Overview comes from this same source_doc.
+    relatedTopics: (sourceDoc) => TOPICS.filter((t) => t.kind === 'region' && t.sourceDoc === sourceDoc),
+  },
+  enology: {
+    nav: null,
+    crumb: null,
+    eyebrow: { en: 'How Wine Works', fr: 'Comment fonctionne le vin' },
+    back: null,
+    name: (sourceDoc, lang) =>
+      ENOLOGY_DOC_NAMES[sourceDoc]?.[lang] ?? humanizeSlug(sourceDoc.replace(/^enology-/, '')),
+    // Wine-science topics this document talks about (same match terms the
+    // topic pages use to find their rows).
+    relatedTopics: (sourceDoc, lang, rows) =>
+      TOPICS.filter((t) => {
+        if (t.kind !== 'enology') return false;
+        // matchTermFr can be a list of alternatives (Oak: chêne, boisé, fût).
+        const terms = [(lang === 'fr' ? t.matchTermFr : null) ?? t.matchTerm ?? t.topicName].flat();
+        return rows.some((row) => terms.some((term) => row.content.toLowerCase().includes(term.toLowerCase())));
+      }),
+  },
+};
 
-    const html = renderPage({
-      file,
-      nav: 'regions.html',
-      lang,
-      title: isFr ? `${name} — Thirsty Cunt` : `${name} — Thirsty Cunt Knowledge Base`,
-      description: escapeHtml(description),
-      jsonLd: [topicSchema({ name, description, url: `${isFr ? 'fr/' : ''}${file}`, kind: 'region', lang })],
-      main: `  <main class="has-hero">
+function buildSectionPages(chunkType) {
+  const kind = SECTION_PAGE_KINDS[chunkType];
+  return async (lang) => {
+    const isFr = lang === 'fr';
+    const ap = assetPrefixFor(lang);
+    const rows = await fetchRows((q) => q.eq('chunk_type', chunkType), lang);
+    const pages = [];
+    for (const [sourceDoc, groupRows] of groupBySourceDoc(rows)) {
+      const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
+      if (sectionRows.length === 0) continue;
+
+      const name = kind.name(sourceDoc, lang);
+      const parts = sectionRows.map((row) => ({ id: sectionAnchor(row), ...splitHeading(row) }));
+      const file = `${sourceDoc}.html`;
+      const description = shorten(stripMarkdown(parts[0].body) || name);
+      const sectionWord = `${parts.length} section${parts.length !== 1 ? 's' : ''}`;
+      const toc = parts
+        .map(({ id, heading }) => `        <li><a href="#${id}">${escapeHtml(heading)}</a></li>`)
+        .join('\n');
+      const related = kind.relatedTopics(sourceDoc, lang, sectionRows);
+      const relatedLinks = related.length
+        ? `      <p class="guide-back" style="margin-bottom: 40px">${related
+            .map((t) => {
+              const topicName = isFr ? t.topicNameFr ?? t.topicName : t.topicName;
+              return `<a href="topic-${t.slug}.html">${escapeHtml(
+                isFr ? `Nos réponses sur ${topicName}` : `Our answers on ${topicName}`
+              )} &rarr;</a>`;
+            })
+            .join(' &nbsp;·&nbsp; ')}</p>\n`
+        : '';
+      const crumb = kind.crumb ? ` / <a href="${kind.crumb.href}">${kind.crumb[lang]}</a>` : '';
+      const back = kind.back ? `      <p class="guide-back"><a href="${kind.back.href}">&larr; ${kind.back[lang]}</a></p>\n` : '';
+
+      const html = renderPage({
+        file,
+        nav: kind.nav,
+        lang,
+        title: isFr ? `${name} — Thirsty Cunt` : `${name} — Thirsty Cunt Knowledge Base`,
+        description: escapeHtml(description),
+        jsonLd: [topicSchema({ name, description, url: `${isFr ? 'fr/' : ''}${file}`, kind: chunkType, lang })],
+        main: `  <main class="has-hero">
 ${renderHeroBand({
-  breadcrumb: `<a href="${ap}index.html">${isFr ? 'Accueil' : 'Home'}</a> / <a href="regions.html">${isFr ? 'Régions' : 'Regions'}</a> / ${escapeHtml(name)}`,
-  eyebrow: `${isFr ? 'Région viticole' : 'Wine Region'} · ${sectionWord}`,
+  breadcrumb: `<a href="${ap}index.html">${isFr ? 'Accueil' : 'Home'}</a>${crumb} / ${escapeHtml(name)}`,
+  eyebrow: `${kind.eyebrow[lang]} · ${sectionWord}`,
   title: name,
   lede: description,
 })}
     <div class="wrap">
-${topicLink}      <ol class="toc">
+${relatedLinks}      <ol class="toc">
 ${toc}
       </ol>
 ${renderSections(parts)}
-      <p class="guide-back"><a href="regions.html">&larr; ${isFr ? 'Toutes les régions' : 'All regions'}</a></p>
-    </div>
+${back}    </div>
   </main>`,
-    });
-    pages.push([file, html]);
-  }
-  if (pages.length === 0) throw new Error(`no ${lang} region pages built`);
-  return pages;
+      });
+      pages.push([file, html]);
+    }
+    if (pages.length === 0) throw new Error(`no ${lang} ${chunkType} section pages built`);
+    return pages;
+  };
 }
 
 // Single-page builds return one HTML string; multi-page builds return
@@ -771,7 +817,8 @@ const builds = [
   ['guides.html', buildGuides],
   ['guide pages', buildGuidePages],
   ['grape pages', buildGrapePages],
-  ['region pages', buildRegionPages],
+  ['region pages', buildSectionPages('region')],
+  ['enology pages', buildSectionPages('enology')],
 ];
 
 mkdirSync('fr', { recursive: true });
