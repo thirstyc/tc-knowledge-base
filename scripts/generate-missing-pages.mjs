@@ -80,14 +80,27 @@ function hreflangAlternates(path) {
 // (see topics.config.mjs) so a single test matches either. topic.frReady
 // guards linking a French page at a topic with no French content yet --
 // not expected once translation is complete, but kept defensive.
+// The answer's topic is the grape or region it mentions first (the
+// question comes first in content, so one named in the question wins).
+// Wine-science topics (tannins, oak, ...) are concepts most answers touch in
+// passing, so they only win when no grape or region is mentioned. TOPICS
+// order only breaks ties between patterns matching at the same position.
 function resolveTopicLink(content, sectionTitle, lang) {
   const haystack = `${content || ''} ${sectionTitle || ''}`;
+  let best = null;
   for (const topic of TOPICS) {
-    if (new RegExp(effectiveKeywordPattern(topic), 'i').test(haystack)) {
-      const label = lang === 'fr' ? topic.topicNameFr ?? topic.topicName : topic.topicName;
-      const href = lang === 'fr' && !topic.frReady ? `../topic-${topic.slug}.html` : `topic-${topic.slug}.html`;
-      return { href, label };
+    const match = new RegExp(effectiveKeywordPattern(topic), 'i').exec(haystack);
+    if (!match) continue;
+    const rank = topic.kind === 'enology' ? 1 : 0;
+    if (!best || rank < best.rank || (rank === best.rank && match.index < best.index)) {
+      best = { topic, index: match.index, rank };
     }
+  }
+  if (best) {
+    const { topic } = best;
+    const label = lang === 'fr' ? topic.topicNameFr ?? topic.topicName : topic.topicName;
+    const href = lang === 'fr' && !topic.frReady ? `../topic-${topic.slug}.html` : `topic-${topic.slug}.html`;
+    return { href, label };
   }
   // topics.html was removed as duplicate content (grapes.html/regions.html/
   // guides.html are the real browse destinations now); fall back to the

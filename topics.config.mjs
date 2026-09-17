@@ -129,7 +129,8 @@ export const TOPICS = [
     topicName: 'Gamay',
     sourceDoc: 'grape-gamay',
     metaDescription: 'Light, juicy, chillable red from Beaujolais. Everything we know about Gamay.',
-    keywordPattern: '\\bgamay\\b',
+    // Beaujolais is Gamay, and answers often name the region, not the grape.
+    keywordPattern: '\\bgamay\\b|\\bbeaujolais\\b',
     frReady: true,
     metaDescriptionFr: 'Rouge léger, juteux, à servir frais, venu du Beaujolais. Tout ce que nous savons sur le Gamay.',
   },

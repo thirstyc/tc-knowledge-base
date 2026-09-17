@@ -105,7 +105,7 @@ const TOPIC_KEYWORDS = [
   { pattern: /cabernet sauvignon/i, slug: 'cabernet-sauvignon' },
   { pattern: /rh[oô]ne/i, slug: 'rhone-valley' },
   { pattern: /nebbiolo/i, slug: 'nebbiolo' },
-  { pattern: /\bgamay\b/i, slug: 'gamay' },
+  { pattern: /\bgamay\b|\bbeaujolais\b/i, slug: 'gamay' },
   { pattern: /riesling/i, slug: 'riesling' },
   { pattern: /(?:burgundy)|(?:bourgogne)/i, slug: 'burgundy' },
   { pattern: /priorat/i, slug: 'priorat' },
