@@ -283,7 +283,13 @@ export const TOPICS = [
     // "élevé en fût"), so match those phrasings too or the topic page
     // undercounts rows that plainly are about oak.
     matchTermFr: ['chêne', 'boisé', 'fût'],
-    keywordPatternFr: '\\bch[êe]ne\\b|\\bbois[ée]s?\\b|\\bf[uû]ts?\\b',
+    // \b fails after an accented letter with nothing ASCII following it (JS's
+    // \w is ASCII-only, so "é" reads as non-word, same as the space after
+    // it -- no boundary transition). That silently missed every singular
+    // "boisé" ("boisés"/"boisée" were fine, ending in an ASCII letter), so
+    // the trailing boundary here is a lookahead for "not another letter"
+    // instead, accented or not.
+    keywordPatternFr: '\\bch[êe]ne\\b|\\bbois[ée]e?s?(?![a-zA-ZÀ-ÖØ-öø-ÿ])|\\bf[uû]ts?\\b',
     topicNameFr: 'Chêne',
     frReady: true,
     metaDescriptionFr: 'Vanille, épices et texture venues du fût. Tout ce que nous savons sur le chêne.',
@@ -335,7 +341,12 @@ export const TOPICS = [
     keywordPattern: '\\bfortified\\b',
     // "muté" is the French technical term; "fortifié" is common in Quebec.
     matchTermFr: ['fortifié', 'muté'],
-    keywordPatternFr: '\\bfortifi[ée]e?s?\\b|\\bmut[ée]e?s?\\b',
+    // Trailing \b breaks on the masculine singular here for the same reason
+    // as oak's "boisé" -- "muté"/"fortifié" end on an accented letter that
+    // JS's ASCII-only \w doesn't count as a word character, so \b never
+    // fires and the singular forms silently never matched. Lookahead for
+    // "not another letter" instead of \b at that boundary.
+    keywordPatternFr: '\\bfortifi[ée]e?s?(?![a-zA-ZÀ-ÖØ-öø-ÿ])|\\bmut[ée]e?s?(?![a-zA-ZÀ-ÖØ-öø-ÿ])',
     topicNameFr: 'Vins fortifiés',
     frReady: true,
     metaDescriptionFr: "Porto, xérès, madère : ce que l'ajout d'eau-de-vie change. Tout ce que nous savons sur les vins fortifiés.",

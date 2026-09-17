@@ -73,7 +73,10 @@ async function translateRow(row) {
     max_tokens: 2000,
     messages: [{ role: 'user', content: buildPrompt(row) }],
   });
-  const text = message.content.find((b) => b.type === 'text')?.text ?? '{}';
+  const raw = message.content.find((b) => b.type === 'text')?.text ?? '{}';
+  // The model sometimes wraps the JSON in a ```json fence despite the
+  // instruction not to; strip it rather than failing the row.
+  const text = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim();
   let parsed;
   try {
     parsed = JSON.parse(text);
