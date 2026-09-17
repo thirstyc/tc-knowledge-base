@@ -309,12 +309,18 @@ export const TOPICS = [
     topicName: 'Sparkling Wine',
     sourceDoc: 'enology-sparkling',
     metaDescription: 'How the bubbles get in, and what each method tastes like. Everything we know about sparkling wine.',
-    matchTerm: 'sparkling',
-    keywordPattern: '\\bsparkling\\b',
+    // Most rows about bubbles never use the word "sparkling" -- they name a
+    // style instead (Prosecco, Cava, Crémant, Champagne, Lambrusco...), so
+    // match those too, or the English page lists far fewer answers than the
+    // French one, whose three category words already catch them.
+    matchTerm: ['sparkling', 'Champagne', 'Prosecco', 'Cava', 'Crémant', 'Lambrusco', 'Franciacorta', 'pét-nat', 'pet-nat'],
+    keywordPattern:
+      '\\bsparkling\\b|\\bchampagnes?\\b|\\bprosecco\\b|\\bcava\\b|\\bcr[ée]mant\\b|\\blambrusco\\b|\\bfranciacorta\\b|\\bp[ée]t[- ]nat\\b',
     // French uses several words for the category depending on pressure and
     // style ("mousseux", "effervescent", "pétillant"), none of them cognates.
-    matchTermFr: ['mousseux', 'effervescent', 'pétillant'],
-    keywordPatternFr: '\\bmousseux\\b|\\beffervescents?\\b|\\bp[ée]tillants?\\b',
+    matchTermFr: ['mousseux', 'effervescent', 'pétillant', 'Champagne', 'Prosecco', 'Cava', 'Crémant', 'Lambrusco'],
+    keywordPatternFr:
+      '\\bmousseux\\b|\\beffervescents?\\b|\\bp[ée]tillants?\\b|\\bchampagnes?\\b|\\bprosecco\\b|\\bcava\\b|\\bcr[ée]mant\\b|\\blambrusco\\b',
     topicNameFr: 'Vins effervescents',
     frReady: true,
     metaDescriptionFr: "D'où viennent les bulles, et ce que chaque méthode donne dans le verre. Tout ce que nous savons sur les vins effervescents.",

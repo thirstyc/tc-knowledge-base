@@ -120,7 +120,7 @@ const TOPIC_KEYWORDS = [
   { pattern: /(?:\btannins?\b)|(?:\btanins?\b)/i, slug: 'tannins' },
   { pattern: /(?:\boak\b)|(?:\bch[êe]ne\b|\bbois[ée]s?\b|\bf[uû]ts?\b)/i, slug: 'oak' },
   { pattern: /(?:\bfault(s|y)?\b)|(?:d[ée]fauts?)/i, slug: 'faults' },
-  { pattern: /(?:\bsparkling\b)|(?:\bmousseux\b|\beffervescents?\b|\bp[ée]tillants?\b)/i, slug: 'sparkling' },
+  { pattern: /(?:\bsparkling\b|\bchampagnes?\b|\bprosecco\b|\bcava\b|\bcr[ée]mant\b|\blambrusco\b|\bfranciacorta\b|\bp[ée]t[- ]nat\b)|(?:\bmousseux\b|\beffervescents?\b|\bp[ée]tillants?\b|\bchampagnes?\b|\bprosecco\b|\bcava\b|\bcr[ée]mant\b|\blambrusco\b)/i, slug: 'sparkling' },
   { pattern: /(?:\bfortified\b)|(?:\bfortifi[ée]e?s?\b|\bmut[ée]e?s?\b)/i, slug: 'fortified' },
 ];
 // --- END GENERATED TOPIC ROUTING ---
