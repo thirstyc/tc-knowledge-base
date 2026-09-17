@@ -10,7 +10,8 @@
 // copy-pasting and hand-editing an existing HTML file.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { TOPICS, STATIC_PAGES, BASE_URL } from './topics.config.mjs';
+import { TOPICS } from './topics.config.mjs';
+import { writeSitemap } from './lib/sitemap.mjs';
 import { renderHead as renderHeadShell, renderHeader as renderHeaderShell, renderFooter as renderFooterShell } from './lib/page-shell.mjs';
 
 function escapeRegex(str) {
@@ -333,17 +334,6 @@ if (!blockRegex.test(clientSrc)) {
 }
 
 // --- sitemap.xml -------------------------------------------------------
-// Only <loc> is included: no lastmod (we don't track real per-page edit
-// times, and fabricating one would be a false freshness signal) and no
-// priority/changefreq (both deprecated by every major search engine).
 
-function renderSitemap() {
-  const paths = [...STATIC_PAGES, ...TOPICS.map((t) => `topic-${t.slug}.html`)];
-  const urls = paths
-    .map((path) => `  <url>\n    <loc>${BASE_URL}/${path}</loc>\n  </url>`)
-    .join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
-}
-
-writeFileSync('sitemap.xml', renderSitemap());
-console.log(`  -> sitemap.xml (${STATIC_PAGES.length + TOPICS.length} urls)`);
+const sitemapCount = writeSitemap('.');
+console.log(`  -> sitemap.xml (${sitemapCount} urls)`);
