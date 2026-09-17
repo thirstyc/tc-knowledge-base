@@ -61,7 +61,10 @@ function resolveTopicLink(content, sectionTitle) {
       return { href: `topic-${topic.slug}.html`, label: topic.topicName };
     }
   }
-  return { href: 'topics.html', label: 'Topics' };
+  // topics.html was removed as duplicate content (grapes.html/regions.html/
+  // guides.html are the real browse destinations now); fall back to the
+  // general answers index rather than a page that no longer exists.
+  return { href: 'answers.html', label: 'Answers' };
 }
 
 function renderAnswerPage(row, related) {

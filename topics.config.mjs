@@ -45,7 +45,6 @@ export const STATIC_PAGES = [
   '',
   'about.html',
   'answers.html',
-  'topics.html',
   'grapes.html',
   'regions.html',
   'guides.html',

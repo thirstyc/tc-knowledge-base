@@ -24,14 +24,19 @@ function renderHead(topic) {
   });
 }
 
-function renderHeader() {
-  return renderHeaderShell('topics.html');
+// Topic pages don't have a single hub page anymore (topics.html was
+// removed as duplicate content once grapes.html/regions.html/guides.html
+// existed as the real browse destinations) -- highlight whichever of those
+// this topic's kind maps to, or nothing for enology topics (no equivalent).
+function renderHeader(topic) {
+  const currentNav = { grape: 'grapes.html', region: 'regions.html' }[topic.kind] ?? null;
+  return renderHeaderShell(currentNav);
 }
 
 function renderMain(topic) {
   return `  <main>
     <div class="wrap">
-      <p class="breadcrumb"><a href="index.html">Home</a> / <a href="topics.html">Topics</a> / ${topic.topicName}</p>
+      <p class="breadcrumb"><a href="index.html">Home</a> / ${topic.topicName}</p>
       <div class="split">
         <div>
           <p class="eyebrow" id="grape-eyebrow">Loading&hellip;</p>
@@ -178,7 +183,7 @@ ${renderQaFetchAndList(topic)}
 function renderPage(topic) {
   return [
     renderHead(topic),
-    renderHeader(),
+    renderHeader(topic),
     renderMain(topic),
     renderFooter(),
     '',
