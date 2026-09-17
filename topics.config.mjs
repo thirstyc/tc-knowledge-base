@@ -154,7 +154,9 @@ export const TOPICS = [
     // as-is -- matchTermFr/keywordPatternFr needed or French QA rows and
     // routing would never match the English word.
     matchTermFr: 'Bourgogne',
-    keywordPatternFr: 'bourgogne',
+    // "Melon de Bourgogne" is Muscadet's grape, in the Loire -- matching it
+    // would route Loire answers to the Burgundy topic.
+    keywordPatternFr: '(?<!melon de )bourgogne',
     topicNameFr: 'Bourgogne',
     frReady: true,
     metaDescriptionFr: "L'expression la plus détaillée du terroir au monde. Tout ce que nous savons sur la Bourgogne.",
