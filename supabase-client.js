@@ -161,18 +161,28 @@ function resolveAnswerHref(chunk) {
   return slug ? `answer-${slug}.html` : null;
 }
 
-// Navigate to a chunk's dedicated topic page when one exists, else its own
-// answer detail page when it's a qa/region-qa row, else fall back to the
-// inline modal so we never link to a 404.
-function goToChunk(chunk) {
-  const topicSlug = resolveTopicSlug(chunk);
-  if (topicSlug) {
-    window.location.href = `topic-${topicSlug}.html`;
-    return;
-  }
+// The page a chunk links to: its own answer page for qa/region-qa rows
+// (the most specific page there is), else its topic page, else null.
+function chunkHref(chunk) {
   const answerHref = resolveAnswerHref(chunk);
-  if (answerHref) {
-    window.location.href = answerHref;
+  if (answerHref) return answerHref;
+  const topicSlug = resolveTopicSlug(chunk);
+  return topicSlug ? `topic-${topicSlug}.html` : null;
+}
+
+// Attributes for a card linking to a chunk: a real href whenever a page
+// exists (so crawlers, middle-click and link sharing work), else the inline
+// modal so we never link to a 404.
+function chunkLinkAttrs(chunk) {
+  const href = chunkHref(chunk);
+  if (href) return `href="${href}"`;
+  return `href="#" onclick="window.KnowledgeBase.showChunkDetail(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"`;
+}
+
+function goToChunk(chunk) {
+  const href = chunkHref(chunk);
+  if (href) {
+    window.location.href = href;
     return;
   }
   showChunkDetail(chunk);
@@ -208,7 +218,7 @@ function renderAnswerCard(chunk) {
   const category = chunk.chunk_type || 'General';
   const source = chunk.source_doc || 'knowledge';
 
-  return `<a class="answer-card" href="#chunk-${chunk.id}" onclick="window.KnowledgeBase.goToChunk(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p>${summary}</p></a>`;
+  return `<a class="answer-card" ${chunkLinkAttrs(chunk)}><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p>${summary}</p></a>`;
 }
 
 async function loadAnswers(containerId, limit = 3, searchQuery = null, chunkTypeFilter = null) {
@@ -494,4 +504,4 @@ async function renderGuidesCatalog({ gridId, ledeId }) {
   render(groups);
 }
 
-window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, resolveTopicSlug, getSearchParam, deriveCardTitle, renderGrapesCatalog, renderRegionsCatalog, renderGuidesCatalog };
+window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, chunkHref, chunkLinkAttrs, resolveTopicSlug, getSearchParam, deriveCardTitle, renderGrapesCatalog, renderRegionsCatalog, renderGuidesCatalog };

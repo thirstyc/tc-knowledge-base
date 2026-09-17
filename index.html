@@ -276,8 +276,7 @@
         const { question, answer } = parseQA(chunk.content);
         const preview = firstSentences(answer, 2);
         const topic = deriveTopic(chunk.source_doc);
-        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
-        return `<a class="answer-card" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
+        return `<a class="answer-card" ${window.KnowledgeBase.chunkLinkAttrs(chunk)}>
           <span class="meta"><span class="tag">${topic}</span></span>
           <h3>${question}</h3>
           <p class="last">${preview}</p>

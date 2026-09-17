@@ -1,4 +1,4 @@
-name: Generate answer & difficulty pages
+name: Generate answer, difficulty & topic pages
 
 on:
   schedule:
@@ -27,6 +27,12 @@ jobs:
       - name: Generate pages
         run: node scripts/generate-missing-pages.mjs
 
+      # After answer pages, so topic-page rows can link to any answer page
+      # generated in the previous step. Exits 1 (failing the run, committing
+      # nothing) if a topic fetch fails; failed topics keep their old file.
+      - name: Generate topic pages
+        run: node generate-topic-pages.mjs
+
       - name: Regenerate sitemap
         run: node scripts/generate-sitemap.mjs
 
@@ -38,6 +44,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new or changed pages."
           else
-            git commit -m "Auto-generate answer/difficulty pages from knowledge_chunks"
+            git commit -m "Auto-generate answer/difficulty/topic pages from knowledge_chunks"
             git push
           fi

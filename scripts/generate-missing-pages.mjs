@@ -35,6 +35,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllRows } from '../lib/pagination.mjs';
 import {
+  renderHeroBand,
   renderHead,
   renderHeader,
   renderFooter,
@@ -146,14 +147,15 @@ function renderAnswerPage(row, related, lang) {
       frHref: isFr ? null : `fr/${slugPath}`,
       enHref: isFr ? `../${slugPath}` : null,
     }),
-    `  <main>
+    `  <main class="has-hero">
+${renderHeroBand({
+  breadcrumb: `<a href="${ap}index.html">${t.home}</a> / <a href="${ap}answers.html">${t.answers}</a> / ${escapeHtml(question)}`,
+  eyebrow: row.source_doc.toUpperCase(),
+  title: question,
+  variant: 'answer',
+})}
     <div class="wrap">
-      <p class="breadcrumb"><a href="${ap}index.html">${t.home}</a> / <a href="${ap}answers.html">${t.answers}</a> / ${escapeHtml(question)}</p>
-
       <article class="sheet">
-        <p class="ans-id">${escapeHtml(row.source_doc.toUpperCase())}</p>
-        <h1>${escapeHtml(question)}</h1>
-
         <div class="meta-bar">
           <div><p class="k">${t.topic}</p><p class="v"><a href="${topic.href}">${escapeHtml(topic.label)}</a></p></div>
           <div><p class="k">${t.difficulty}</p><p class="v"><a href="difficulty-${difficultySlug}.html">${escapeHtml(difficultyLabel)}</a></p></div>

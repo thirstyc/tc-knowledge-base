@@ -21,6 +21,7 @@ import {
   renderHeader as renderHeaderShell,
   renderFooter as renderFooterShell,
   assetPrefixFor,
+  renderHeroBand,
   deriveQuestion,
   escapeHtml,
   answerPagePath,
@@ -186,20 +187,16 @@ function renderMain(topic, lang, { overview, qaRows }) {
   const facts = overview.facts
     .map(([key, value]) => `          <div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`)
     .join('\n');
-  return `  <main>
+  const hero = renderHeroBand({
+    breadcrumb: `<a href="${assetPrefixFor(lang)}index.html">${home}</a> / ${escapeHtml(name)}`,
+    eyebrow: overview.eyebrow,
+    title: overview.name || name,
+    lede: overview.lede,
+    aside: `        <dl class="facts">\n${facts}\n        </dl>`,
+  });
+  return `  <main class="has-hero">
+${hero}
     <div class="wrap">
-      <p class="breadcrumb"><a href="${assetPrefixFor(lang)}index.html">${home}</a> / ${name}</p>
-      <div class="split">
-        <div>
-          <p class="eyebrow">${escapeHtml(overview.eyebrow)}</p>
-          <h1 class="display">${escapeHtml(overview.name || name)}</h1>
-          <p class="lede sm" style="margin: 0">${escapeHtml(overview.lede)}</p>
-        </div>
-        <dl class="facts">
-${facts}
-        </dl>
-      </div>
-
       <p class="list-head">${escapeHtml(countLine(qaRows.length, name, lang))}</p>
       <div>
 ${qaRows.map((chunk) => renderRow(chunk, lang)).join('\n')}
