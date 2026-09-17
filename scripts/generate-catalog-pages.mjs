@@ -12,7 +12,9 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllRows } from '../lib/pagination.mjs';
-import { renderHead, renderHeader, renderFooter, escapeHtml, assetPrefixFor } from '../lib/page-shell.mjs';
+import { renderHead, renderHeader, renderFooter, renderHeroBand, escapeHtml, assetPrefixFor } from '../lib/page-shell.mjs';
+import { renderMarkdown } from '../lib/markdown.mjs';
+import { articleSchema } from '../lib/schema-markup-templates.js';
 import { TOPICS, BASE_URL } from '../topics.config.mjs';
 
 // Public anon key, same as the other generators -- read-only, no secrets.
@@ -180,14 +182,15 @@ function hreflangAlternates(file) {
   ];
 }
 
-function renderPage({ file, title, description, main, script = '', lang }) {
+// nav is the header item to highlight; defaults to the page itself.
+function renderPage({ file, nav = file, title, description, main, script = '', lang, jsonLd = [] }) {
   const ap = assetPrefixFor(lang);
   const isFr = lang === 'fr';
   return [
-    renderHead({ title, description, lang, assetPrefix: ap, alternates: hreflangAlternates(file) }),
+    renderHead({ title, description, lang, assetPrefix: ap, alternates: hreflangAlternates(file), jsonLd }),
     GENERATED_MARKER,
     renderHeader({
-      currentNav: file,
+      currentNav: nav,
       lang,
       assetPrefix: ap,
       frHref: isFr ? null : `fr/${file}`,
@@ -378,28 +381,53 @@ ${sections}
 // section_title suffixes are inconsistent. enology rows are excluded: they
 // already have their own topic pages.
 
-async function buildGuides(lang) {
+// Each guide/comparison has its own page named after its source_doc
+// (guide-how-to-taste-wine.html), in the same directory as guides.html.
+// Mirrored by chunkHref() in supabase-client.js.
+function guidePagePath(sourceDoc) {
+  return `${sourceDoc}.html`;
+}
+
+// A part's content opens with its heading ("Wine Tasting Framework —
+// Overview"), then the body after a blank line.
+function splitPart(content) {
+  const [heading, ...rest] = content.split('\n\n');
+  return { heading: heading.trim(), body: rest.join('\n\n') };
+}
+
+function guidePreview(group) {
+  const body = stripMarkdown(splitPart(group.rows[0].content).body);
+  return body.length > 160 ? `${body.slice(0, 160)}…` : body;
+}
+
+async function fetchGuideGroups(lang) {
   const isFr = lang === 'fr';
   const rows = await fetchRows((q) => q.in('chunk_type', ['guide', 'comparison']), lang);
   const groups = groupBySourceDoc(rows).map(([sourceDoc, groupRows]) => {
     const stripped = sourceDoc.replace(/^(guide|comparison)-/, '');
-    return { title: isFr ? guideTitleFr(stripped) : humanizeSlug(stripped), rows: groupRows };
+    return { sourceDoc, title: isFr ? guideTitleFr(stripped) : humanizeSlug(stripped), rows: groupRows };
   });
   if (groups.length === 0) throw new Error(`no ${lang} guide/comparison rows returned`);
+  return { rows, groups };
+}
+
+function guidePartWord(n, lang) {
+  return lang === 'fr' ? `${n} partie${n !== 1 ? 's' : ''}` : `${n} part${n !== 1 ? 's' : ''}`;
+}
+
+async function buildGuides(lang) {
+  const isFr = lang === 'fr';
+  const { rows, groups } = await fetchGuideGroups(lang);
 
   const readMore = isFr ? 'Lire' : 'Read';
-  const partWord = (n) => (isFr ? `${n} partie${n !== 1 ? 's' : ''}` : `${n} part${n !== 1 ? 's' : ''}`);
 
   const cards = groups
     .map((group) => {
       const primary = group.rows[0];
-      const body = stripMarkdown(primary.content.split('\n\n').slice(1).join(' '));
-      const preview = body.length > 160 ? `${body.slice(0, 160)}…` : body;
-      const chunk = { ...primary, section_title: group.title };
-      return `        <a class="card topic" href="#" onclick="window.KnowledgeBase.showChunkDetail(${escapeHtml(JSON.stringify(chunk))}); return false;">
-          <span class="card-meta">${escapeHtml(primary.chunk_type.toUpperCase())} &middot; ${partWord(group.rows.length)}</span>
+      return `        <a class="card topic" href="${guidePagePath(group.sourceDoc)}">
+          <span class="card-meta">${escapeHtml(primary.chunk_type.toUpperCase())} &middot; ${guidePartWord(group.rows.length, lang)}</span>
           <span class="card-title sm">${escapeHtml(group.title)}</span>
-          <p>${escapeHtml(preview)}</p>
+          <p>${escapeHtml(guidePreview(group))}</p>
           <span class="more">${readMore} &rarr;</span>
         </a>`;
     })
@@ -430,23 +458,85 @@ ${cards}
   });
 }
 
+// --- guide-*.html / comparison-*.html -----------------------------------------
+// One page per guide/comparison with every part in order (the catalog card
+// used to open only the first part in a modal).
+
+async function buildGuidePages(lang) {
+  const isFr = lang === 'fr';
+  const { groups } = await fetchGuideGroups(lang);
+  const ap = assetPrefixFor(lang);
+  const t = {
+    home: isFr ? 'Accueil' : 'Home',
+    guides: isFr ? 'Guides' : 'Guides',
+    kind: { guide: isFr ? 'Guide' : 'Guide', comparison: isFr ? 'Comparaison' : 'Comparison' },
+    back: isFr ? 'Tous les guides' : 'All guides',
+  };
+
+  return groups.map((group) => {
+    const file = guidePagePath(group.sourceDoc);
+    const kind = group.rows[0].chunk_type;
+    const description = guidePreview(group);
+    const parts = group.rows
+      .map((row) => {
+        const { heading, body } = splitPart(row.content);
+        return `      <section class="guide-part">
+        <h2 class="guide-part-title">${escapeHtml(heading)}</h2>
+        <div class="body-copy">
+${renderMarkdown(body)}
+        </div>
+      </section>`;
+      })
+      .join('\n');
+
+    const html = renderPage({
+      file,
+      nav: 'guides.html',
+      lang,
+      title: isFr ? `${group.title} — Thirsty Cunt` : `${group.title} — Thirsty Cunt Knowledge Base`,
+      description: escapeHtml(description),
+      jsonLd: [articleSchema({ headline: group.title, description, url: `${isFr ? 'fr/' : ''}${file}`, lang })],
+      main: `  <main class="has-hero">
+${renderHeroBand({
+  breadcrumb: `<a href="${ap}index.html">${t.home}</a> / <a href="guides.html">${t.guides}</a> / ${escapeHtml(group.title)}`,
+  eyebrow: `${t.kind[kind] ?? kind} · ${guidePartWord(group.rows.length, lang)}`,
+  title: group.title,
+  lede: description,
+})}
+    <div class="wrap">
+${parts}
+      <p class="guide-back"><a href="guides.html">&larr; ${t.back}</a></p>
+    </div>
+  </main>`,
+    });
+    return [file, html];
+  });
+}
+
+// Single-page builds return one HTML string; multi-page builds return
+// [[file, html], ...].
 const builds = [
   ['grapes.html', buildGrapes],
   ['regions.html', buildRegions],
   ['guides.html', buildGuides],
+  ['guide pages', buildGuidePages],
 ];
 
 mkdirSync('fr', { recursive: true });
 
 let failed = 0;
-for (const [file, build] of builds) {
+for (const [name, build] of builds) {
   for (const lang of ['en', 'fr']) {
-    const path = lang === 'fr' ? `fr/${file}` : file;
+    const dir = lang === 'fr' ? 'fr/' : '';
     try {
-      writeFileSync(path, await build(lang));
-      console.log(`  -> ${path}`);
+      const output = await build(lang);
+      const files = typeof output === 'string' ? [[name, output]] : output;
+      for (const [file, html] of files) {
+        writeFileSync(`${dir}${file}`, html);
+        console.log(`  -> ${dir}${file}`);
+      }
     } catch (error) {
-      console.error(`  !! ${path}: ${error.message} -- kept the existing file`);
+      console.error(`  !! ${dir}${name}: ${error.message} -- kept the existing file(s)`);
       failed++;
     }
   }

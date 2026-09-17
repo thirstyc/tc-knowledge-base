@@ -164,6 +164,10 @@ function resolveAnswerHref(chunk) {
 // The page a chunk links to: its own answer page for qa/region-qa rows
 // (the most specific page there is), else its topic page, else null.
 function chunkHref(chunk) {
+  // Guides/comparisons have one page per source_doc (generate-catalog-pages.mjs).
+  if (chunk && ['guide', 'comparison'].includes(chunk.chunk_type) && chunk.source_doc) {
+    return `${chunk.source_doc}.html`;
+  }
   const answerHref = resolveAnswerHref(chunk);
   if (answerHref) return answerHref;
   const topicSlug = resolveTopicSlug(chunk);
