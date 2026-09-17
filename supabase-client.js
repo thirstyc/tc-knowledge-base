@@ -136,15 +136,33 @@ function resolveTopicSlug(chunk) {
   return null;
 }
 
-// Navigate to a chunk's dedicated topic page when one exists; otherwise fall
-// back to the inline modal so we never link to a 404.
+// Every published qa/region-qa row has its own answer-{slug}.html detail
+// page now (generate-missing-pages.mjs), keyed by its source_doc with the
+// leading "qa-" stripped, slugified -- mirrors slugify()/answerSlug() in
+// lib/page-shell.mjs / scripts/generate-missing-pages.mjs exactly. Kept in
+// sync by hand since this copy runs in the browser and those run in Node.
+function resolveAnswerHref(chunk) {
+  if (!chunk || !['qa', 'region-qa'].includes(chunk.chunk_type)) return null;
+  const stripped = (chunk.source_doc || '').replace(/^qa-/, '');
+  const slug = stripped.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return slug ? `answer-${slug}.html` : null;
+}
+
+// Navigate to a chunk's dedicated topic page when one exists, else its own
+// answer detail page when it's a qa/region-qa row, else fall back to the
+// inline modal so we never link to a 404.
 function goToChunk(chunk) {
-  const slug = resolveTopicSlug(chunk);
-  if (slug) {
-    window.location.href = `topic-${slug}.html`;
-  } else {
-    showChunkDetail(chunk);
+  const topicSlug = resolveTopicSlug(chunk);
+  if (topicSlug) {
+    window.location.href = `topic-${topicSlug}.html`;
+    return;
   }
+  const answerHref = resolveAnswerHref(chunk);
+  if (answerHref) {
+    window.location.href = answerHref;
+    return;
+  }
+  showChunkDetail(chunk);
 }
 
 // section_title is only a real title for grape/region/enology/guide/producer/
