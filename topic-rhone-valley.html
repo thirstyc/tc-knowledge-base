@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
+<link rel="alternate" hreflang="en" href="https://knowledge.thirstyc.com/topic-rhone-valley.html" />
+<link rel="alternate" hreflang="fr" href="https://knowledge.thirstyc.com/fr/topic-rhone-valley.html" />
+<link rel="alternate" hreflang="x-default" href="https://knowledge.thirstyc.com/topic-rhone-valley.html" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -43,7 +46,7 @@
       <a href="guides.html">Guides</a>
       <a href="search.html">Search</a>
       <a href="about.html">About</a>
-      <span class="lang"><span class="current" aria-current="true">En</span><span class="sep">|</span><span class="off unavailable" aria-disabled="true" lang="fr" title="Version française à venir">Fr</span></span>
+      <span class="lang"><span class="current" aria-current="true">En</span><span class="sep">|</span><a class="off" href="fr/topic-rhone-valley.html" hreflang="fr" lang="fr">Fr</a></span>
       <a class="btn-pill" href="https://apps.apple.com/ca/app/thirsty-cellar/id6772614506">Get the app</a>
     </nav>
   </header>
@@ -52,15 +55,41 @@
       <p class="breadcrumb"><a href="index.html">Home</a> / Rhône Valley</p>
       <div class="split">
         <div>
-          <p class="eyebrow" id="grape-eyebrow">Loading&hellip;</p>
-          <h1 class="display" id="grape-name">Rhône Valley</h1>
-          <p class="lede sm" id="grape-lede" style="margin: 0">Loading&hellip;</p>
+          <p class="eyebrow">Wine Region / France</p>
+          <h1 class="display">Rhône Valley</h1>
+          <p class="lede sm" style="margin: 0">Syrah country in the cooler north, Grenache-based blends in the warm south. Home to Châteauneuf-du-Pape and Hermitage, and some of France&#39;s best-value reds.</p>
         </div>
-        <dl class="facts" id="grape-facts"></dl>
+        <dl class="facts">
+          <div><dt>Key Grapes</dt><dd>Syrah, Grenache, Mourvèdre, Viognier</dd></div>
+          <div><dt>Climate</dt><dd>Continental north, Mediterranean south</dd></div>
+          <div><dt>Known For</dt><dd>Châteauneuf-du-Pape, Hermitage, Côtes du Rhône</dd></div>
+          <div><dt>Homes</dt><dd>Northern and Southern Rhône, southeastern France</dd></div>
+        </dl>
       </div>
 
-      <p class="list-head" id="qa-count">Loading answers&hellip;</p>
-      <div id="qa-list"></div>
+      <p class="list-head">4 Answers On Rhône Valley</p>
+      <div>
+        <a class="row-item" href="answer-region-central-coast-california-positioning.html">
+          <span class="id">QA-REGION-CENTRAL-COAST-CALIFORNIA-POSITIONING</span>
+          <span class="t">Why is Central Coast California worth knowing?</span>
+          <span class="k">REGION-QA</span>
+        </a>
+        <a class="row-item" href="answer-region-rhone-valley-pairing.html">
+          <span class="id">QA-REGION-RHONE-VALLEY-PAIRING</span>
+          <span class="t">What pairs with Rhône reds?</span>
+          <span class="k">REGION-QA</span>
+        </a>
+        <a class="row-item" href="answer-region-rhone-valley-positioning.html">
+          <span class="id">QA-REGION-RHONE-VALLEY-POSITIONING</span>
+          <span class="t">Why does the Rhône matter?</span>
+          <span class="k">REGION-QA</span>
+        </a>
+        <a class="row-item" href="answer-region-rhone-valley-style.html">
+          <span class="id">QA-REGION-RHONE-VALLEY-STYLE</span>
+          <span class="t">Why does Rhône wine taste so peppery and rich?</span>
+          <span class="k">REGION-QA</span>
+        </a>
+      </div>
     </div>
   </main>
   <footer class="site-footer">
@@ -96,69 +125,10 @@
     </div>
     <div class="footer-bottom">
       <span class="copy">&copy; 2026 Thirsty Cunt &middot; Drink Responsibly</span>
-      <span class="lang"><span class="current" aria-current="true">En</span><span class="sep">|</span><span class="off unavailable" aria-disabled="true" lang="fr" title="Version française à venir">Fr</span></span>
+      <span class="lang"><span class="current" aria-current="true">En</span><span class="sep">|</span><a class="off" href="fr/topic-rhone-valley.html" hreflang="fr" lang="fr">Fr</a></span>
     </div>
   </footer>
 
   <script src="supabase-client.js"></script>
-  <script>
-    const TOPIC_CHUNK_TYPE = 'region';
-    const TOPIC_SOURCE_DOC = 'region-rhone';
-    const TOPIC_NAME = 'Rhône Valley';
-    const QA_CHUNK_TYPE = 'region-qa';
-    const QA_MATCH_TERM = 'Rhône';
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const overviewRows = await window.KnowledgeBase.fetchChunks(
-        `select=content&chunk_type=eq.${TOPIC_CHUNK_TYPE}&source_doc=eq.${TOPIC_SOURCE_DOC}&section_title=eq.Overview&limit=1`
-      );
-
-      if (overviewRows.length > 0) {
-        const [eyebrow, name, lede, factsBlock] = overviewRows[0].content.split('\n\n');
-        document.getElementById('grape-eyebrow').textContent = eyebrow || '';
-        document.getElementById('grape-name').textContent = name || TOPIC_NAME;
-        document.getElementById('grape-lede').textContent = lede || '';
-
-        const factsEl = document.getElementById('grape-facts');
-        factsEl.innerHTML = (factsBlock || '').split('\n').map(line => {
-          const sep = line.indexOf(':');
-          if (sep === -1) return '';
-          const key = line.slice(0, sep).trim();
-          const value = line.slice(sep + 1).trim();
-          return `<div><dt>${key}</dt><dd>${value}</dd></div>`;
-        }).join('');
-      } else {
-        // Every topic in topics.config.mjs has real Overview content --
-        // an empty result here means the request failed, not that this
-        // topic has no overview. Without this, eyebrow/lede stay stuck on
-        // their initial "Loading…" text forever instead of ever resolving.
-        document.getElementById('grape-eyebrow').textContent = '';
-        document.getElementById('grape-lede').textContent = "Couldn't load this right now — try refreshing.";
-      }
-
-      const qaRows = await window.KnowledgeBase.fetchChunks(
-        `select=id,content,source_doc,chunk_type&chunk_type=eq.${QA_CHUNK_TYPE}&content=ilike.%25${encodeURIComponent(QA_MATCH_TERM)}%25&order=source_doc.asc&limit=100`
-      );
-
-      const countEl = document.getElementById('qa-count');
-      const listEl = document.getElementById('qa-list');
-
-      if (qaRows.length === 0) {
-        countEl.textContent = `No Answers Yet On ${TOPIC_NAME}`;
-        return;
-      }
-
-      countEl.textContent = `${qaRows.length} Answer${qaRows.length !== 1 ? 's' : ''} On ${TOPIC_NAME}`;
-      listEl.innerHTML = qaRows.map(chunk => {
-        const title = window.KnowledgeBase.deriveCardTitle(chunk);
-        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
-        return `<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
-          <span class="id">${(chunk.source_doc || '').toUpperCase()}</span>
-          <span class="t">${title}</span>
-          <span class="k">${chunk.chunk_type.toUpperCase()}</span>
-        </a>`;
-      }).join('');
-    });
-  </script>
 </body>
 </html>

@@ -55,15 +55,56 @@
       <p class="breadcrumb"><a href="index.html">Home</a> / Grenache</p>
       <div class="split">
         <div>
-          <p class="eyebrow" id="grape-eyebrow">Loading&hellip;</p>
-          <h1 class="display" id="grape-name">Grenache</h1>
-          <p class="lede sm" id="grape-lede" style="margin: 0">Loading&hellip;</p>
+          <p class="eyebrow">Red Grape / France, Spain</p>
+          <h1 class="display">Grenache</h1>
+          <p class="lede sm" style="margin: 0">Soft, generous, high in alcohol and low in grip. It&#39;s the backbone of Châteauneuf-du-Pape, the whole point of Priorat, and the reason cheap rosé from the south of France tastes like strawberries. Garnacha if you&#39;re in Spain.</p>
         </div>
-        <dl class="facts" id="grape-facts"></dl>
+        <dl class="facts">
+          <div><dt>Also Called</dt><dd>Garnacha, Cannonau</dd></div>
+          <div><dt>Typical Alcohol</dt><dd>14–16%</dd></div>
+          <div><dt>Tannin</dt><dd>Low</dd></div>
+          <div><dt>Homes</dt><dd>Rhône, Priorat, Sardinia</dd></div>
+        </dl>
       </div>
 
-      <p class="list-head" id="qa-count">Loading answers&hellip;</p>
-      <div id="qa-list"></div>
+      <p class="list-head">7 Answers On Grenache</p>
+      <div>
+        <a class="row-item" href="answer-caladoc-languedoc.html">
+          <span class="id">QA-CALADOC-LANGUEDOC</span>
+          <span class="t">Why does Caladoc taste so Languedoc-dark?</span>
+          <span class="k">QA</span>
+        </a>
+        <a class="row-item" href="answer-caladoc-languedoc-dark.html">
+          <span class="id">QA-CALADOC-LANGUEDOC-DARK</span>
+          <span class="t">Why does Caladoc taste so dark-full?</span>
+          <span class="k">QA</span>
+        </a>
+        <a class="row-item" href="answer-cinsault-underrated.html">
+          <span class="id">QA-CINSAULT-UNDERRATED</span>
+          <span class="t">Why does Cinsault fly under the radar?</span>
+          <span class="k">QA</span>
+        </a>
+        <a class="row-item" href="answer-cotes-du-rhone-accessible.html">
+          <span class="id">QA-COTES-DU-RHONE-ACCESSIBLE</span>
+          <span class="t">Why does Côtes du Rhône taste so fruit-forward and accessible?</span>
+          <span class="k">QA</span>
+        </a>
+        <a class="row-item" href="answer-grenache-pairing.html">
+          <span class="id">QA-GRENACHE-PAIRING</span>
+          <span class="t">What pairs with Grenache?</span>
+          <span class="k">QA</span>
+        </a>
+        <a class="row-item" href="answer-grenache-style.html">
+          <span class="id">QA-GRENACHE-STYLE</span>
+          <span class="t">Why does Grenache taste so warm and jammy?</span>
+          <span class="k">QA</span>
+        </a>
+        <a class="row-item" href="answer-grenache-underrated.html">
+          <span class="id">QA-GRENACHE-UNDERRATED</span>
+          <span class="t">Why does Grenache get less credit than Syrah or Mourvèdre?</span>
+          <span class="k">QA</span>
+        </a>
+      </div>
     </div>
   </main>
   <footer class="site-footer">
@@ -104,64 +145,5 @@
   </footer>
 
   <script src="supabase-client.js"></script>
-  <script>
-    const TOPIC_CHUNK_TYPE = 'grape';
-    const TOPIC_SOURCE_DOC = 'grape-grenache';
-    const TOPIC_NAME = 'Grenache';
-    const QA_CHUNK_TYPE = 'qa';
-    const QA_MATCH_TERM = 'Grenache';
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const overviewRows = await window.KnowledgeBase.fetchChunks(
-        `select=content&chunk_type=eq.${TOPIC_CHUNK_TYPE}&source_doc=eq.${TOPIC_SOURCE_DOC}&section_title=eq.Overview&limit=1`
-      );
-
-      if (overviewRows.length > 0) {
-        const [eyebrow, name, lede, factsBlock] = overviewRows[0].content.split('\n\n');
-        document.getElementById('grape-eyebrow').textContent = eyebrow || '';
-        document.getElementById('grape-name').textContent = name || TOPIC_NAME;
-        document.getElementById('grape-lede').textContent = lede || '';
-
-        const factsEl = document.getElementById('grape-facts');
-        factsEl.innerHTML = (factsBlock || '').split('\n').map(line => {
-          const sep = line.indexOf(':');
-          if (sep === -1) return '';
-          const key = line.slice(0, sep).trim();
-          const value = line.slice(sep + 1).trim();
-          return `<div><dt>${key}</dt><dd>${value}</dd></div>`;
-        }).join('');
-      } else {
-        // Every topic in topics.config.mjs has real Overview content --
-        // an empty result here means the request failed, not that this
-        // topic has no overview. Without this, eyebrow/lede stay stuck on
-        // their initial "Loading…" text forever instead of ever resolving.
-        document.getElementById('grape-eyebrow').textContent = '';
-        document.getElementById('grape-lede').textContent = "Couldn't load this right now — try refreshing.";
-      }
-
-      const qaRows = await window.KnowledgeBase.fetchChunks(
-        `select=id,content,source_doc,chunk_type&chunk_type=eq.${QA_CHUNK_TYPE}&content=ilike.%25${encodeURIComponent(QA_MATCH_TERM)}%25&order=source_doc.asc&limit=100`
-      );
-
-      const countEl = document.getElementById('qa-count');
-      const listEl = document.getElementById('qa-list');
-
-      if (qaRows.length === 0) {
-        countEl.textContent = `No Answers Yet On ${TOPIC_NAME}`;
-        return;
-      }
-
-      countEl.textContent = `${qaRows.length} Answer${qaRows.length !== 1 ? 's' : ''} On ${TOPIC_NAME}`;
-      listEl.innerHTML = qaRows.map(chunk => {
-        const title = window.KnowledgeBase.deriveCardTitle(chunk);
-        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
-        return `<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(${safeChunk}); return false;">
-          <span class="id">${(chunk.source_doc || '').toUpperCase()}</span>
-          <span class="t">${title}</span>
-          <span class="k">${chunk.chunk_type.toUpperCase()}</span>
-        </a>`;
-      }).join('');
-    });
-  </script>
 </body>
 </html>

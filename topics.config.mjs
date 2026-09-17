@@ -26,6 +26,23 @@
 
 export const BASE_URL = 'https://knowledge.thirstyc.com';
 
+export function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// The regex generate-topic-pages.mjs's routing table (TOPIC_KEYWORDS) and
+// generate-missing-pages.mjs's resolveTopicLink() both test against a
+// chunk's content to find its topic page -- content can be English or
+// French, so where translation changed the word entirely (not just a proper
+// noun that survives untouched), keywordPatternFr covers the French phrasing
+// and this unions the two into one pattern that matches either language.
+// Most topics don't need it: grape/region proper nouns are usually unchanged
+// in French, so keywordPattern alone already matches both languages.
+export function effectiveKeywordPattern(topic) {
+  const en = topic.keywordPattern ?? escapeRegex(topic.topicName.toLowerCase());
+  return topic.keywordPatternFr ? `(?:${en})|(?:${topic.keywordPatternFr})` : en;
+}
+
 // Static (non-topic) pages included in sitemap.xml, as paths relative to
 // the site root ('' = homepage). Deliberately excludes:
 //   - search.html, 404.html: standard practice, not real content pages.
@@ -59,6 +76,8 @@ export const TOPICS = [
     topicName: 'Chenin Blanc',
     sourceDoc: 'grape-chenin-blanc',
     metaDescription: 'Bone-dry to lusciously sweet, one grape doing it all. Everything we know about Chenin Blanc.',
+    frReady: true,
+    metaDescriptionFr: 'Du plus sec au plus liquoreux, un seul cépage sait tout faire. Tout ce que nous savons sur le Chenin Blanc.',
   },
   {
     slug: 'cabernet-sauvignon',
@@ -72,6 +91,8 @@ export const TOPICS = [
       'Most entries just say "Cabernet", not the full varietal name, so we ' +
       'match broadly and exclude Cabernet Franc mentions instead of requiring ' +
       'the exact phrase (which was missing ~32 of the 40 real matches).',
+    frReady: true,
+    metaDescriptionFr: 'Structuré, tannique, fait pour vieillir. Tout ce que nous savons sur le Cabernet Sauvignon.',
   },
   {
     slug: 'rhone-valley',
@@ -81,6 +102,12 @@ export const TOPICS = [
     metaDescription: 'Syrah in the north, Gren­ache blends in the south. Everything we know about the Rhône Valley.',
     matchTerm: 'Rhône',
     keywordPattern: 'rh[oô]ne',
+    // "Rhône" itself is unchanged in French; only the full topic name
+    // translates ("Vallée du Rhône"), so no matchTermFr/keywordPatternFr
+    // is needed -- the existing pattern already matches French content.
+    topicNameFr: 'Vallée du Rhône',
+    frReady: true,
+    metaDescriptionFr: "La Syrah au nord, des assemblages de Grenache au sud. Tout ce que nous savons sur la vallée du Rhône.",
   },
   {
     slug: 'nebbiolo',
@@ -88,6 +115,8 @@ export const TOPICS = [
     topicName: 'Nebbiolo',
     sourceDoc: 'grape-nebbiolo',
     metaDescription: 'Pale in color, ferociously tannic. Everything we know about Nebbiolo.',
+    frReady: true,
+    metaDescriptionFr: 'Pâle en couleur, redoutablement tannique. Tout ce que nous savons sur le Nebbiolo.',
   },
   {
     slug: 'gamay',
@@ -96,6 +125,8 @@ export const TOPICS = [
     sourceDoc: 'grape-gamay',
     metaDescription: 'Light, juicy, chillable red from Beaujolais. Everything we know about Gamay.',
     keywordPattern: '\\bgamay\\b',
+    frReady: true,
+    metaDescriptionFr: 'Rouge léger, juteux, à servir frais, venu du Beaujolais. Tout ce que nous savons sur le Gamay.',
   },
   {
     slug: 'riesling',
@@ -113,6 +144,14 @@ export const TOPICS = [
     topicName: 'Burgundy',
     sourceDoc: 'region-burgundy',
     metaDescription: "The world's most detailed expression of terroir. Everything we know about Burgundy.",
+    // "Burgundy" is translated to the French exonym "Bourgogne", not kept
+    // as-is -- matchTermFr/keywordPatternFr needed or French QA rows and
+    // routing would never match the English word.
+    matchTermFr: 'Bourgogne',
+    keywordPatternFr: 'bourgogne',
+    topicNameFr: 'Bourgogne',
+    frReady: true,
+    metaDescriptionFr: "L'expression la plus détaillée du terroir au monde. Tout ce que nous savons sur la Bourgogne.",
   },
   {
     slug: 'priorat',
@@ -120,6 +159,8 @@ export const TOPICS = [
     topicName: 'Priorat',
     sourceDoc: 'region-priorat',
     metaDescription: 'Dark, mineral reds off steep Spanish slate. Everything we know about Priorat.',
+    frReady: true,
+    metaDescriptionFr: "Des rouges sombres et minéraux nés de l'ardoise espagnole abrupte. Tout ce que nous savons sur le Priorat.",
   },
   {
     slug: 'jura',
@@ -128,6 +169,8 @@ export const TOPICS = [
     sourceDoc: 'region-jura',
     metaDescription: "France's strangest, most beloved region. Everything we know about Jura.",
     keywordPattern: '\\bjura\\b',
+    frReady: true,
+    metaDescriptionFr: 'La région la plus singulière et la plus attachante de France. Tout ce que nous savons sur le Jura.',
   },
   {
     slug: 'etna',
@@ -136,6 +179,8 @@ export const TOPICS = [
     sourceDoc: 'region-etna',
     metaDescription: "Volcanic wine from the slopes of Sicily's active volcano. Everything we know about Etna.",
     keywordPattern: '\\betna\\b',
+    frReady: true,
+    metaDescriptionFr: "Un vin volcanique né des pentes du volcan actif de Sicile. Tout ce que nous savons sur l'Etna.",
   },
   {
     slug: 'niagara',
@@ -145,6 +190,9 @@ export const TOPICS = [
     metaDescription: "Canada's cool-climate Riesling and ice wine country. Everything we know about Niagara.",
     matchTerm: 'Niagara',
     keywordPattern: 'niagara',
+    topicNameFr: 'Péninsule du Niagara',
+    frReady: true,
+    metaDescriptionFr: 'La région canadienne du Riesling et du vin de glace en climat frais. Tout ce que nous savons sur le Niagara.',
   },
   {
     slug: 'grenache',
@@ -166,6 +214,13 @@ export const TOPICS = [
     metaDescription: 'Farming by the lunar calendar. Everything we know about biodynamic wine.',
     matchTerm: 'Biodynamic',
     keywordPattern: 'biodynamic',
+    // "Biodynamic" -> "biodynamique" -- not a substring match of the
+    // English word (diverges at "biodynami{c vs que}"), needs its own term.
+    matchTermFr: 'biodynamique',
+    keywordPatternFr: 'biodynamique',
+    topicNameFr: 'Vin biodynamique',
+    frReady: true,
+    metaDescriptionFr: 'Cultiver selon le calendrier lunaire. Tout ce que nous savons sur le vin biodynamique.',
   },
   {
     slug: 'fermentation',
@@ -173,6 +228,8 @@ export const TOPICS = [
     topicName: 'Fermentation',
     sourceDoc: 'enology-fermentation',
     metaDescription: 'How grape juice becomes wine. Everything we know about fermentation.',
+    frReady: true,
+    metaDescriptionFr: 'Comment le jus de raisin devient du vin. Tout ce que nous savons sur la fermentation.',
   },
   {
     slug: 'sulphites',
@@ -182,6 +239,11 @@ export const TOPICS = [
     metaDescription: "The winemaker's essential preservative, and the headache myth around it. Everything we know about sulphites.",
     matchTerm: 'Sulfite',
     keywordPattern: 'sulf?ite',
+    // "sulfite" is spelled identically in French -- existing pattern
+    // already matches both languages, no *Fr fields needed.
+    topicNameFr: 'Sulfites',
+    frReady: true,
+    metaDescriptionFr: "Le conservateur essentiel du vigneron, et le mythe du mal de tête qui l'entoure. Tout ce que nous savons sur les sulfites.",
   },
   {
     slug: 'tannins',
@@ -191,6 +253,14 @@ export const TOPICS = [
     metaDescription: "Where grip comes from, and why it fades with age. Everything we know about tannins.",
     matchTerm: 'Tannin',
     keywordPattern: '\\btannins?\\b',
+    // French uses the correct single-n spelling ("tanin"/"tanins", enforced
+    // via the DeepL glossary -- see scripts/translate-to-french-deepl.mjs),
+    // which the English double-n pattern doesn't match.
+    matchTermFr: 'tanin',
+    keywordPatternFr: '\\btanins?\\b',
+    topicNameFr: 'Tanins',
+    frReady: true,
+    metaDescriptionFr: "D'où vient la structure tannique, et pourquoi elle s'adoucit avec l'âge. Tout ce que nous savons sur les tanins.",
   },
   {
     slug: 'oak',
@@ -199,6 +269,13 @@ export const TOPICS = [
     sourceDoc: 'enology-oak',
     metaDescription: 'Vanilla, spice, and texture from the barrel. Everything we know about oak.',
     keywordPattern: '\\boak\\b',
+    // "Oak" -> "chêne" in French (also enforced via the DeepL glossary) --
+    // an entirely different word, needs its own match/keyword pattern.
+    matchTermFr: 'chêne',
+    keywordPatternFr: '\\bch[êe]ne\\b',
+    topicNameFr: 'Chêne',
+    frReady: true,
+    metaDescriptionFr: 'Vanille, épices et texture venues du fût. Tout ce que nous savons sur le chêne.',
   },
   {
     slug: 'faults',
@@ -208,5 +285,11 @@ export const TOPICS = [
     metaDescription: 'Flaw or style choice? Everything we know about wine faults.',
     matchTerm: 'Fault',
     keywordPattern: '\\bfault(s|y)?\\b',
+    // "Fault" -> "défaut" in French -- an entirely different word.
+    matchTermFr: 'défaut',
+    keywordPatternFr: 'd[ée]fauts?',
+    topicNameFr: 'Défauts du vin',
+    frReady: true,
+    metaDescriptionFr: 'Défaut ou choix de style ? Tout ce que nous savons sur les défauts du vin.',
   },
 ];

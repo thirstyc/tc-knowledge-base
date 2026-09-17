@@ -2,28 +2,37 @@
 //
 // Run: node generate-topic-pages.mjs   (or npm run generate:topics)
 //
-// The page shell (head/header/footer) and the client-side Supabase fetch
-// logic are identical across every topic page today — only a handful of
-// strings differ (title, meta description, breadcrumb, and the three
-// TOPIC_*/QA_* query params). This script is that template, parameterized
-// by topics.config.mjs, so adding a topic is one config entry instead of
-// copy-pasting and hand-editing an existing HTML file.
+// Each page is pre-rendered with its content: the Overview chunk and the
+// matching Q&A rows are fetched from Supabase here, at build time, so
+// crawlers that don't run JavaScript see the real page instead of a
+// "Loading…" shell. Content changes reach the site when this script reruns
+// (the weekly generate-pages workflow does that).
+//
+// If a topic's fetch fails, its existing file is left as-is and the script
+// exits 1 — a network blip never ships an empty topic page.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { TOPICS, BASE_URL } from './topics.config.mjs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { createClient } from '@supabase/supabase-js';
+import { TOPICS, BASE_URL, effectiveKeywordPattern } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
 import { topicSchema } from './lib/schema-markup-templates.js';
-import { renderHead as renderHeadShell, renderHeader as renderHeaderShell, renderFooter as renderFooterShell } from './lib/page-shell.mjs';
+import {
+  renderHead as renderHeadShell,
+  renderHeader as renderHeaderShell,
+  renderFooter as renderFooterShell,
+  assetPrefixFor,
+  deriveQuestion,
+  escapeHtml,
+  answerPagePath,
+} from './lib/page-shell.mjs';
 
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// French pages live at fr/topic-{slug}.html -- one directory deeper than
-// their English counterpart -- so every asset/nav href needs '../'.
-function assetPrefixFor(lang) {
-  return lang === 'fr' ? '../' : '';
-}
+// Same public anon key used by every other page (client-side, protected by
+// RLS's unconditional public-read policy on knowledge_chunks) -- read-only
+// generation doesn't need the service role key.
+const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
+const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function topicName(topic, lang) {
   return lang === 'fr' ? topic.topicNameFr ?? topic.topicName : topic.topicName;
@@ -76,25 +85,125 @@ function renderHeader(topic, lang) {
   return renderHeaderShell({ currentNav, lang, assetPrefix: assetPrefixFor(lang), ...langToggleHrefs(topic, lang) });
 }
 
-function renderMain(topic, lang) {
+// --- Supabase fetch -------------------------------------------------------
+
+function publishedChunks(lang) {
+  return supabase
+    .from('knowledge_chunks')
+    .select('id, content, source_doc, section_title, chunk_type')
+    .eq('status', 'published')
+    .eq('lang', lang);
+}
+
+// Same queries the topic pages used to run in the browser. Most topics are
+// unchanged proper nouns in French (Grenache, Riesling, Rhône...), so the
+// English match term still finds French rows too; a few translate to a
+// different word entirely (Burgundy -> Bourgogne, Oak -> chêne, the
+// corrected "tanin" spelling) and set matchTermFr in topics.config.mjs.
+async function fetchTopicData(topic, lang) {
+  const overview = await publishedChunks(lang)
+    .eq('chunk_type', topic.kind)
+    .eq('source_doc', topic.sourceDoc)
+    .eq('section_title', 'Overview')
+    .limit(1);
+  if (overview.error) throw overview.error;
+  // Every topic in topics.config.mjs has real Overview content, so none
+  // here means something is wrong upstream, not an empty topic.
+  if (overview.data.length === 0) throw new Error(`no ${lang} Overview chunk for ${topic.sourceDoc}`);
+
+  const matchTerm = lang === 'fr' ? topic.matchTermFr ?? topic.matchTerm ?? topic.topicName : topic.matchTerm ?? topic.topicName;
+  let qa = publishedChunks(lang)
+    .eq('chunk_type', topic.kind === 'region' ? 'region-qa' : 'qa')
+    .ilike('content', `%${matchTerm}%`);
+  if (topic.excludeTerm) qa = qa.not('content', 'ilike', `%${topic.excludeTerm}%`);
+  const queries = [qa];
+  if (topic.kind === 'enology') {
+    queries.push(
+      publishedChunks(lang).eq('chunk_type', 'enology').ilike('content', `%${matchTerm}%`).neq('section_title', 'Overview')
+    );
+  }
+  // id as tiebreaker keeps output stable run to run, so regenerating
+  // unchanged content produces no diff.
+  const results = await Promise.all(queries.map((q) => q.order('source_doc').order('id').limit(100)));
+  const failed = results.find((r) => r.error);
+  if (failed) throw failed.error;
+
+  return { overview: parseOverview(overview.data[0].content), qaRows: results.flatMap((r) => r.data) };
+}
+
+// Overview content is "eyebrow\n\nname\n\nlede\n\nKey: value\nKey: value".
+function parseOverview(content) {
+  const [eyebrow = '', name = '', lede = '', factsBlock = ''] = content.split('\n\n');
+  const facts = factsBlock
+    .split('\n')
+    .map((line) => {
+      const sep = line.indexOf(':');
+      return sep === -1 ? null : [line.slice(0, sep).trim(), line.slice(sep + 1).trim()];
+    })
+    .filter(Boolean);
+  return { eyebrow, name, lede, facts };
+}
+
+// --- Page body -------------------------------------------------------------
+
+// Mirrors deriveCardTitle() in supabase-client.js.
+function rowTitle(chunk) {
+  if (chunk.chunk_type === 'enology') return chunk.section_title || chunk.content.split('\n')[0];
+  return deriveQuestion(chunk.content);
+}
+
+// qa/region-qa rows have their own answer page (scripts/generate-missing-
+// pages.mjs writes both languages); enology rows don't, and open the same
+// inline modal the client-rendered version used instead. The href written
+// into the page is always the plain same-directory filename -- a French
+// topic page and its qa row's French answer page are both siblings inside
+// fr/, so neither needs an assetPrefix; existsSync() below checks the real
+// on-disk location instead, which for a French row does need the fr/ prefix.
+function renderRow(chunk, lang) {
+  const href = ['qa', 'region-qa'].includes(chunk.chunk_type) ? answerPagePath(chunk.source_doc) : null;
+  const onDisk = href && lang === 'fr' ? `fr/${href}` : href;
+  const linkAttrs =
+    href && existsSync(onDisk)
+      ? `href="${href}"`
+      : `href="#" onclick="window.KnowledgeBase.showChunkDetail(${escapeHtml(JSON.stringify(chunk))}); return false;"`;
+  return `        <a class="row-item" ${linkAttrs}>
+          <span class="id">${escapeHtml(chunk.source_doc.toUpperCase())}</span>
+          <span class="t">${escapeHtml(rowTitle(chunk))}</span>
+          <span class="k">${escapeHtml(chunk.chunk_type.toUpperCase())}</span>
+        </a>`;
+}
+
+function countLine(count, name, lang) {
+  if (lang === 'fr') {
+    return count === 0 ? `Pas Encore De Réponses Sur ${name}` : `${count} Réponse${count !== 1 ? 's' : ''} Sur ${name}`;
+  }
+  return count === 0 ? `No Answers Yet On ${name}` : `${count} Answer${count !== 1 ? 's' : ''} On ${name}`;
+}
+
+function renderMain(topic, lang, { overview, qaRows }) {
   const name = topicName(topic, lang);
   const home = lang === 'fr' ? 'Accueil' : 'Home';
-  const loading = lang === 'fr' ? 'Chargement&hellip;' : 'Loading&hellip;';
-  const loadingAnswers = lang === 'fr' ? 'Chargement des réponses&hellip;' : 'Loading answers&hellip;';
+  const facts = overview.facts
+    .map(([key, value]) => `          <div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`)
+    .join('\n');
   return `  <main>
     <div class="wrap">
       <p class="breadcrumb"><a href="${assetPrefixFor(lang)}index.html">${home}</a> / ${name}</p>
       <div class="split">
         <div>
-          <p class="eyebrow" id="grape-eyebrow">${loading}</p>
-          <h1 class="display" id="grape-name">${name}</h1>
-          <p class="lede sm" id="grape-lede" style="margin: 0">${loading}</p>
+          <p class="eyebrow">${escapeHtml(overview.eyebrow)}</p>
+          <h1 class="display">${escapeHtml(overview.name || name)}</h1>
+          <p class="lede sm" style="margin: 0">${escapeHtml(overview.lede)}</p>
         </div>
-        <dl class="facts" id="grape-facts"></dl>
+        <dl class="facts">
+${facts}
+        </dl>
       </div>
 
-      <p class="list-head" id="qa-count">${loadingAnswers}</p>
-      <div id="qa-list"></div>
+      <p class="list-head">${escapeHtml(countLine(qaRows.length, name, lang))}</p>
+      <div>
+${qaRows.map((chunk) => renderRow(chunk, lang)).join('\n')}
+      </div>
     </div>
   </main>`;
 }
@@ -103,186 +212,47 @@ function renderFooter(topic, lang) {
   return renderFooterShell({ lang, assetPrefix: assetPrefixFor(lang), ...langToggleHrefs(topic, lang) });
 }
 
-// Shared by every kind: fetch the Overview chunk and paint eyebrow/name/lede/facts.
-function overviewJs(lang) {
-  const failedMsg = lang === 'fr'
-    ? "Impossible de charger cette page pour le moment — essayez de rafraîchir."
-    : "Couldn't load this right now — try refreshing.";
-  return `      const overviewRows = await window.KnowledgeBase.fetchChunks(
-        \`select=content&chunk_type=eq.\${TOPIC_CHUNK_TYPE}&source_doc=eq.\${TOPIC_SOURCE_DOC}&section_title=eq.Overview&limit=1\`
-      );
-
-      if (overviewRows.length > 0) {
-        const [eyebrow, name, lede, factsBlock] = overviewRows[0].content.split('\\n\\n');
-        document.getElementById('grape-eyebrow').textContent = eyebrow || '';
-        document.getElementById('grape-name').textContent = name || TOPIC_NAME;
-        document.getElementById('grape-lede').textContent = lede || '';
-
-        const factsEl = document.getElementById('grape-facts');
-        factsEl.innerHTML = (factsBlock || '').split('\\n').map(line => {
-          const sep = line.indexOf(':');
-          if (sep === -1) return '';
-          const key = line.slice(0, sep).trim();
-          const value = line.slice(sep + 1).trim();
-          return \`<div><dt>\${key}</dt><dd>\${value}</dd></div>\`;
-        }).join('');
-      } else {
-        // Every topic in topics.config.mjs has real Overview content --
-        // an empty result here means the request failed, not that this
-        // topic has no overview. Without this, eyebrow/lede stay stuck on
-        // their initial "Loading…" text forever instead of ever resolving.
-        document.getElementById('grape-eyebrow').textContent = '';
-        document.getElementById('grape-lede').textContent = "${failedMsg}";
-      }`;
-}
-
-// Shared by every kind: render the count line + answer list once qaRows is populated.
-function renderListJs(lang) {
-  const noAnswers = lang === 'fr' ? 'Pas Encore De Réponses Sur' : 'No Answers Yet On';
-  const answerWord = lang === 'fr' ? 'Réponse' : 'Answer';
-  const onWord = lang === 'fr' ? 'Sur' : 'On';
-  return `      const countEl = document.getElementById('qa-count');
-      const listEl = document.getElementById('qa-list');
-
-      if (qaRows.length === 0) {
-        countEl.textContent = \`${noAnswers} \${TOPIC_NAME}\`;
-        return;
-      }
-
-      countEl.textContent = \`\${qaRows.length} ${answerWord}\${qaRows.length !== 1 ? 's' : ''} ${onWord} \${TOPIC_NAME}\`;
-      listEl.innerHTML = qaRows.map(chunk => {`;
-}
-
-function renderQaFetchAndList(topic, lang) {
-  const matchTerm = topic.matchTerm ?? topic.topicName;
-
-  if (topic.kind === 'enology') {
-    return `      const [qaMatches, enologyMatches] = await Promise.all([
-        window.KnowledgeBase.fetchChunks(
-          \`select=id,content,source_doc,chunk_type&chunk_type=eq.\${QA_CHUNK_TYPE}&content=ilike.%25\${encodeURIComponent(QA_MATCH_TERM)}%25&order=source_doc.asc&limit=100\`
-        ),
-        window.KnowledgeBase.fetchChunks(
-          \`select=id,content,source_doc,section_title,chunk_type&chunk_type=eq.enology&content=ilike.%25\${encodeURIComponent(QA_MATCH_TERM)}%25&section_title=neq.Overview&order=source_doc.asc&limit=100\`
-        ),
-      ]);
-      const qaRows = [...qaMatches, ...enologyMatches];
-
-${renderListJs(lang)}
-        const title = window.KnowledgeBase.deriveCardTitle(chunk);
-        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
-        return \`<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(\${safeChunk}); return false;">
-          <span class="id">\${(chunk.source_doc || '').toUpperCase()}</span>
-          <span class="t">\${title}</span>
-          <span class="k">\${chunk.chunk_type.toUpperCase()}</span>
-        </a>\`;
-      }).join('');`;
-  }
-
-  const excludeClause = topic.excludeTerm
-    ? `&content=not.ilike.%25\${encodeURIComponent(QA_EXCLUDE_TERM)}%25`
-    : '';
-
-  return `      const qaRows = await window.KnowledgeBase.fetchChunks(
-        \`select=id,content,source_doc,chunk_type&chunk_type=eq.\${QA_CHUNK_TYPE}&content=ilike.%25\${encodeURIComponent(QA_MATCH_TERM)}%25${excludeClause}&order=source_doc.asc&limit=100\`
-      );
-
-${renderListJs(lang)}
-        const title = window.KnowledgeBase.deriveCardTitle(chunk);
-        const safeChunk = JSON.stringify(chunk).replace(/"/g, '&quot;');
-        return \`<a class="row-item" href="#" onclick="window.KnowledgeBase.showChunkDetail(\${safeChunk}); return false;">
-          <span class="id">\${(chunk.source_doc || '').toUpperCase()}</span>
-          <span class="t">\${title}</span>
-          <span class="k">\${chunk.chunk_type.toUpperCase()}</span>
-        </a>\`;
-      }).join('');`;
-}
-
-// Wraps `note` into //-prefixed comment lines matching the script block's
-// 4-space indent, at roughly the same width as the hand-written originals.
-function wrapComment(note, width = 70) {
-  const words = note.split(' ');
-  const lines = [];
-  let line = '';
-  for (const word of words) {
-    if (line && (line + ' ' + word).length > width) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = line ? `${line} ${word}` : word;
-    }
-  }
-  if (line) lines.push(line);
-  return lines.map((l) => `    // ${l}`).join('\n');
-}
-
-function renderScript(topic, lang) {
-  const matchTerm = topic.matchTerm ?? topic.topicName;
-  const qaChunkType = topic.kind === 'region' ? 'region-qa' : 'qa';
-
-  const consts = [
-    `    const TOPIC_CHUNK_TYPE = '${topic.kind}';`,
-    `    const TOPIC_SOURCE_DOC = '${topic.sourceDoc}';`,
-    `    const TOPIC_NAME = '${topicName(topic, lang)}';`,
-    `    const QA_CHUNK_TYPE = '${qaChunkType}';`,
-  ];
-  if (topic.note) consts.push(wrapComment(topic.note));
-  // The match term stays the English word even on French pages: fetchChunks
-  // already filters to lang=eq.fr, and for the translated topics so far
-  // (grapes: Grenache, Riesling) the term is an unchanged proper noun in
-  // French too. A topic whose French name diverges from the English match
-  // term (e.g. a translated concept name) will need its own matchTermFr
-  // field when it's translated.
-  consts.push(`    const QA_MATCH_TERM = '${matchTerm}';`);
-  if (topic.excludeTerm) consts.push(`    const QA_EXCLUDE_TERM = '${topic.excludeTerm}';`);
-
-  return `  <script src="${assetPrefixFor(lang)}supabase-client.js"></script>
-  <script>
-${consts.join('\n')}
-
-    document.addEventListener('DOMContentLoaded', async () => {
-${overviewJs(lang)}
-
-${renderQaFetchAndList(topic, lang)}
-    });
-  </script>
-</body>
-</html>
-`;
-}
-
-function renderPage(topic, lang) {
+function renderPage(topic, lang, data) {
+  // supabase-client.js is still loaded for the row modal and the shared
+  // header behaviour (Android App Store guard).
   return [
     renderHead(topic, lang),
     renderHeader(topic, lang),
-    renderMain(topic, lang),
+    renderMain(topic, lang, data),
     renderFooter(topic, lang),
     '',
-    renderScript(topic, lang),
+    `  <script src="${assetPrefixFor(lang)}supabase-client.js"></script>
+</body>
+</html>
+`,
   ].join('\n');
 }
-
-for (const topic of TOPICS) {
-  const outPath = `topic-${topic.slug}.html`;
-  writeFileSync(outPath, renderPage(topic, 'en'));
-  console.log(`  -> ${outPath}`);
-}
-
-console.log(`Generated ${TOPICS.length} topic page(s).`);
 
 // French pages: only for topics with real translated content so far
 // (topic.frReady -- see scripts/translate-to-french.mjs). Generating a
 // French page for an untranslated topic would just ship the "no content"
 // fallback UI for no reason.
-const frTopics = TOPICS.filter((t) => t.frReady);
-if (frTopics.length > 0) {
-  mkdirSync('fr', { recursive: true });
-  for (const topic of frTopics) {
-    const outPath = `fr/topic-${topic.slug}.html`;
-    writeFileSync(outPath, renderPage(topic, 'fr'));
-    console.log(`  -> ${outPath}`);
+const jobs = [
+  ...TOPICS.map((topic) => ({ topic, lang: 'en', outPath: `topic-${topic.slug}.html` })),
+  ...TOPICS.filter((t) => t.frReady).map((topic) => ({ topic, lang: 'fr', outPath: `fr/topic-${topic.slug}.html` })),
+];
+mkdirSync('fr', { recursive: true });
+
+const results = await Promise.all(
+  jobs.map((job) => fetchTopicData(job.topic, job.lang).then((data) => ({ ...job, data }), (error) => ({ ...job, error })))
+);
+let failedTopics = 0;
+for (const { topic, lang, outPath, data, error } of results) {
+  if (error) {
+    console.error(`  !! ${outPath}: ${error.message} -- kept the existing file`);
+    failedTopics++;
+    continue;
   }
-  console.log(`Generated ${frTopics.length} French topic page(s).`);
+  writeFileSync(outPath, renderPage(topic, lang, data));
+  console.log(`  -> ${outPath} (${data.qaRows.length} answers)`);
 }
+console.log(`Generated ${jobs.length - failedTopics} of ${jobs.length} topic page(s).`);
+if (failedTopics) process.exitCode = 1;
 
 // --- Answer-card routing table in supabase-client.js -----------------------
 // TOPIC_PAGE_SLUGS, SOURCE_DOC_SLUG_OVERRIDES, and TOPIC_KEYWORDS are all
@@ -311,10 +281,7 @@ function renderSourceDocSlugOverrides() {
 }
 
 function renderTopicKeywords() {
-  const entries = TOPICS.map((t) => {
-    const pattern = t.keywordPattern ?? escapeRegex(t.topicName.toLowerCase());
-    return `  { pattern: /${pattern}/i, slug: '${t.slug}' },`;
-  });
+  const entries = TOPICS.map((t) => `  { pattern: /${effectiveKeywordPattern(t)}/i, slug: '${t.slug}' },`);
   return `const TOPIC_KEYWORDS = [\n${entries.join('\n')}\n];`;
 }
 

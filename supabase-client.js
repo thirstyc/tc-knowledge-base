@@ -107,18 +107,18 @@ const TOPIC_KEYWORDS = [
   { pattern: /nebbiolo/i, slug: 'nebbiolo' },
   { pattern: /\bgamay\b/i, slug: 'gamay' },
   { pattern: /riesling/i, slug: 'riesling' },
-  { pattern: /burgundy/i, slug: 'burgundy' },
+  { pattern: /(?:burgundy)|(?:bourgogne)/i, slug: 'burgundy' },
   { pattern: /priorat/i, slug: 'priorat' },
   { pattern: /\bjura\b/i, slug: 'jura' },
   { pattern: /\betna\b/i, slug: 'etna' },
   { pattern: /niagara/i, slug: 'niagara' },
   { pattern: /grenache/i, slug: 'grenache' },
-  { pattern: /biodynamic/i, slug: 'biodynamic' },
+  { pattern: /(?:biodynamic)|(?:biodynamique)/i, slug: 'biodynamic' },
   { pattern: /fermentation/i, slug: 'fermentation' },
   { pattern: /sulf?ite/i, slug: 'sulphites' },
-  { pattern: /\btannins?\b/i, slug: 'tannins' },
-  { pattern: /\boak\b/i, slug: 'oak' },
-  { pattern: /\bfault(s|y)?\b/i, slug: 'faults' },
+  { pattern: /(?:\btannins?\b)|(?:\btanins?\b)/i, slug: 'tannins' },
+  { pattern: /(?:\boak\b)|(?:\bch[êe]ne\b)/i, slug: 'oak' },
+  { pattern: /(?:\bfault(s|y)?\b)|(?:d[ée]fauts?)/i, slug: 'faults' },
 ];
 // --- END GENERATED TOPIC ROUTING ---
 
