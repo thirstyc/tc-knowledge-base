@@ -47,6 +47,7 @@ import {
 import { TOPICS, BASE_URL, effectiveKeywordPattern } from '../topics.config.mjs';
 import { faqPageSchema, collectionPageSchema } from '../lib/schema-markup-templates.js';
 import { REDIRECTS } from '../redirects.config.mjs';
+import { renderMarkdown } from '../lib/markdown.mjs';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 // Deliberately overwrite a hand-authored file this one time. Not for
@@ -110,14 +111,13 @@ function resolveTopicLink(content, sectionTitle, lang) {
   return lang === 'fr' ? { href: '../answers.html', label: 'Réponses' } : { href: 'answers.html', label: 'Answers' };
 }
 
-// Longer answers use blank lines between paragraphs; one-line answers
-// render exactly as before (a single <p>).
+// Longer answers use blank lines between paragraphs and the same small
+// Markdown subset as guides (lists, bold); one-line answers render exactly
+// as before (a single <p>).
 function answerParagraphs(answerBody) {
-  return answerBody
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
-    .map((paragraph) => `          <p>${escapeHtml(paragraph)}</p>`)
+  return renderMarkdown(answerBody)
+    .split('\n')
+    .map((line) => `          ${line}`)
     .join('\n');
 }
 

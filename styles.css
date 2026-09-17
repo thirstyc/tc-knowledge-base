@@ -296,6 +296,8 @@ main.has-hero { padding-top: 0; }
 .short-answer .k { font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dark-cherries); margin: 0 0 14px; }
 .short-answer p { margin: 0; font-size: 18px; line-height: 1.75; }
 .short-answer p:not(.k) + p { margin-top: 1em; }
+.short-answer ul, .short-answer ol { margin: 1em 0 0; padding-left: 1.4em; font-size: 18px; line-height: 1.75; }
+.short-answer ul + p, .short-answer ol + p { margin-top: 1em; }
 .pull { border-left: 2px solid var(--burnt-sunset); padding: 4px 0 4px 24px; margin: 0 0 48px; }
 .pull p { font-family: var(--serif); font-style: italic; font-size: 23px; line-height: 1.5; color: var(--dark-cherries); margin: 0; }
 .verified { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 48px; }
