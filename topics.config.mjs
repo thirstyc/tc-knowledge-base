@@ -270,9 +270,12 @@ export const TOPICS = [
     metaDescription: 'Vanilla, spice, and texture from the barrel. Everything we know about oak.',
     keywordPattern: '\\boak\\b',
     // "Oak" -> "chêne" in French (also enforced via the DeepL glossary) --
-    // an entirely different word, needs its own match/keyword pattern.
-    matchTermFr: 'chêne',
-    keywordPatternFr: '\\bch[êe]ne\\b',
+    // an entirely different word, needs its own match/keyword pattern. Some
+    // rows describe barrel ageing without naming the wood ("non boisé",
+    // "élevé en fût"), so match those phrasings too or the topic page
+    // undercounts rows that plainly are about oak.
+    matchTermFr: ['chêne', 'boisé', 'fût'],
+    keywordPatternFr: '\\bch[êe]ne\\b|\\bbois[ée]s?\\b|\\bf[uû]ts?\\b',
     topicNameFr: 'Chêne',
     frReady: true,
     metaDescriptionFr: 'Vanille, épices et texture venues du fût. Tout ce que nous savons sur le chêne.',

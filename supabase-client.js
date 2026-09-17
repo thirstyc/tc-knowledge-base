@@ -117,7 +117,7 @@ const TOPIC_KEYWORDS = [
   { pattern: /fermentation/i, slug: 'fermentation' },
   { pattern: /sulf?ite/i, slug: 'sulphites' },
   { pattern: /(?:\btannins?\b)|(?:\btanins?\b)/i, slug: 'tannins' },
-  { pattern: /(?:\boak\b)|(?:\bch[êe]ne\b)/i, slug: 'oak' },
+  { pattern: /(?:\boak\b)|(?:\bch[êe]ne\b|\bbois[ée]s?\b|\bf[uû]ts?\b)/i, slug: 'oak' },
   { pattern: /(?:\bfault(s|y)?\b)|(?:d[ée]fauts?)/i, slug: 'faults' },
 ];
 // --- END GENERATED TOPIC ROUTING ---

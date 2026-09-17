@@ -96,6 +96,17 @@ function publishedChunks(lang) {
     .eq('lang', lang);
 }
 
+// content.ilike matching against a single term or (for a topic like Oak,
+// where French rows use several different words for the same concept --
+// "chêne", but also "boisé"/"fût" when a row describes barrel ageing
+// without naming the wood itself) an array of alternative terms, OR'd.
+function matchingContent(query, term) {
+  const terms = Array.isArray(term) ? term : [term];
+  return terms.length > 1
+    ? query.or(terms.map((t) => `content.ilike.%${t}%`).join(','))
+    : query.ilike('content', `%${terms[0]}%`);
+}
+
 // Same queries the topic pages used to run in the browser. Most topics are
 // unchanged proper nouns in French (Grenache, Riesling, Rhône...), so the
 // English match term still finds French rows too; a few translate to a
@@ -113,14 +124,15 @@ async function fetchTopicData(topic, lang) {
   if (overview.data.length === 0) throw new Error(`no ${lang} Overview chunk for ${topic.sourceDoc}`);
 
   const matchTerm = lang === 'fr' ? topic.matchTermFr ?? topic.matchTerm ?? topic.topicName : topic.matchTerm ?? topic.topicName;
-  let qa = publishedChunks(lang)
-    .eq('chunk_type', topic.kind === 'region' ? 'region-qa' : 'qa')
-    .ilike('content', `%${matchTerm}%`);
+  let qa = matchingContent(
+    publishedChunks(lang).eq('chunk_type', topic.kind === 'region' ? 'region-qa' : 'qa'),
+    matchTerm
+  );
   if (topic.excludeTerm) qa = qa.not('content', 'ilike', `%${topic.excludeTerm}%`);
   const queries = [qa];
   if (topic.kind === 'enology') {
     queries.push(
-      publishedChunks(lang).eq('chunk_type', 'enology').ilike('content', `%${matchTerm}%`).neq('section_title', 'Overview')
+      matchingContent(publishedChunks(lang).eq('chunk_type', 'enology'), matchTerm).neq('section_title', 'Overview')
     );
   }
   // id as tiebreaker keeps output stable run to run, so regenerating
