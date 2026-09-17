@@ -44,15 +44,31 @@ ${content}`,
   }
 }
 
-async function publish() {
-  const { data, error } = await supabase
+// --source=<prefix> limits the publish to drafts whose source_doc starts with
+// that prefix (e.g. --source=sommelier- or --source=qa-gen-). Without it every
+// draft row goes live, which is how a vault-scan batch and an unrelated qa-gen
+// batch can be published together by accident.
+async function publish({ source } = {}) {
+  let query = supabase
     .from('knowledge_chunks')
     .update({ status: 'published', published_at: new Date().toISOString() })
-    .eq('status', 'draft')
-    .select('id');
+    .eq('status', 'draft');
+
+  if (source !== undefined) {
+    if (!source) throw new Error('--source needs a value, e.g. --source=sommelier-');
+    // source_doc values are slugified, so anything outside this set is a typo
+    // or a stray LIKE wildcard ('%' would silently widen the publish).
+    if (!/^[A-Za-z0-9._-]+$/.test(source)) {
+      throw new Error(`--source must match [A-Za-z0-9._-]+ (got "${source}")`);
+    }
+    query = query.like('source_doc', `${source}%`);
+  }
+
+  const { data, error } = await query.select('id');
 
   if (error) throw error;
-  console.log(`Published ${data.length} chunk(s).`);
+  const scope = source ? `source_doc starting with "${source}"` : 'all sources';
+  console.log(`Published ${data.length} chunk(s) (${scope}).`);
 }
 
 async function processIntake() {
@@ -119,7 +135,10 @@ async function processIntake() {
 
 async function main() {
   if (process.argv.includes('--publish')) {
-    await publish();
+    const sourceArg = process.argv.find((a) => a === '--source' || a.startsWith('--source='));
+    await publish(
+      sourceArg === undefined ? {} : { source: sourceArg.replace(/^--source=?/, '') }
+    );
   } else {
     await processIntake();
   }
