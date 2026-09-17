@@ -217,11 +217,11 @@ function renderScript(topic, lang) {
   ];
   if (topic.note) consts.push(wrapComment(topic.note));
   // The match term stays the English word even on French pages: fetchChunks
-  // already filters to lang=eq.fr, and for this pilot (Grenache) the term
-  // is an unchanged proper noun in French too. A topic whose French name
-  // diverges from the English match term (e.g. a translated concept name)
-  // will need its own matchTermFr field when it's translated -- not needed
-  // yet since only Grenache has French content so far.
+  // already filters to lang=eq.fr, and for the translated topics so far
+  // (grapes: Grenache, Riesling) the term is an unchanged proper noun in
+  // French too. A topic whose French name diverges from the English match
+  // term (e.g. a translated concept name) will need its own matchTermFr
+  // field when it's translated.
   consts.push(`    const QA_MATCH_TERM = '${matchTerm}';`);
   if (topic.excludeTerm) consts.push(`    const QA_EXCLUDE_TERM = '${topic.excludeTerm}';`);
 
