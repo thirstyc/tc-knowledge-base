@@ -32,7 +32,7 @@
         <div style="max-width: 760px">
           <p class="eyebrow">The Knowledge Base</p>
           <h1 class="display">Wine Knowledge Built on Real Bottles</h1>
-          <p class="lede" id="hero-stats">667 Q&amp;As from independent tastings. 40 wines. No tasting-note theatre.</p>
+          <p class="lede" id="hero-stats">670 Q&amp;As from independent tastings. 189 grape topics. 114+ wine regions. 40 teaching wines. No tasting-note theatre.</p>
           <form action="search.html" method="get" style="max-width: 640px">
             <label class="sr-only" for="q" hidden>Search the knowledge base</label>
             <input class="search-input" type="search" id="q" name="q" placeholder="why does my wine taste like a barn?" />
@@ -192,8 +192,8 @@
           ...regionDocs.map(r => stripSuffix(r.source_doc, 'region-')),
         ]);
 
-        if (qaCount && grapeTopics && regionSlugs.size) {
-          heroEl.textContent = `${qaCount.toLocaleString()} Q&As from independent tastings. ${grapeTopics} grape topics. ${regionSlugs.size}+ wine regions. ${wineCount || 40} teaching wines. No tasting-note theatre.`;
+        if (qaCount && grapeTopics && regionSlugs.size && wineCount) {
+          heroEl.textContent = `${qaCount.toLocaleString()} Q&As from independent tastings. ${grapeTopics} grape topics. ${regionSlugs.size}+ wine regions. ${wineCount} teaching wines. No tasting-note theatre.`;
         }
       } catch (error) {
         console.error('Error loading hero stats, keeping fallback text:', error);
