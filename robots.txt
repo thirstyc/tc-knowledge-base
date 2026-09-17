@@ -78,5 +78,10 @@ Disallow: /
 
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /search?
+# Honoured by Bing/Yandex; Google ignores it.
+Crawl-delay: 1
 
 Sitemap: https://knowledge.thirstyc.com/sitemap.xml
