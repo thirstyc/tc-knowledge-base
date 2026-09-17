@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Every Answer — Thirsty Cunt Knowledge Base</title>
-<meta name="description" content="387 wine answers, each one fresh from Supabase." />
+<meta name="description" content="904 wine answers, each one fresh from Supabase." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -87,8 +87,18 @@
 
   <script src="supabase-client.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      window.KnowledgeBase.loadAnswers('answers-grid', 100);
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Was fetching the 100 most-recently-created chunks with no chunk_type
+      // filter at all -- of those, only ~1% were actually chunk_type='qa'
+      // (mostly region-qa, plus some enology/region overview rows that
+      // aren't answers at all). Restrict to real answer types.
+      window.KnowledgeBase.loadAnswers('answers-grid', 100, null, 'qa,region-qa');
+
+      const total = await window.KnowledgeBase.countChunks('select=id&chunk_type=in.(qa,region-qa)');
+      const countEl = document.getElementById('answerCount');
+      if (countEl && total) {
+        countEl.textContent = `${total.toLocaleString()} answers. Showing the 100 most recent below -- search for the rest.`;
+      }
     });
   </script>
 </body>

@@ -26,12 +26,17 @@ async function fetchChunks(queryString) {
   return fetchTable('knowledge_chunks', `${queryString}&status=eq.published`);
 }
 
-async function fetchPublishedChunks(limit = 10, searchQuery = null) {
+// chunkTypeFilter (e.g. 'qa,region-qa') is optional and off by default so
+// search.html's broad "search everything" behavior is unchanged; pages that
+// specifically mean "answers" (qa/region-qa only, not grape/region/enology
+// overview rows that happen to be recent) pass it explicitly.
+async function fetchPublishedChunks(limit = 10, searchQuery = null, chunkTypeFilter = null) {
   const columns = 'id,content,section_title,source_doc,chunk_type';
-  let query = `select=${columns}&order=created_at.desc&limit=${limit}`;
+  const typeClause = chunkTypeFilter ? `&chunk_type=in.(${chunkTypeFilter})` : '';
+  let query = `select=${columns}${typeClause}&order=created_at.desc&limit=${limit}`;
 
   if (searchQuery) {
-    query = `select=${columns}&or=(section_title.ilike.%25${encodeURIComponent(searchQuery)}%25,content.ilike.%25${encodeURIComponent(searchQuery)}%25)&order=created_at.desc&limit=${limit}`;
+    query = `select=${columns}${typeClause}&or=(section_title.ilike.%25${encodeURIComponent(searchQuery)}%25,content.ilike.%25${encodeURIComponent(searchQuery)}%25)&order=created_at.desc&limit=${limit}`;
   }
 
   return fetchChunks(query);
@@ -198,12 +203,12 @@ function renderAnswerCard(chunk) {
   return `<a class="answer-card" href="#chunk-${chunk.id}" onclick="window.KnowledgeBase.goToChunk(${JSON.stringify(chunk).replace(/"/g, '&quot;')}); return false;"><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p>${summary}</p></a>`;
 }
 
-async function loadAnswers(containerId, limit = 3, searchQuery = null) {
+async function loadAnswers(containerId, limit = 3, searchQuery = null, chunkTypeFilter = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  
+
   container.innerHTML = '<p style="text-align: center; color: #999;">Loading...</p>';
-  const chunks = await fetchPublishedChunks(limit, searchQuery);
+  const chunks = await fetchPublishedChunks(limit, searchQuery, chunkTypeFilter);
   
   if (chunks.length === 0) {
     container.innerHTML = '<div class="empty"><p class="k">Nothing Yet</p><p class="t">We Haven\'t Written That One Down</p><p>Try fewer words, or a topic name.</p></div>';
