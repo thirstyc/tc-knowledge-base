@@ -170,8 +170,18 @@ function chunkHref(chunk) {
   }
   const answerHref = resolveAnswerHref(chunk);
   if (answerHref) return answerHref;
+  // Region sections live on their chapter's region-*.html page.
+  if (chunk && chunk.chunk_type === 'region' && chunk.section_title !== 'Overview' && chunk.source_doc) {
+    return `${chunk.source_doc}.html`;
+  }
   const topicSlug = resolveTopicSlug(chunk);
-  return topicSlug ? `topic-${topicSlug}.html` : null;
+  if (topicSlug) return `topic-${topicSlug}.html`;
+  // Grapes without a topic page have their own grape-*.html page
+  // (grape-varieties is a reference list, not a grape).
+  if (chunk && chunk.chunk_type === 'grape' && chunk.source_doc && chunk.source_doc !== 'grape-varieties') {
+    return `${chunk.source_doc}.html`;
+  }
+  return null;
 }
 
 // Attributes for a card linking to a chunk: a real href whenever a page

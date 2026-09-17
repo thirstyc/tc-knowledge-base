@@ -382,8 +382,9 @@ main.notfound .lede { max-width: 48ch; margin-bottom: 40px; }
 .region-group > summary:hover { color: var(--burnt-sunset); }
 
 /* guide/comparison pages (scripts/generate-catalog-pages.mjs) */
-.guide-part { max-width: 72ch; margin-bottom: 56px; }
+.guide-part { max-width: 72ch; margin-bottom: 56px; scroll-margin-top: 110px; }
 .guide-part-title { font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 4vw, 38px); line-height: 1.1; letter-spacing: -0.8px; margin: 0 0 20px; text-wrap: pretty; }
 .body-copy ul, .body-copy ol { font-size: 18px; line-height: 1.8; margin: 0 0 20px; padding-left: 1.4em; }
 .body-copy li { margin-bottom: 6px; }
 .guide-back { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0; }
+.toc { margin: 0 0 56px; padding-left: 1.4em; font-size: 16px; line-height: 1.9; max-width: 72ch; }

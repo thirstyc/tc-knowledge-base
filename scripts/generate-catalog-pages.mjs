@@ -9,13 +9,23 @@
 // grapes, ~35 region groups and 7 guides, so empty means the request
 // failed), that page keeps its existing file and the script exits 1.
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllRows } from '../lib/pagination.mjs';
-import { renderHead, renderHeader, renderFooter, renderHeroBand, escapeHtml, assetPrefixFor } from '../lib/page-shell.mjs';
+import {
+  renderHead,
+  renderHeader,
+  renderFooter,
+  renderHeroBand,
+  escapeHtml,
+  assetPrefixFor,
+  deriveQuestion,
+  answerPagePath,
+} from '../lib/page-shell.mjs';
 import { renderMarkdown } from '../lib/markdown.mjs';
-import { articleSchema } from '../lib/schema-markup-templates.js';
-import { TOPICS, BASE_URL } from '../topics.config.mjs';
+import { articleSchema, topicSchema } from '../lib/schema-markup-templates.js';
+import { REDIRECTS } from '../redirects.config.mjs';
+import { TOPICS, BASE_URL, escapeRegex } from '../topics.config.mjs';
 
 // Public anon key, same as the other generators -- read-only, no secrets.
 const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
@@ -60,15 +70,40 @@ async function fetchRows(applyFilter, lang) {
   );
 }
 
+// Region/grape section rows open with their heading line, then the body.
 // section_title is never translated (it's the join key back to English, see
-// fetchRows), but each French row's content opens with its translated
-// heading, so French pages take the title from there. A few translations
-// dropped that heading line (the text starts straight into the body), so
-// only a short single first line counts; otherwise keep section_title.
-function rowTitle(chunk, lang) {
-  if (lang !== 'fr') return chunk.section_title;
-  const firstLine = chunk.content.split('\n')[0].trim();
-  return firstLine && firstLine.length <= 120 ? firstLine : chunk.section_title;
+// fetchRows), and in English it sometimes carries a slug suffix ("Quick
+// regional summary alsace"), so the heading line is the better title in both
+// languages. A few translations dropped that line (the text starts straight
+// into the body), so only a short single first line counts as a heading.
+function splitHeading(row) {
+  const [first, ...rest] = row.content.split('\n');
+  const heading = first.trim();
+  if (heading && heading.length <= 120) return { heading, body: rest.join('\n').trim() };
+  return { heading: row.section_title, body: row.content };
+}
+
+function rowTitle(chunk) {
+  return splitHeading(chunk).heading;
+}
+
+// Overview content is "eyebrow\n\nname\n\nlede\n\nKey: value\nKey: value"
+// (same parser as generate-topic-pages.mjs).
+function parseOverview(content) {
+  const [eyebrow = '', name = '', lede = '', factsBlock = ''] = content.split('\n\n');
+  const facts = factsBlock
+    .split('\n')
+    .map((line) => {
+      const sep = line.indexOf(':');
+      return sep === -1 ? null : [line.slice(0, sep).trim(), line.slice(sep + 1).trim()];
+    })
+    .filter(Boolean);
+  return { eyebrow: eyebrow.trim(), name: name.trim(), lede: lede.trim(), facts };
+}
+
+function shorten(text, max = 160) {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
 }
 
 function groupBySourceDoc(rows) {
@@ -162,16 +197,23 @@ function guideTitleFr(strippedSlug) {
   return GUIDE_TITLES_FR[strippedSlug] ?? humanizeSlug(strippedSlug);
 }
 
-// A grape/region row links to its topic page when one exists (exact
-// source_doc match only -- same rule as resolveTopicSlug() in
-// supabase-client.js); anything else opens the inline modal. The href is
-// always the plain same-directory filename: an English catalog page and its
-// French counterpart both sit next to their language's topic pages (root
-// and fr/ respectively), so neither needs an assetPrefix here.
-function linkAttrs(chunk) {
-  const topic = TOPICS.find((t) => t.kind === chunk.chunk_type && t.sourceDoc === chunk.source_doc);
-  if (topic) return `href="topic-${topic.slug}.html"`;
-  return `href="#" onclick="window.KnowledgeBase.showChunkDetail(${escapeHtml(JSON.stringify(chunk))}); return false;"`;
+// Where a grape/region row lives (mirrored by chunkHref() in
+// supabase-client.js). hrefs are plain same-directory filenames: English
+// and French catalog pages each sit next to their own language's pages.
+//   - a source_doc with a topic page: that topic page (grape Overview rows,
+//     and the Overview row of the six region topics)
+//   - any other grape: its own grape-*.html page
+//   - a region section: its region-*.html page, at that section's anchor
+function topicFor(chunk) {
+  return TOPICS.find((t) => t.kind === chunk.chunk_type && t.sourceDoc === chunk.source_doc);
+}
+
+function regionPartAnchor(index) {
+  return `part-${index + 1}`;
+}
+
+function linkAttrs(href) {
+  return `href="${href}"`;
 }
 
 function hreflangAlternates(file) {
@@ -218,6 +260,11 @@ function renderPage({ file, nav = file, title, description, main, script = '', l
 // Content shape: "{eyebrow}\n\n{name}\n\n{lede}\n\n{factsBlock}", with the
 // country as the second "/"-separated part of the eyebrow.
 
+function grapeHref(chunk) {
+  const topic = topicFor(chunk);
+  return topic ? `topic-${topic.slug}.html` : `${chunk.source_doc}.html`;
+}
+
 async function buildGrapes(lang) {
   const isFr = lang === 'fr';
   const rows = await fetchRows((q) => q.eq('chunk_type', 'grape').eq('section_title', 'Overview'), lang);
@@ -234,7 +281,7 @@ async function buildGrapes(lang) {
 
   const tiles = grapes
     .map(
-      (g) => `        <a class="tile" data-name="${escapeHtml(g.name.toLowerCase())}" ${linkAttrs(g.chunk)}>
+      (g) => `        <a class="tile" data-name="${escapeHtml(g.name.toLowerCase())}" ${linkAttrs(grapeHref(g.chunk))}>
           <span class="name">${escapeHtml(g.name)}</span>
           <span class="n">${escapeHtml(g.country)}</span>
         </a>`
@@ -317,10 +364,17 @@ async function buildRegions(lang) {
   const groups = groupBySourceDoc(rows)
     .map(([sourceDoc, groupRows]) => {
       const stripped = sourceDoc.replace(/^region-/, '');
+      const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
       return {
         name: isFr ? groupNameFr(stripped) : humanizeSlug(stripped),
-        // The modal's title comes from section_title too, so override it.
-        rows: groupRows.map((row) => ({ ...row, section_title: rowTitle(row, lang) })),
+        rows: groupRows.map((row) => {
+          const topic = topicFor(row);
+          const href =
+            row.section_title === 'Overview' && topic
+              ? `topic-${topic.slug}.html`
+              : `${sourceDoc}.html#${regionPartAnchor(sectionRows.indexOf(row))}`;
+          return { ...row, title: rowTitle(row), href };
+        }),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -334,9 +388,9 @@ async function buildRegions(lang) {
     .map((group) => {
       const items = group.rows
         .map(
-          (chunk) => `          <a class="row-item" ${linkAttrs(chunk)}>
+          (chunk) => `          <a class="row-item" ${linkAttrs(chunk.href)}>
             <span class="id">${escapeHtml(chunk.source_doc.toUpperCase())}</span>
-            <span class="t">${escapeHtml(chunk.section_title || untitled)}</span>
+            <span class="t">${escapeHtml(chunk.title || untitled)}</span>
             <span class="k">${escapeHtml(chunk.chunk_type.toUpperCase())}</span>
           </a>`
         )
@@ -513,6 +567,202 @@ ${parts}
   });
 }
 
+// --- grape-*.html --------------------------------------------------------------
+// One page per grape without a topic page: overview, facts, any extra
+// sections, and every answer that mentions the grape by name.
+
+async function fetchAnswerRows(lang) {
+  const rows = await fetchLangRows((q) => q.in('chunk_type', ['qa', 'region-qa']), lang);
+  const dir = lang === 'fr' ? 'fr/' : '';
+  return rows.filter((row) => {
+    const path = `${dir}${answerPagePath(row.source_doc)}`;
+    return !(path in REDIRECTS) && existsSync(path);
+  });
+}
+
+function renderAnswerRows(rows) {
+  return rows
+    .map(
+      (row) => `        <a class="row-item" href="${answerPagePath(row.source_doc)}">
+          <span class="id">${escapeHtml(row.source_doc.toUpperCase())}</span>
+          <span class="t">${escapeHtml(deriveQuestion(row.content))}</span>
+          <span class="k">${escapeHtml(row.chunk_type.toUpperCase())}</span>
+        </a>`
+    )
+    .join('\n');
+}
+
+function renderSections(parts) {
+  return parts
+    .map(
+      ({ id, heading, body }) => `      <section class="guide-part"${id ? ` id="${id}"` : ''}>
+        <h2 class="guide-part-title">${escapeHtml(heading)}</h2>
+        <div class="body-copy">
+${renderMarkdown(body)}
+        </div>
+      </section>`
+    )
+    .join('\n');
+}
+
+// Grape names like "Riesling (Australia)" are regional takes on a grape.
+// Their answer list only includes answers that mention the place too;
+// style qualifiers ("Old-Vine", "White") don't narrow the match.
+const STYLE_QUALIFIERS = new Set(['White', 'Nebbiolo', 'Old-Vine', 'Higher Quality', 'Rot']);
+const PLACE_PATTERNS = {
+  NZ: 'New Zealand|NZ',
+  USA: 'USA|America|\\bUS\\b',
+  Italy: 'Ital',
+  Argentina: 'Argentin',
+  'Argentine High-Altitude': 'Argentin',
+  Lebanon: 'Leban',
+  Uruguay: 'Urugua',
+  Israel: 'Israel',
+  'Southern Rhône': 'Rhône',
+  'Northern Rhône': 'Rhône',
+};
+
+function grapeAnswerMatcher(name) {
+  const [, base, qualifier] = name.match(/^(.*?)\s*(?:\((.*)\))?\s*$/);
+  const mentionsBase = new RegExp(`(^|[^\\p{L}])${escapeRegex(base)}(?![\\p{L}])`, 'u');
+  const place = qualifier && !STYLE_QUALIFIERS.has(qualifier) ? PLACE_PATTERNS[qualifier] ?? escapeRegex(qualifier) : null;
+  const mentionsPlace = place ? new RegExp(place, 'u') : null;
+  return {
+    base,
+    matches: (content) => mentionsBase.test(content) && (!mentionsPlace || mentionsPlace.test(content)),
+  };
+}
+
+async function buildGrapePages(lang) {
+  const isFr = lang === 'fr';
+  const ap = assetPrefixFor(lang);
+  const [grapeRows, answerRows] = await Promise.all([
+    fetchRows((q) => q.eq('chunk_type', 'grape'), lang),
+    fetchAnswerRows(lang),
+  ]);
+  const pages = [];
+  for (const [sourceDoc, rows] of groupBySourceDoc(grapeRows)) {
+    const overviewRow = rows.find((row) => row.section_title === 'Overview');
+    // grape-varieties is a reference list, not a grape; topic grapes
+    // already have their own page.
+    if (!overviewRow || topicFor(overviewRow)) continue;
+
+    const overview = parseOverview(overviewRow.content);
+    const name = overview.name || humanizeSlug(sourceDoc.replace(/^grape-/, ''));
+    const matcher = grapeAnswerMatcher(name);
+    const matchName = matcher.base;
+    const answers = answerRows.filter((row) => matcher.matches(row.content)).slice(0, 60);
+    // Regional takes on a topic grape ("Riesling (Australia)") also point to
+    // that grape's topic page.
+    const baseTopic = TOPICS.find((t) => t.kind === 'grape' && t.topicName === matchName);
+    const baseTopicLink = baseTopic
+      ? `      <p class="guide-back" style="margin-bottom: 40px"><a href="topic-${baseTopic.slug}.html">${
+          isFr ? `Tout sur ${escapeHtml(matchName)}` : `Everything on ${escapeHtml(matchName)}`
+        } &rarr;</a></p>\n`
+      : '';
+    const sections = rows.filter((row) => row !== overviewRow).map((row) => splitHeading(row));
+
+    const file = `${sourceDoc}.html`;
+    const description = shorten(overview.lede || name);
+    const facts = overview.facts
+      .map(([key, value]) => `          <div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`)
+      .join('\n');
+    const countLine = isFr
+      ? `${answers.length} réponse${answers.length !== 1 ? 's' : ''} mentionnant ${matchName}`
+      : `${answers.length} Answer${answers.length !== 1 ? 's' : ''} Mentioning ${matchName}`;
+
+    const html = renderPage({
+      file,
+      nav: 'grapes.html',
+      lang,
+      title: isFr ? `${name} — Thirsty Cunt` : `${name} — Thirsty Cunt Knowledge Base`,
+      description: escapeHtml(description),
+      jsonLd: [topicSchema({ name, description, url: `${isFr ? 'fr/' : ''}${file}`, kind: 'grape', lang })],
+      main: `  <main class="has-hero">
+${renderHeroBand({
+  breadcrumb: `<a href="${ap}index.html">${isFr ? 'Accueil' : 'Home'}</a> / <a href="grapes.html">${isFr ? 'Cépages' : 'Grapes'}</a> / ${escapeHtml(name)}`,
+  eyebrow: overview.eyebrow,
+  title: name,
+  lede: overview.lede,
+  aside: facts ? `        <dl class="facts">\n${facts}\n        </dl>` : '',
+})}
+    <div class="wrap">
+${baseTopicLink}${renderSections(sections)}
+${answers.length ? `      <p class="list-head">${escapeHtml(countLine)}</p>
+      <div style="margin-bottom: 56px">
+${renderAnswerRows(answers)}
+      </div>` : ''}
+      <p class="guide-back"><a href="grapes.html">&larr; ${isFr ? 'Tous les cépages' : 'All grapes'}</a></p>
+    </div>
+  </main>`,
+    });
+    pages.push([file, html]);
+  }
+  if (pages.length === 0) throw new Error(`no ${lang} grape pages built`);
+  return pages;
+}
+
+// --- region-*.html -------------------------------------------------------------
+// One page per region chapter that has sections (the six region topics'
+// Overview rows stay on their topic pages). Sections get part-N anchors,
+// which regions.html links to.
+
+async function buildRegionPages(lang) {
+  const isFr = lang === 'fr';
+  const ap = assetPrefixFor(lang);
+  const rows = await fetchRows((q) => q.eq('chunk_type', 'region'), lang);
+  const pages = [];
+  for (const [sourceDoc, groupRows] of groupBySourceDoc(rows)) {
+    const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
+    if (sectionRows.length === 0) continue;
+
+    const stripped = sourceDoc.replace(/^region-/, '');
+    const name = isFr ? groupNameFr(stripped) : humanizeSlug(stripped);
+    const parts = sectionRows.map((row, i) => ({ id: regionPartAnchor(i), ...splitHeading(row) }));
+    const topic = TOPICS.find((t) => t.kind === 'region' && t.sourceDoc === sourceDoc);
+    const file = `${sourceDoc}.html`;
+    const description = shorten(stripMarkdown(parts[0].body) || name);
+    const sectionWord = isFr
+      ? `${parts.length} section${parts.length !== 1 ? 's' : ''}`
+      : `${parts.length} section${parts.length !== 1 ? 's' : ''}`;
+    const toc = parts
+      .map(({ id, heading }) => `        <li><a href="#${id}">${escapeHtml(heading)}</a></li>`)
+      .join('\n');
+    const topicLink = topic
+      ? `      <p class="guide-back" style="margin-bottom: 40px"><a href="topic-${topic.slug}.html">${
+          isFr ? 'Toutes nos réponses sur cette région' : 'All our answers on this region'
+        } &rarr;</a></p>\n`
+      : '';
+
+    const html = renderPage({
+      file,
+      nav: 'regions.html',
+      lang,
+      title: isFr ? `${name} — Thirsty Cunt` : `${name} — Thirsty Cunt Knowledge Base`,
+      description: escapeHtml(description),
+      jsonLd: [topicSchema({ name, description, url: `${isFr ? 'fr/' : ''}${file}`, kind: 'region', lang })],
+      main: `  <main class="has-hero">
+${renderHeroBand({
+  breadcrumb: `<a href="${ap}index.html">${isFr ? 'Accueil' : 'Home'}</a> / <a href="regions.html">${isFr ? 'Régions' : 'Regions'}</a> / ${escapeHtml(name)}`,
+  eyebrow: `${isFr ? 'Région viticole' : 'Wine Region'} · ${sectionWord}`,
+  title: name,
+  lede: description,
+})}
+    <div class="wrap">
+${topicLink}      <ol class="toc">
+${toc}
+      </ol>
+${renderSections(parts)}
+      <p class="guide-back"><a href="regions.html">&larr; ${isFr ? 'Toutes les régions' : 'All regions'}</a></p>
+    </div>
+  </main>`,
+    });
+    pages.push([file, html]);
+  }
+  if (pages.length === 0) throw new Error(`no ${lang} region pages built`);
+  return pages;
+}
+
 // Single-page builds return one HTML string; multi-page builds return
 // [[file, html], ...].
 const builds = [
@@ -520,6 +770,8 @@ const builds = [
   ['regions.html', buildRegions],
   ['guides.html', buildGuides],
   ['guide pages', buildGuidePages],
+  ['grape pages', buildGrapePages],
+  ['region pages', buildRegionPages],
 ];
 
 mkdirSync('fr', { recursive: true });
