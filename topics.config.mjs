@@ -255,7 +255,10 @@ export const TOPICS = [
     matchTermFr: ['vin nature', 'vins nature', 'intervention minimale', 'faible intervention'],
     // \b stops "vin naturellement" (naturally sweet, etc.) routing here --
     // ilike in matchTermFr can't express that, but none match today.
-    keywordPatternFr: 'vins? nature(?:ls?)?\\b|faible intervention|intervention minimale',
+    // "natures" too: the translator sometimes pluralises the (invariable)
+    // "vins nature". "peu interventionniste" is the adjectival form of
+    // English's "low-intervention".
+    keywordPatternFr: 'vins? nature(?:ls?|s)?\\b|faible intervention|intervention minimale|peu interventionnistes?',
     topicNameFr: 'Vin nature',
     frReady: true,
     metaDescriptionFr:
@@ -267,6 +270,10 @@ export const TOPICS = [
     topicName: 'Fermentation',
     sourceDoc: 'enology-fermentation',
     metaDescription: 'How grape juice becomes wine. Everything we know about fermentation.',
+    // English usually says "fermented"/"fermenting" where French says "la
+    // fermentation", so the bare noun alone routed the same answer
+    // differently by language. The stem covers both ("fermenté" too).
+    keywordPattern: '\\bferment(?:ations?|ed|ing|s|[ée]e?s?)?(?![a-zA-ZÀ-ÖØ-öø-ÿ])',
     frReady: true,
     metaDescriptionFr: 'Comment le jus de raisin devient du vin. Tout ce que nous savons sur la fermentation.',
   },
@@ -310,7 +317,8 @@ export const TOPICS = [
     // Adjectival forms too ("oaked", "oaky", "unoaked"): a bare \boak\b
     // skipped them while French's "boisé"/"non boisé" matched, so the same
     // answer could route to Oak in French and elsewhere in English.
-    keywordPattern: '\\b(?:un)?oak(?:ed|y)?\\b',
+    // "barrel"/"cask"/"barrique" too, since French's "fût" already routes here.
+    keywordPattern: '\\b(?:un)?oak(?:ed|y)?\\b|\\bbarrels?\\b|\\bcasks?\\b|\\bbarriques?\\b',
     // "Oak" -> "chêne" in French (also enforced via the DeepL glossary) --
     // an entirely different word, needs its own match/keyword pattern. Some
     // rows describe barrel ageing without naming the wood ("non boisé",
@@ -323,7 +331,7 @@ export const TOPICS = [
     // "boisé" ("boisés"/"boisée" were fine, ending in an ASCII letter), so
     // the trailing boundary here is a lookahead for "not another letter"
     // instead, accented or not.
-    keywordPatternFr: '\\bch[êe]ne\\b|\\bbois[ée]e?s?(?![a-zA-ZÀ-ÖØ-öø-ÿ])|\\bf[uû]ts?\\b',
+    keywordPatternFr: '\\bch[êe]ne\\b|\\bbois[ée]e?s?(?![a-zA-ZÀ-ÖØ-öø-ÿ])|\\bf[uû]ts?\\b|\\bbarriques?\\b',
     topicNameFr: 'Chêne',
     frReady: true,
     metaDescriptionFr: 'Vanille, épices et texture venues du fût. Tout ce que nous savons sur le chêne.',
@@ -335,10 +343,13 @@ export const TOPICS = [
     sourceDoc: 'enology-faults',
     metaDescription: 'Flaw or style choice? Everything we know about wine faults.',
     matchTerm: 'Fault',
-    keywordPattern: '\\bfault(s|y)?\\b',
+    // "corked"/"tainted" and their French forms name faults without the
+    // word itself; the lookbehind skips "re-corked" (resealed, not TCA).
+    keywordPattern: '\\bfault(s|y)?\\b|(?<![-\\w])corked\\b|\\btainted\\b',
     // "Fault" -> "défaut" in French -- an entirely different word.
     matchTermFr: 'défaut',
-    keywordPatternFr: 'd[ée]fauts?',
+    // Not "par défaut" (by default). "défectueux" is how "faulty" translates.
+    keywordPatternFr: '(?<!par )d[ée]fauts?|\\bd[ée]fectueu(?:x|se|ses)\\b|\\bbouchonn[ée]e?s?(?![a-zA-ZÀ-ÖØ-öø-ÿ])',
     topicNameFr: 'Défauts du vin',
     frReady: true,
     metaDescriptionFr: 'Défaut ou choix de style ? Tout ce que nous savons sur les défauts du vin.',
@@ -355,7 +366,9 @@ export const TOPICS = [
     // French one, whose three category words already catch them.
     matchTerm: ['sparkling', 'Champagne', 'Prosecco', 'Cava', 'Crémant', 'Lambrusco', 'Franciacorta', 'pét-nat', 'pet-nat'],
     keywordPattern:
-      '\\bsparkling\\b|\\bchampagnes?\\b|\\bprosecco\\b|\\bcava\\b|\\bcr[ée]mant\\b|\\blambrusco\\b|\\bfranciacorta\\b|\\bp[ée]t[- ]nat\\b',
+      '\\bsparkling\\b|\\bchampagnes?\\b|\\bprosecco\\b|\\bcava\\b|\\bcr[ée]mant\\b|\\blambrusco\\b|\\bfranciacorta\\b|\\bp[ée]t[- ]nat\\b' +
+      // "fizzy"/"spritzy"/"frizzante" are what French renders "pétillant".
+      '|\\bfizz(?:y|es)?\\b|\\bfrizzante\\b|\\bspritz(?:y)?\\b',
     // French uses several words for the category depending on pressure and
     // style ("mousseux", "effervescent", "pétillant"), none of them cognates.
     matchTermFr: ['mousseux', 'effervescent', 'pétillant', 'Champagne', 'Prosecco', 'Cava', 'Crémant', 'Lambrusco'],

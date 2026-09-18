@@ -105,15 +105,28 @@ function topicBySourceDoc(sourceDoc) {
   return TOPICS.find((t) => t.sourceDocPrefixes?.some((prefix) => (sourceDoc || '').startsWith(prefix)));
 }
 
+// Region answers are named for their region (qa-region-niagara-style), so
+// that region's topic claims them before anything else: question word order
+// differs by language ("Niagara Riesling" vs "Riesling du Niagara"), and the
+// first-mention rule would otherwise route the two translations apart.
+function topicByRegionDoc(sourceDoc) {
+  return TOPICS.find(
+    (t) => t.kind === 'region' && [t.slug, t.slug.replace(/-valley$/, '')].some((s) => (sourceDoc || '').startsWith(`qa-region-${s}-`)),
+  );
+}
+
 function resolveTopicLink(content, sectionTitle, lang, sourceDoc) {
   // A topic named in the question itself is what the answer is about
   // ("Best natural wine?"), even if a grape or region comes up first in
   // the body; otherwise fall back to the whole answer.
-  // Precedence: a topic named in the question ("Best natural wine?" is
-  // about natural wine), then a topic that claims the answer by source_doc
-  // prefix, then the first grape/region/concept mentioned in the body.
+  // Precedence: a region answer's own region (see topicByRegionDoc), then
+  // a topic named in the question ("Best natural wine?" is about natural
+  // wine), then a topic that claims the answer by source_doc prefix, then
+  // the first grape/region/concept mentioned in the body.
   const claimed = topicBySourceDoc(sourceDoc);
+  const region = topicByRegionDoc(sourceDoc);
   const best =
+    (region ? { topic: region } : null) ??
     bestTopicIn(deriveQuestion(content || '')) ??
     (claimed ? { topic: claimed } : null) ??
     bestTopicIn(`${content || ''} ${sectionTitle || ''}`);
