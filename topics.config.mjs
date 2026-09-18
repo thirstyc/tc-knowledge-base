@@ -231,6 +231,30 @@ export const TOPICS = [
     metaDescriptionFr: 'Cultiver selon le calendrier lunaire. Tout ce que nous savons sur le vin biodynamique.',
   },
   {
+    slug: 'natural-wine',
+    kind: 'enology',
+    topicName: 'Natural Wine',
+    sourceDoc: 'enology-natural-wine',
+    metaDescription:
+      'Nothing added, nothing taken away — and no legal definition anywhere. Everything we know about natural wine.',
+    // Bare "natural" is almost all false positives in the qa rows ("a
+    // natural match", "naturally peppery", "natural cork", "natural
+    // compounds"), so match the phrase instead, plus the two ways rows
+    // describe the same thing without using the word "natural" at all.
+    matchTerm: ['natural wine', 'low-intervention', 'minimal intervention'],
+    // Default (escaped topicName) would route only rows saying the exact
+    // phrase; a card that only says "low-intervention" belongs here too.
+    keywordPattern: 'natural wines?|low-intervention',
+    // Sits after biodynamic deliberately: a row that names both should
+    // route to the narrower, more specific claim of the two.
+    //
+    // frReady stays false until an enology-natural-wine Overview exists in
+    // French -- the FR qa rows say "vin nature", not "natural wine", so a
+    // French page would need matchTermFr/keywordPatternFr too. Only 2 FR
+    // rows match today, so it would ship a near-empty page.
+    frReady: false,
+  },
+  {
     slug: 'fermentation',
     kind: 'enology',
     topicName: 'Fermentation',

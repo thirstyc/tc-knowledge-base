@@ -87,8 +87,8 @@ function getSearchParam(param) {
 const TOPIC_PAGE_SLUGS = new Set([
   'chenin-blanc', 'cabernet-sauvignon', 'rhone-valley', 'nebbiolo', 'gamay', 'riesling',
   'burgundy', 'priorat', 'jura', 'etna', 'niagara', 'grenache',
-  'biodynamic', 'fermentation', 'sulphites', 'tannins', 'oak', 'faults',
-  'sparkling', 'fortified',
+  'biodynamic', 'natural-wine', 'fermentation', 'sulphites', 'tannins', 'oak',
+  'faults', 'sparkling', 'fortified',
 ]);
 
 // Maps a region-/enology-prefixed source_doc to its topic slug when the two
@@ -115,6 +115,7 @@ const TOPIC_KEYWORDS = [
   { pattern: /niagara/i, slug: 'niagara' },
   { pattern: /grenache/i, slug: 'grenache' },
   { pattern: /(?:biodynamic)|(?:biodynamique)/i, slug: 'biodynamic' },
+  { pattern: /natural wines?|low-intervention/i, slug: 'natural-wine' },
   { pattern: /fermentation/i, slug: 'fermentation' },
   { pattern: /sulf?ite/i, slug: 'sulphites' },
   { pattern: /(?:\btannins?\b)|(?:\btanins?\b)/i, slug: 'tannins' },
