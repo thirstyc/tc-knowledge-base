@@ -248,11 +248,18 @@ export const TOPICS = [
     // Sits after biodynamic deliberately: a row that names both should
     // route to the narrower, more specific claim of the two.
     //
-    // frReady stays false until an enology-natural-wine Overview exists in
-    // French -- the FR qa rows say "vin nature", not "natural wine", so a
-    // French page would need matchTermFr/keywordPatternFr too. Only 2 FR
-    // rows match today, so it would ship a near-empty page.
-    frReady: false,
+    // French rows say "vin(s) nature", not a translation of "natural
+    // wine". "vin nature" also covers "vin naturel" as a substring but not
+    // the plural "vins nature", so both are listed. Bare "nature" is as
+    // noisy as bare "natural" in English (Brut Nature, "par nature").
+    matchTermFr: ['vin nature', 'vins nature', 'intervention minimale', 'faible intervention'],
+    // \b stops "vin naturellement" (naturally sweet, etc.) routing here --
+    // ilike in matchTermFr can't express that, but none match today.
+    keywordPatternFr: 'vins? nature(?:ls?)?\\b|faible intervention|intervention minimale',
+    topicNameFr: 'Vin nature',
+    frReady: true,
+    metaDescriptionFr:
+      "Rien d'ajouté, rien de retiré — et aucune définition légale nulle part. Tout ce que nous savons sur le vin nature.",
   },
   {
     slug: 'fermentation',

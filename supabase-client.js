@@ -115,7 +115,7 @@ const TOPIC_KEYWORDS = [
   { pattern: /niagara/i, slug: 'niagara' },
   { pattern: /grenache/i, slug: 'grenache' },
   { pattern: /(?:biodynamic)|(?:biodynamique)/i, slug: 'biodynamic' },
-  { pattern: /natural wines?|low-intervention/i, slug: 'natural-wine' },
+  { pattern: /(?:natural wines?|low-intervention)|(?:vins? nature(?:ls?)?\b|faible intervention|intervention minimale)/i, slug: 'natural-wine' },
   { pattern: /fermentation/i, slug: 'fermentation' },
   { pattern: /sulf?ite/i, slug: 'sulphites' },
   { pattern: /(?:\btannins?\b)|(?:\btanins?\b)/i, slug: 'tannins' },
