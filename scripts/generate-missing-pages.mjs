@@ -86,17 +86,24 @@ function hreflangAlternates(path) {
 // Wine-science topics (tannins, oak, ...) are concepts most answers touch in
 // passing, so they only win when no grape or region is mentioned. TOPICS
 // order only breaks ties between patterns matching at the same position.
-function resolveTopicLink(content, sectionTitle, lang) {
-  const haystack = `${content || ''} ${sectionTitle || ''}`;
+function bestTopicIn(text) {
   let best = null;
   for (const topic of TOPICS) {
-    const match = new RegExp(effectiveKeywordPattern(topic), 'i').exec(haystack);
+    const match = new RegExp(effectiveKeywordPattern(topic), 'i').exec(text);
     if (!match) continue;
     const rank = topic.kind === 'enology' ? 1 : 0;
     if (!best || rank < best.rank || (rank === best.rank && match.index < best.index)) {
       best = { topic, index: match.index, rank };
     }
   }
+  return best;
+}
+
+function resolveTopicLink(content, sectionTitle, lang) {
+  // A topic named in the question itself is what the answer is about
+  // ("Best natural wine?"), even if a grape or region comes up first in
+  // the body; otherwise fall back to the whole answer.
+  const best = bestTopicIn(deriveQuestion(content || '')) ?? bestTopicIn(`${content || ''} ${sectionTitle || ''}`);
   if (best) {
     const { topic } = best;
     const label = lang === 'fr' ? topic.topicNameFr ?? topic.topicName : topic.topicName;
