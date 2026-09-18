@@ -1,0 +1,17 @@
+{
+  "generated": "2026-09-18T20:18:47Z",
+  "totalUrls": 1716,
+  "urlsByType": {
+    "qa": 925,
+    "atlas": 305,
+    "region-qa": 234,
+    "grape": 189,
+    "region": 36,
+    "enology": 12,
+    "producer": 8,
+    "comparison": 4,
+    "guide": 3
+  },
+  "sitemapUrls": 2803,
+  "lastUpdated": "2026-09-18"
+}
