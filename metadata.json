@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-18T21:16:29Z",
-  "totalUrls": 1755,
+  "generated": "2026-09-18T21:23:51Z",
+  "totalUrls": 1762,
   "urlsByType": {
-    "qa": 964,
+    "qa": 971,
     "atlas": 305,
     "region-qa": 234,
     "grape": 189,
@@ -12,6 +12,6 @@
     "comparison": 4,
     "guide": 3
   },
-  "sitemapUrls": 2901,
+  "sitemapUrls": 2915,
   "lastUpdated": "2026-09-18"
 }
