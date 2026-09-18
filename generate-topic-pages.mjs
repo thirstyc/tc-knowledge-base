@@ -125,6 +125,18 @@ async function fetchTopicData(topic, lang) {
   // here means something is wrong upstream, not an empty topic.
   if (overview.data.length === 0) throw new Error(`no ${lang} Overview chunk for ${topic.sourceDoc}`);
 
+  if (topic.sourceDocPrefixes) {
+    // Membership by source_doc prefix (see topics.config.mjs), not keyword.
+    const byPrefix = await publishedChunks(lang)
+      .in('chunk_type', ['qa', 'region-qa'])
+      .or(topic.sourceDocPrefixes.map((prefix) => `source_doc.like.${prefix}*`).join(','))
+      .order('source_doc')
+      .order('id')
+      .limit(200);
+    if (byPrefix.error) throw byPrefix.error;
+    return { overview: parseOverview(overview.data[0].content), qaRows: byPrefix.data };
+  }
+
   const matchTerm = lang === 'fr' ? topic.matchTermFr ?? topic.matchTerm ?? topic.topicName : topic.matchTerm ?? topic.topicName;
   let qa = matchingContent(
     publishedChunks(lang).eq('chunk_type', topic.kind === 'region' ? 'region-qa' : 'qa'),

@@ -382,4 +382,20 @@ export const TOPICS = [
     frReady: true,
     metaDescriptionFr: "Porto, xérès, madère : ce que l'ajout d'eau-de-vie change. Tout ce que nous savons sur les vins fortifiés.",
   },
+  {
+    slug: 'buying',
+    kind: 'enology',
+    topicName: 'Buying Wine',
+    sourceDoc: 'enology-buying',
+    metaDescription: 'Where to buy, what to spend, and how to choose. Everything we know about buying wine.',
+    // Buying has no reliable keyword ("best", "value", "store" appear in
+    // hundreds of unrelated answers), so this topic lists answers by
+    // source_doc prefix instead, and those answers link here directly.
+    sourceDocPrefixes: ['qa-buying-', 'qa-sourcing-', 'qa-wine-gift'],
+    // Never matches: membership comes from sourceDocPrefixes only.
+    keywordPattern: '(?!x)x',
+    topicNameFr: 'Acheter du vin',
+    frReady: true,
+    metaDescriptionFr: 'Où acheter, combien dépenser et comment choisir. Tout ce que nous savons sur l\'achat du vin.',
+  },
 ];

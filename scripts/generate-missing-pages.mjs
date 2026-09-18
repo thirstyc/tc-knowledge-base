@@ -99,11 +99,24 @@ function bestTopicIn(text) {
   return best;
 }
 
-function resolveTopicLink(content, sectionTitle, lang) {
+// Topics that list answers by source_doc prefix (topics.config.mjs) claim
+// those answers outright.
+function topicBySourceDoc(sourceDoc) {
+  return TOPICS.find((t) => t.sourceDocPrefixes?.some((prefix) => (sourceDoc || '').startsWith(prefix)));
+}
+
+function resolveTopicLink(content, sectionTitle, lang, sourceDoc) {
   // A topic named in the question itself is what the answer is about
   // ("Best natural wine?"), even if a grape or region comes up first in
   // the body; otherwise fall back to the whole answer.
-  const best = bestTopicIn(deriveQuestion(content || '')) ?? bestTopicIn(`${content || ''} ${sectionTitle || ''}`);
+  // Precedence: a topic named in the question ("Best natural wine?" is
+  // about natural wine), then a topic that claims the answer by source_doc
+  // prefix, then the first grape/region/concept mentioned in the body.
+  const claimed = topicBySourceDoc(sourceDoc);
+  const best =
+    bestTopicIn(deriveQuestion(content || '')) ??
+    (claimed ? { topic: claimed } : null) ??
+    bestTopicIn(`${content || ''} ${sectionTitle || ''}`);
   if (best) {
     const { topic } = best;
     const label = lang === 'fr' ? topic.topicNameFr ?? topic.topicName : topic.topicName;
@@ -134,7 +147,7 @@ function renderAnswerPage(row, related, lang) {
   const path = isFr ? `fr/${slugPath}` : slugPath;
   const question = deriveQuestion(row.content);
   const answerBody = row.content.slice(question.length).trim();
-  const topic = resolveTopicLink(row.content, row.section_title, lang);
+  const topic = resolveTopicLink(row.content, row.section_title, lang, row.source_doc);
   const difficultySlug = row.section_title === 'Beginner' ? 'beginner' : 'intermediate';
   const difficultyLabel = isFr ? DIFFICULTY_LABELS_FR[row.section_title] ?? row.section_title : row.section_title;
   const ap = assetPrefixFor(lang);
