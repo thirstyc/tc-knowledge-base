@@ -307,7 +307,10 @@ export const TOPICS = [
     topicName: 'Oak',
     sourceDoc: 'enology-oak',
     metaDescription: 'Vanilla, spice, and texture from the barrel. Everything we know about oak.',
-    keywordPattern: '\\boak\\b',
+    // Adjectival forms too ("oaked", "oaky", "unoaked"): a bare \boak\b
+    // skipped them while French's "boisé"/"non boisé" matched, so the same
+    // answer could route to Oak in French and elsewhere in English.
+    keywordPattern: '\\b(?:un)?oak(?:ed|y)?\\b',
     // "Oak" -> "chêne" in French (also enforced via the DeepL glossary) --
     // an entirely different word, needs its own match/keyword pattern. Some
     // rows describe barrel ageing without naming the wood ("non boisé",
