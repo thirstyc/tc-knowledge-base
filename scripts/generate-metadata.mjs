@@ -6,32 +6,38 @@
 // producer docs have no generated pages yet, so totalUrls can differ from
 // sitemapUrls (which also counts fr/, topic and index pages).
 //
-// Run: node scripts/generate-metadata.mjs   (or npm run generate:metadata)
+// The file is only rewritten when a count changes, so the weekly
+// generate-pages workflow doesn't commit a timestamp-only diff.
+//
+// Run after the sitemap: node scripts/generate-metadata.mjs
+// (or npm run generate:metadata)
 
-import 'dotenv/config';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { fetchAllRows } from '../lib/pagination.mjs';
 
-const PAGE_SIZE = 1000;
+// Same public anon key as generate-missing-pages.mjs: published rows are
+// readable without secrets, so the workflow needs none.
+const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
+const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
+const METADATA_PATH = 'metadata.json';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function publishedDocsByType() {
-  const docs = new Map();
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase
+  const rows = await fetchAllRows(() =>
+    supabase
       .from('knowledge_chunks')
       .select('chunk_type, source_doc')
       .eq('status', 'published')
       .eq('lang', 'en')
-      .order('id')
-      .range(from, from + PAGE_SIZE - 1);
-    if (error) throw error;
-    for (const { chunk_type, source_doc } of data) {
-      if (!docs.has(chunk_type)) docs.set(chunk_type, new Set());
-      docs.get(chunk_type).add(source_doc);
-    }
-    if (data.length < PAGE_SIZE) break;
+      .order('id'),
+  );
+  const docs = new Map();
+  for (const { chunk_type, source_doc } of rows) {
+    if (!docs.has(chunk_type)) docs.set(chunk_type, new Set());
+    docs.get(chunk_type).add(source_doc);
   }
   return Object.fromEntries(
     [...docs].map(([type, slugs]) => [type, slugs.size]).sort((a, b) => b[1] - a[1]),
@@ -39,19 +45,32 @@ async function publishedDocsByType() {
 }
 
 const urlsByType = await publishedDocsByType();
-const totalUrls = Object.values(urlsByType).reduce((sum, n) => sum + n, 0);
-const sitemapUrls = (readFileSync('sitemap.xml', 'utf8').match(/<loc>/g) ?? []).length;
-const now = new Date();
-
-const metadata = {
-  generated: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
-  totalUrls,
+const counts = {
+  totalUrls: Object.values(urlsByType).reduce((sum, n) => sum + n, 0),
   urlsByType,
-  sitemapUrls,
-  lastUpdated: now.toISOString().slice(0, 10),
+  sitemapUrls: (readFileSync('sitemap.xml', 'utf8').match(/<loc>/g) ?? []).length,
 };
-writeFileSync('metadata.json', `${JSON.stringify(metadata, null, 2)}\n`);
-console.log(
-  `Generated metadata with ${totalUrls} total URLs across ${Object.keys(urlsByType).length} content types` +
-    ` (sitemap.xml: ${sitemapUrls} urls)`,
-);
+const summary =
+  `${counts.totalUrls} total URLs across ${Object.keys(urlsByType).length} content types` +
+  ` (sitemap.xml: ${counts.sitemapUrls} urls)`;
+
+const previous = existsSync(METADATA_PATH) ? JSON.parse(readFileSync(METADATA_PATH, 'utf8')) : null;
+const unchanged =
+  previous &&
+  JSON.stringify({ totalUrls: previous.totalUrls, urlsByType: previous.urlsByType, sitemapUrls: previous.sitemapUrls }) ===
+    JSON.stringify(counts);
+
+if (unchanged) {
+  console.log(`  -> metadata.json unchanged (${summary})`);
+} else {
+  const now = new Date();
+  const metadata = {
+    generated: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    totalUrls: counts.totalUrls,
+    urlsByType,
+    sitemapUrls: counts.sitemapUrls,
+    lastUpdated: now.toISOString().slice(0, 10),
+  };
+  writeFileSync(METADATA_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
+  console.log(`Generated metadata with ${summary}`);
+}
