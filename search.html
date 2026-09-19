@@ -132,14 +132,7 @@
           : `${chunks.length} result${chunks.length !== 1 ? 's' : ''} for "${searchQuery}"`;
         if (resultCount) resultCount.textContent = label;
         if (resultsDiv) {
-          resultsDiv.innerHTML = chunks.map(chunk => {
-            const title = window.KnowledgeBase.deriveCardTitle(chunk);
-            const content = chunk.content || '';
-            const summary = chunk.summary || content.substring(0, 150) + '...';
-            const category = chunk.chunk_type || 'General';
-            const source = chunk.source_doc || 'knowledge';
-            return `<a class="answer-card" ${window.KnowledgeBase.chunkLinkAttrs(chunk)}><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p class="last">${summary}</p></a>`;
-          }).join('');
+          resultsDiv.innerHTML = chunks.map(window.KnowledgeBase.renderAnswerCard).join('');
         }
       }
     });

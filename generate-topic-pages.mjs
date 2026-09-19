@@ -17,7 +17,8 @@ import { TOPICS, BASE_URL, effectiveKeywordPattern } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
 import { topicSchema } from './lib/schema-markup-templates.js';
 import { REDIRECTS } from './redirects.config.mjs';
-import { isSectionRow, sectionPageHref } from './lib/sections.mjs';
+import { isSectionRow, sectionPageHref, sectionAnchor } from './lib/sections.mjs';
+import { renderMarkdown } from './lib/markdown.mjs';
 import {
   renderHead as renderHeadShell,
   renderHeader as renderHeaderShell,
@@ -27,6 +28,7 @@ import {
   deriveQuestion,
   escapeHtml,
   answerPagePath,
+  kindLabel,
 } from './lib/page-shell.mjs';
 
 // Same public anon key used by every other page (client-side, protected by
@@ -125,6 +127,16 @@ async function fetchTopicData(topic, lang) {
   // here means something is wrong upstream, not an empty topic.
   if (overview.data.length === 0) throw new Error(`no ${lang} Overview chunk for ${topic.sourceDoc}`);
 
+  // The topic's own explainer sections (same source_doc, not the Overview),
+  // shown on the page itself.
+  const own = await publishedChunks(lang)
+    .eq('chunk_type', topic.kind)
+    .eq('source_doc', topic.sourceDoc)
+    .neq('section_title', 'Overview')
+    .order('id');
+  if (own.error) throw own.error;
+  const sections = topic.kind === 'enology' ? own.data : [];
+
   if (topic.sourceDocPrefixes) {
     // Membership by source_doc prefix (see topics.config.mjs), not keyword.
     const byPrefix = await publishedChunks(lang)
@@ -134,7 +146,7 @@ async function fetchTopicData(topic, lang) {
       .order('id')
       .limit(200);
     if (byPrefix.error) throw byPrefix.error;
-    return { overview: parseOverview(overview.data[0].content), qaRows: byPrefix.data };
+    return { overview: parseOverview(overview.data[0].content), sections, qaRows: byPrefix.data };
   }
 
   const matchTerm = lang === 'fr' ? topic.matchTermFr ?? topic.matchTerm ?? topic.topicName : topic.matchTerm ?? topic.topicName;
@@ -158,8 +170,10 @@ async function fetchTopicData(topic, lang) {
   // Answer rows whose page is retired in redirects.config.mjs aren't listed.
   const isRetired = (r) =>
     ['qa', 'region-qa'].includes(r.chunk_type) && `${lang === 'fr' ? 'fr/' : ''}${answerPagePath(r.source_doc)}` in REDIRECTS;
-  const qaRows = results.flatMap((r) => r.data).filter((r) => !isRetired(r));
-  return { overview: parseOverview(overview.data[0].content), qaRows };
+  const qaRows = results
+    .flatMap((r) => r.data)
+    .filter((r) => !isRetired(r) && !(r.chunk_type === 'enology' && r.source_doc === topic.sourceDoc));
+  return { overview: parseOverview(overview.data[0].content), sections, qaRows };
 }
 
 // Overview content is "eyebrow\n\nname\n\nlede\n\nKey: value\nKey: value".
@@ -205,9 +219,8 @@ function renderRow(chunk, lang) {
       ? `href="${href}"`
       : `href="#" onclick="window.KnowledgeBase.showChunkDetail(${escapeHtml(JSON.stringify(chunk))}); return false;"`;
   return `        <a class="row-item" ${linkAttrs}>
-          <span class="id">${escapeHtml(chunk.source_doc.toUpperCase())}</span>
           <span class="t">${escapeHtml(rowTitle(chunk))}</span>
-          <span class="k">${escapeHtml(chunk.chunk_type.toUpperCase())}</span>
+          ${kindLabel(chunk.chunk_type, lang) ? `<span class="k">${escapeHtml(kindLabel(chunk.chunk_type, lang))}</span>` : ''}
         </a>`;
 }
 
@@ -218,7 +231,23 @@ function countLine(count, name, lang) {
   return count === 0 ? `No Answers Yet On ${name}` : `${count} Answer${count !== 1 ? 's' : ''} On ${name}`;
 }
 
-function renderMain(topic, lang, { overview, qaRows }) {
+// A section's content opens with its heading line, then the body.
+function renderOwnSections(sections) {
+  return sections
+    .map((row) => {
+      const [first, ...rest] = row.content.split('\n');
+      const heading = first.trim();
+      return `      <section class="guide-part" id="${sectionAnchor(row)}">
+        <h2 class="guide-part-title">${escapeHtml(heading)}</h2>
+        <div class="body-copy">
+${renderMarkdown(rest.join('\n').trim())}
+        </div>
+      </section>`;
+    })
+    .join('\n');
+}
+
+function renderMain(topic, lang, { overview, sections = [], qaRows }) {
   const name = topicName(topic, lang);
   const home = lang === 'fr' ? 'Accueil' : 'Home';
   const facts = overview.facts
@@ -234,7 +263,7 @@ function renderMain(topic, lang, { overview, qaRows }) {
   return `  <main class="has-hero">
 ${hero}
     <div class="wrap">
-      <p class="list-head">${escapeHtml(countLine(qaRows.length, name, lang))}</p>
+${sections.length ? `${renderOwnSections(sections)}\n` : ''}      <p class="list-head">${escapeHtml(countLine(qaRows.length, name, lang))}</p>
       <div>
 ${qaRows.map((chunk) => renderRow(chunk, lang)).join('\n')}
       </div>

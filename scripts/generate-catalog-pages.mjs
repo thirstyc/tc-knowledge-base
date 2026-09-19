@@ -21,6 +21,7 @@ import {
   assetPrefixFor,
   deriveQuestion,
   answerPagePath,
+  kindLabel,
 } from '../lib/page-shell.mjs';
 import { renderMarkdown } from '../lib/markdown.mjs';
 import { articleSchema, topicSchema } from '../lib/schema-markup-templates.js';
@@ -262,6 +263,40 @@ function grapeHref(chunk) {
   return topic ? `topic-${topic.slug}.html` : `${chunk.source_doc}.html`;
 }
 
+// --- A-Z filter (grapes.html, regions.html) -------------------------------
+// First letter for filtering, ignoring accents ("Émilie" files under E);
+// anything that isn't a letter files under "#".
+function initialOf(name) {
+  const c = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().charAt(0).toUpperCase();
+  return /[A-Z]/.test(c) ? c : '#';
+}
+
+function renderAlphaFilter(initials, lang) {
+  const present = new Set(initials);
+  const letters = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ...(present.has('#') ? ['#'] : [])];
+  const all = lang === 'fr' ? 'Tous' : 'All';
+  const label = lang === 'fr' ? 'Filtrer par lettre' : 'Filter by letter';
+  const buttons = letters
+    .map((l) => `        <button type="button" class="chip" data-letter="${l}" aria-pressed="false"${present.has(l) ? '' : ' disabled'}>${l}</button>`)
+    .join('\n');
+  return `      <div class="chip-row alpha-filter" role="group" aria-label="${label}">
+        <button type="button" class="chip" data-letter="" aria-pressed="true">${all}</button>
+${buttons}
+      </div>`;
+}
+
+// Wires the letter buttons: onLetter(letter) re-filters the page ('' = all).
+const ALPHA_FILTER_SCRIPT = `
+    function wireAlphaFilter(onLetter) {
+      const buttons = [...document.querySelectorAll('.alpha-filter .chip')];
+      for (const b of buttons) {
+        b.addEventListener('click', () => {
+          for (const x of buttons) x.setAttribute('aria-pressed', String(x === b));
+          onLetter(b.dataset.letter);
+        });
+      }
+    }`;
+
 async function buildGrapes(lang) {
   const isFr = lang === 'fr';
   const rows = await fetchRows((q) => q.eq('chunk_type', 'grape').eq('section_title', 'Overview'), lang);
@@ -278,7 +313,7 @@ async function buildGrapes(lang) {
 
   const tiles = grapes
     .map(
-      (g) => `        <a class="tile" data-name="${escapeHtml(g.name.toLowerCase())}" ${linkAttrs(grapeHref(g.chunk))}>
+      (g) => `        <a class="tile" data-name="${escapeHtml(g.name.toLowerCase())}" data-letter="${initialOf(g.name)}" ${linkAttrs(grapeHref(g.chunk))}>
           <span class="name">${escapeHtml(g.name)}</span>
           <span class="n">${escapeHtml(g.country)}</span>
         </a>`
@@ -290,7 +325,6 @@ async function buildGrapes(lang) {
         home: 'Accueil',
         crumb: 'Cépages',
         title: 'Tous Les Cépages',
-        lede: (n) => `${n} cépages. Cliquez sur l'un d'eux pour voir ce que nous en avons écrit.`,
         placeholder: 'rechercher un cépage',
         count: (n) => `${n} cépages`,
         noMatch: 'Aucun cépage ne correspond à cette recherche.',
@@ -299,7 +333,6 @@ async function buildGrapes(lang) {
         home: 'Home',
         crumb: 'Grapes',
         title: 'All Grape Varieties',
-        lede: (n) => `${n} varieties. Click one to see what we've written about it.`,
         placeholder: 'search grapes',
         count: (n) => `${n} grapes`,
         noMatch: 'No grapes match that search.',
@@ -316,9 +349,9 @@ async function buildGrapes(lang) {
     <div class="wrap">
       <p class="breadcrumb"><a href="${assetPrefixFor(lang)}index.html">${t.home}</a> / ${t.crumb}</p>
       <h1 class="page-title">${t.title}</h1>
-      <p class="lede sm">${t.lede(grapes.length)}</p>
 
-      <input class="search-input" type="search" id="grapeSearch" placeholder="${t.placeholder}" aria-label="${t.placeholder}" style="margin-bottom: 28px" />
+      <input class="search-input" type="search" id="grapeSearch" placeholder="${t.placeholder}" aria-label="${t.placeholder}" style="margin-bottom: 20px" />
+${renderAlphaFilter(grapes.map((g) => initialOf(g.name)), lang)}
 
       <p class="count" id="grapeCount">${t.count(grapes.length)}</p>
       <div id="grapesGrid" class="grid tiles">
@@ -326,23 +359,26 @@ ${tiles}
       </div>
     </div>
   </main>`,
-    // Filters the pre-rendered tiles in place.
+    // Filters the pre-rendered tiles in place, by search text and letter.
     script: `
   <script>
-    (() => {
+    (() => {${ALPHA_FILTER_SCRIPT}
       const input = document.getElementById('grapeSearch');
       const count = document.getElementById('grapeCount');
       const tiles = [...document.querySelectorAll('#grapesGrid .tile')];
-      input.addEventListener('input', () => {
+      let letter = '';
+      function apply() {
         const q = input.value.trim().toLowerCase();
         let shown = 0;
         for (const tile of tiles) {
-          tile.hidden = Boolean(q) && !tile.dataset.name.includes(q);
+          tile.hidden = (Boolean(q) && !tile.dataset.name.includes(q)) || (Boolean(letter) && tile.dataset.letter !== letter);
           if (!tile.hidden) shown++;
         }
         const noun = ${isFr ? "'cépage'" : "'grape'"};
         count.textContent = shown === 0 ? '${t.noMatch}' : \`\${shown} \${noun}\${shown !== 1 ? 's' : ''}\`;
-      });
+      }
+      input.addEventListener('input', apply);
+      wireAlphaFilter((l) => { letter = l; apply(); });
     })();
   </script>`,
   });
@@ -385,13 +421,12 @@ async function buildRegions(lang) {
       const items = group.rows
         .map(
           (chunk) => `          <a class="row-item" ${linkAttrs(chunk.href)}>
-            <span class="id">${escapeHtml(chunk.source_doc.toUpperCase())}</span>
             <span class="t">${escapeHtml(chunk.title || untitled)}</span>
-            <span class="k">${escapeHtml(chunk.chunk_type.toUpperCase())}</span>
+            ${kindLabel(chunk.chunk_type, lang) ? `<span class="k">${escapeHtml(kindLabel(chunk.chunk_type, lang))}</span>` : ''}
           </a>`
         )
         .join('\n');
-      return `        <details class="region-group">
+      return `        <details class="region-group" data-letter="${initialOf(group.name)}">
           <summary class="list-head"><span>${escapeHtml(group.name)}</span><span>${group.rows.length}</span></summary>
 ${items}
         </details>`;
@@ -409,17 +444,23 @@ ${items}
     <div class="wrap">
       <p class="breadcrumb"><a href="${assetPrefixFor(lang)}index.html">${isFr ? 'Accueil' : 'Home'}</a> / ${isFr ? 'Régions' : 'Regions'}</p>
       <h1 class="page-title">${isFr ? 'Régions Viticoles' : 'Wine Regions'}</h1>
-      <p class="lede sm">${
-        isFr
-          ? `${groups.length} régions, ${rows.length} sous-thèmes au total. Développez-en une pour explorer.`
-          : `${groups.length} regions, ${rows.length} sub-topics between them. Expand one to browse.`
-      }</p>
 
-      <div>
+${renderAlphaFilter(groups.map((g) => initialOf(g.name)), lang)}
+      <div id="regionGroups">
 ${sections}
       </div>
     </div>
   </main>`,
+    // Shows only the region groups starting with the chosen letter.
+    script: `
+  <script>
+    (() => {${ALPHA_FILTER_SCRIPT}
+      const groups = [...document.querySelectorAll('#regionGroups .region-group')];
+      wireAlphaFilter((letter) => {
+        for (const g of groups) g.hidden = Boolean(letter) && g.dataset.letter !== letter;
+      });
+    })();
+  </script>`,
   });
 }
 
@@ -467,20 +508,32 @@ function guidePartWord(n, lang) {
 
 async function buildGuides(lang) {
   const isFr = lang === 'fr';
-  const { rows, groups } = await fetchGuideGroups(lang);
+  const { groups } = await fetchGuideGroups(lang);
 
   const readMore = isFr ? 'Lire' : 'Read';
-
-  const cards = groups
-    .map((group) => {
-      const primary = group.rows[0];
-      return `        <a class="card topic" href="${guidePagePath(group.sourceDoc)}">
-          <span class="card-meta">${escapeHtml(primary.chunk_type.toUpperCase())} &middot; ${guidePartWord(group.rows.length, lang)}</span>
+  const card = (group) => `        <a class="card topic" href="${guidePagePath(group.sourceDoc)}">
+          <span class="card-meta">${guidePartWord(group.rows.length, lang)}</span>
           <span class="card-title sm">${escapeHtml(group.title)}</span>
           <p>${escapeHtml(guidePreview(group))}</p>
           <span class="more">${readMore} &rarr;</span>
         </a>`;
+
+  // Guides teach how wine works; comparisons set two things side by side.
+  const sections = [
+    ['guide', isFr ? 'Guides' : 'Guides'],
+    ['comparison', isFr ? 'Comparaisons' : 'Comparisons'],
+  ]
+    .map(([kind, heading]) => {
+      const kindGroups = groups.filter((g) => g.rows[0].chunk_type === kind);
+      if (kindGroups.length === 0) return '';
+      return `      <section style="margin-top: 48px">
+        <p class="list-head">${heading}</p>
+        <div class="grid answers-3" style="margin-top: 24px">
+${kindGroups.map(card).join('\n')}
+        </div>
+      </section>`;
     })
+    .filter(Boolean)
     .join('\n');
 
   return renderPage({
@@ -496,13 +549,11 @@ async function buildGuides(lang) {
       <h1 class="page-title">${isFr ? 'Guides Et Comparaisons' : 'Guides &amp; Comparisons'}</h1>
       <p class="lede sm">${
         isFr
-          ? `${groups.length} guides et comparaisons, ${rows.length} parties au total.`
-          : `${groups.length} guides and comparisons, ${rows.length} parts in total.`
+          ? 'Des lectures plus longues qu’une simple réponse : des guides en plusieurs parties sur le fonctionnement du vin, et des comparaisons côte à côte. Une petite sélection, choisie avec soin.'
+          : 'Longer reads than a single answer: multi-part guides on how wine works, and side-by-side comparisons. A small, handpicked set.'
       }</p>
 
-      <div class="grid answers-3">
-${cards}
-      </div>
+${sections}
     </div>
   </main>`,
   });
@@ -576,13 +627,12 @@ async function fetchAnswerRows(lang) {
   });
 }
 
-function renderAnswerRows(rows) {
+function renderAnswerRows(rows, lang) {
   return rows
     .map(
       (row) => `        <a class="row-item" href="${answerPagePath(row.source_doc)}">
-          <span class="id">${escapeHtml(row.source_doc.toUpperCase())}</span>
           <span class="t">${escapeHtml(deriveQuestion(row.content))}</span>
-          <span class="k">${escapeHtml(row.chunk_type.toUpperCase())}</span>
+          ${kindLabel(row.chunk_type, lang) ? `<span class="k">${escapeHtml(kindLabel(row.chunk_type, lang))}</span>` : ''}
         </a>`
     )
     .join('\n');
@@ -721,7 +771,7 @@ ${renderHeroBand({
 ${baseTopicLink}${renderSections(sections)}
 ${answers.length ? `      <p class="list-head">${escapeHtml(countLine)}</p>
       <div style="margin-bottom: 56px">
-${renderAnswerRows(answers)}
+${renderAnswerRows(answers, lang)}
       </div>` : ''}
       <p class="guide-back"><a href="grapes.html">&larr; ${isFr ? 'Tous les cépages' : 'All grapes'}</a></p>
     </div>
@@ -792,6 +842,8 @@ function buildSectionPages(chunkType) {
     for (const [sourceDoc, groupRows] of groupBySourceDoc(rows)) {
       const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
       if (sectionRows.length === 0) continue;
+      // A topic's own sections are shown on its topic page instead.
+      if (TOPICS.some((t) => t.sourceDoc === sourceDoc)) continue;
 
       const name = kind.name(sourceDoc, lang);
       const parts = sectionRows.map((row) => ({ id: sectionAnchor(row), ...splitHeading(row) }));

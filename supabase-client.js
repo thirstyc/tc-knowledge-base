@@ -175,7 +175,12 @@ function chunkHref(chunk) {
   }
   const answerHref = resolveAnswerHref(chunk);
   if (answerHref) return answerHref;
-  // Region and enology sections live on their source_doc's page.
+  // An enology topic's own sections are shown on its topic page.
+  if (chunk && chunk.chunk_type === 'enology' && chunk.section_title !== 'Overview') {
+    const ownTopic = resolveTopicSlug(chunk);
+    if (ownTopic) return `topic-${ownTopic}.html`;
+  }
+  // Other region and enology sections live on their source_doc's page.
   if (chunk && ['region', 'enology'].includes(chunk.chunk_type) && chunk.section_title !== 'Overview' && chunk.source_doc) {
     return `${chunk.source_doc}.html`;
   }
@@ -244,15 +249,29 @@ function deriveCardTitle(chunk) {
   return chunk.section_title || chunk.source_doc || 'Untitled';
 }
 
+// Mirrors kindLabel() in lib/page-shell.mjs: answers get no label, other
+// kinds a plain word instead of the raw chunk_type code.
+const KIND_LABELS = {
+  en: { guide: 'Guide', comparison: 'Comparison', enology: 'Wine science', overview: 'Overview', grape: 'Grape', region: 'Region' },
+  fr: { guide: 'Guide', comparison: 'Comparaison', enology: 'Science du vin', overview: 'Présentation', grape: 'Cépage', region: 'Région' },
+};
+function kindLabel(chunkType, lang) {
+  if (!chunkType || chunkType === 'qa' || chunkType === 'region-qa') return '';
+  const labels = KIND_LABELS[lang] || KIND_LABELS.en;
+  return labels[chunkType] || chunkType.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
+}
+
 function renderAnswerCard(chunk) {
   if (!chunk || !chunk.id) return '';
   const title = deriveCardTitle(chunk);
   const content = chunk.content || '';
-  const summary = chunk.summary || content.substring(0, 150) + '...';
-  const category = chunk.chunk_type || 'General';
-  const source = chunk.source_doc || 'knowledge';
+  // The preview starts after the title so a question isn't shown twice.
+  const body = content.startsWith(title) ? content.slice(title.length).trim() : content;
+  const summary = chunk.summary || (body.length > 150 ? body.substring(0, 150).trim() + '...' : body);
+  const label = kindLabel(chunk.chunk_type, (document.documentElement.lang || 'en').slice(0, 2));
+  const meta = label ? `<span class="meta"><span class="badge high">${label}</span></span>` : '';
 
-  return `<a class="answer-card" ${chunkLinkAttrs(chunk)}><span class="meta"><span class="id">${source.toUpperCase()}</span><span class="badge high">${category}</span></span><h3>${title}</h3><p>${summary}</p></a>`;
+  return `<a class="answer-card" ${chunkLinkAttrs(chunk)}>${meta}<h3>${title}</h3><p>${summary}</p></a>`;
 }
 
 async function loadAnswers(containerId, limit = 3, searchQuery = null, chunkTypeFilter = null) {
@@ -380,4 +399,4 @@ function guardAppStoreLinksOnAndroid() {
 
 guardAppStoreLinksOnAndroid();
 
-window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, chunkHref, chunkLinkAttrs, resolveTopicSlug, getSearchParam, deriveCardTitle };
+window.KnowledgeBase = { loadAnswers, fetchPublishedChunks, fetchChunks, fetchTable, countChunks, countTable, showChunkDetail, goToChunk, chunkHref, chunkLinkAttrs, resolveTopicSlug, getSearchParam, deriveCardTitle, renderAnswerCard };

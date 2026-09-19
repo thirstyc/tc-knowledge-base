@@ -66,17 +66,25 @@
       <div class="trust-band">
         <p class="sub">Wine Regions We Cover</p>
         <div class="trust-row" id="trust-regions">
-          <a class="region" href="search.html?q=Barossa%20Valley">Barossa Valley</a>
-          <a class="region" href="search.html?q=Beaujolais">Beaujolais</a>
-          <a class="region" href="search.html?q=Burgundy">Burgundy</a>
-          <a class="region" href="search.html?q=Central%20Valley">Central Valley</a>
-          <a class="region" href="search.html?q=Douro">Douro</a>
-          <a class="region" href="search.html?q=Languedoc-Roussillon">Languedoc-Roussillon</a>
+          <a class="region" href="topic-burgundy.html">Burgundy</a>
+          <a class="region" href="region-bordeaux.html">Bordeaux</a>
+          <a class="region" href="region-champagne.html">Champagne</a>
+          <a class="region" href="topic-rhone-valley.html">Rhône Valley</a>
+          <a class="region" href="region-loire.html">Loire</a>
+          <a class="region" href="region-beaujolais-provence-southwest.html#beaujolais-overview">Beaujolais</a>
+          <a class="region" href="topic-jura.html">Jura</a>
+          <a class="region" href="topic-priorat.html">Priorat</a>
+          <a class="region" href="topic-etna.html">Etna</a>
+          <a class="region" href="region-portugal-table-wines.html#douro-table-wines">Douro</a>
+          <a class="region" href="region-australia.html#barossa-valley-south-australias-warm-regions">Barossa Valley</a>
+          <a class="region" href="topic-niagara.html">Niagara Peninsula</a>
+          <a class="region" href="regions.html"><strong>All regions &rarr;</strong></a>
         </div>
       </div>
 
       <div class="section-head">
         <h2>Explore By Topic</h2>
+        <a href="answers.html">All Topics</a>
       </div>
       <div class="grid topics" style="margin-bottom: 80px">
         <a class="card topic" href="topic-grenache.html">
@@ -234,20 +242,6 @@
       }
     }
 
-    async function renderTrustRegions() {
-      const el = document.getElementById('trust-regions');
-      if (!el) return;
-      const regions = await window.KnowledgeBase.fetchTable('regions', 'select=name&order=name.asc&limit=6');
-      // fetchTable returns [] both when the table is genuinely empty and
-      // when the request failed (see fetchTable in supabase-client.js) --
-      // either way, overwriting with nothing would blank out a section
-      // that already has a real static fallback baked into the markup.
-      // Leave it alone rather than replace real content with silence.
-      if (regions.length === 0) return;
-      el.innerHTML = regions.map(r =>
-        `<a class="region" href="search.html?q=${encodeURIComponent(r.name)}">${r.name}</a>`
-      ).join('');
-    }
 
     async function renderTopicCounts() {
       const topics = [
@@ -300,7 +294,6 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       renderHeroStats();
-      renderTrustRegions();
       renderTopicCounts();
       renderFeaturedAnswers();
     });

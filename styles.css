@@ -275,6 +275,11 @@ main.has-hero { padding-top: 0; }
 }
 .chip:hover { border-color: var(--deep-turquoise); color: var(--vintage); }
 .chip[aria-current] { background: var(--deep-turquoise); border-color: var(--deep-turquoise); color: var(--rose); }
+.alpha-filter { margin-bottom: 28px; gap: 6px; }
+.alpha-filter .chip { cursor: pointer; min-width: 34px; justify-content: center; text-align: center; }
+.alpha-filter .chip[aria-pressed="true"] { background: var(--deep-turquoise); border-color: var(--deep-turquoise); color: var(--rose); }
+.alpha-filter .chip:disabled { opacity: 0.3; cursor: default; border-color: var(--hairline); }
+.alpha-filter .chip:focus-visible { outline: 2px solid var(--deep-turquoise); outline-offset: 2px; }
 .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--deep-turquoise); border: 1px solid var(--hairline); padding: 5px 9px; }
 .badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; padding: 5px 9px; }
 .badge.high { background: var(--turquoise); color: var(--vintage); }

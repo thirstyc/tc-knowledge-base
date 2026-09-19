@@ -15,6 +15,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllRows } from '../lib/pagination.mjs';
+import { TOPICS } from '../topics.config.mjs';
 
 // Same public anon key as generate-missing-pages.mjs: published rows are
 // readable without secrets, so the workflow needs none.
@@ -22,6 +23,9 @@ const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
 const METADATA_PATH = 'metadata.json';
+
+// Topic pages, for about.html's "Topics Covered" figure.
+const topicPages = TOPICS.length;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -49,6 +53,7 @@ const counts = {
   totalUrls: Object.values(urlsByType).reduce((sum, n) => sum + n, 0),
   urlsByType,
   sitemapUrls: (readFileSync('sitemap.xml', 'utf8').match(/<loc>/g) ?? []).length,
+  topicPages,
 };
 const summary =
   `${counts.totalUrls} total URLs across ${Object.keys(urlsByType).length} content types` +
@@ -57,7 +62,7 @@ const summary =
 const previous = existsSync(METADATA_PATH) ? JSON.parse(readFileSync(METADATA_PATH, 'utf8')) : null;
 const unchanged =
   previous &&
-  JSON.stringify({ totalUrls: previous.totalUrls, urlsByType: previous.urlsByType, sitemapUrls: previous.sitemapUrls }) ===
+  JSON.stringify({ totalUrls: previous.totalUrls, urlsByType: previous.urlsByType, sitemapUrls: previous.sitemapUrls, topicPages: previous.topicPages }) ===
     JSON.stringify(counts);
 
 if (unchanged) {
@@ -69,6 +74,7 @@ if (unchanged) {
     totalUrls: counts.totalUrls,
     urlsByType,
     sitemapUrls: counts.sitemapUrls,
+    topicPages,
     lastUpdated: now.toISOString().slice(0, 10),
   };
   writeFileSync(METADATA_PATH, `${JSON.stringify(metadata, null, 2)}\n`);

@@ -47,9 +47,9 @@
       </div>
 
       <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 24px">
-        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px" id="stat-answers">904</span><span class="card-meta">Réponses Publiées</span></div>
-        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px">18</span><span class="card-meta">Thèmes Couverts</span></div>
-        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px">2026</span><span class="card-meta">Dernière Revérification Complète</span></div>
+        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px" id="stat-answers">1 205</span><span class="card-meta">Réponses Publiées</span></div>
+        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px" id="stat-topics">22</span><span class="card-meta">Thèmes Couverts</span></div>
+        <div class="card" style="gap: 10px"><span class="card-title" style="font-size: 44px; letter-spacing: -1.5px" id="stat-updated">sept. 2026</span><span class="card-meta">Dernière Mise À Jour</span></div>
       </div>
     </div>
   </main>
@@ -92,14 +92,23 @@
 
   <script src="../supabase-client.js"></script>
   <script>
+    // Figures come from metadata.json, rewritten on every build
+    // (scripts/generate-metadata.mjs). If it can't be read, the numbers
+    // already in the page stay: a snapshot beats a confidently wrong zero.
     document.addEventListener('DOMContentLoaded', async () => {
-      const total = await window.KnowledgeBase.countChunks('select=id&chunk_type=in.(qa,region-qa)');
-      // countChunks returns 0 both for a genuine zero and a failed request;
-      // there are always hundreds of real answers, so 0 here means the
-      // request failed -- leave the static snapshot number rather than
-      // show a confidently wrong "0".
-      const el = document.getElementById('stat-answers');
-      if (el && total) el.textContent = total.toLocaleString('fr-FR');
+      try {
+        const res = await fetch('../metadata.json', { cache: 'no-store' });
+        if (!res.ok) return;
+        const m = await res.json();
+        const answers = (m.urlsByType?.qa ?? 0) + (m.urlsByType?.['region-qa'] ?? 0);
+        const set = (id, text) => { const el = document.getElementById(id); if (el && text) el.textContent = text; };
+        if (answers) set('stat-answers', answers.toLocaleString('fr-FR'));
+        if (m.topicPages) set('stat-topics', String(m.topicPages));
+        if (m.lastUpdated) {
+          const d = new Date(m.lastUpdated + 'T12:00:00Z');
+          set('stat-updated', d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric', timeZone: 'UTC' }));
+        }
+      } catch {}
     });
   </script>
 </body>
