@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-18T21:23:51Z",
+  "generated": "2026-09-19T14:54:08Z",
   "totalUrls": 1762,
   "urlsByType": {
     "qa": 971,
@@ -12,6 +12,7 @@
     "comparison": 4,
     "guide": 3
   },
-  "sitemapUrls": 2915,
-  "lastUpdated": "2026-09-18"
+  "sitemapUrls": 2911,
+  "topicPages": 22,
+  "lastUpdated": "2026-09-19"
 }
