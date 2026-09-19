@@ -843,8 +843,10 @@ function buildSectionPages(chunkType) {
     for (const [sourceDoc, groupRows] of groupBySourceDoc(rows)) {
       const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
       if (sectionRows.length === 0) continue;
-      // A topic's own sections are shown on its topic page instead.
-      if (TOPICS.some((t) => t.sourceDoc === sourceDoc)) continue;
+      // A wine-science topic's own sections are shown on its topic page
+      // instead (see topicOwningSections in lib/sections.mjs). Region topics
+      // keep their region-*.html page.
+      if (chunkType === 'enology' && TOPICS.some((t) => t.sourceDoc === sourceDoc)) continue;
 
       const name = kind.name(sourceDoc, lang);
       const parts = sectionRows.map((row) => ({ id: sectionAnchor(row), ...splitHeading(row) }));
