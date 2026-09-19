@@ -40,6 +40,7 @@ import {
   escapeHtml,
   answerPagePath,
   assetPrefixFor,
+  frenchSpacing,
 } from '../lib/page-shell.mjs';
 import { BASE_URL } from '../topics.config.mjs';
 import { faqPageSchema } from '../lib/schema-markup-templates.js';
@@ -211,7 +212,7 @@ async function main() {
         .sort((a, b) => Math.abs(a.id - row.id) - Math.abs(b.id - row.id))
         .slice(0, 3);
 
-      if (!DRY_RUN) writeFileSync(path, renderAnswerPage(row, related, lang));
+      if (!DRY_RUN) writeFileSync(path, frenchSpacing(renderAnswerPage(row, related, lang), lang));
       written++;
     }
   }

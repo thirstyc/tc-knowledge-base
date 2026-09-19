@@ -29,6 +29,7 @@ import {
   escapeHtml,
   answerPagePath,
   kindLabel,
+  frenchSpacing,
 } from './lib/page-shell.mjs';
 
 // Same public anon key used by every other page (client-side, protected by
@@ -311,7 +312,7 @@ for (const { topic, lang, outPath, data, error } of results) {
     failedTopics++;
     continue;
   }
-  writeFileSync(outPath, renderPage(topic, lang, data));
+  writeFileSync(outPath, frenchSpacing(renderPage(topic, lang, data), lang));
   console.log(`  -> ${outPath} (${data.qaRows.length} answers)`);
 }
 console.log(`Generated ${jobs.length - failedTopics} of ${jobs.length} topic page(s).`);

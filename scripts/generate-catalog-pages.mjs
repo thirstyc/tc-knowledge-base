@@ -22,6 +22,7 @@ import {
   deriveQuestion,
   answerPagePath,
   kindLabel,
+  frenchSpacing,
 } from '../lib/page-shell.mjs';
 import { renderMarkdown } from '../lib/markdown.mjs';
 import { articleSchema, topicSchema } from '../lib/schema-markup-templates.js';
@@ -918,7 +919,7 @@ for (const [name, build] of builds) {
       const output = await build(lang);
       const files = typeof output === 'string' ? [[name, output]] : output;
       for (const [file, html] of files) {
-        writeFileSync(`${dir}${file}`, html);
+        writeFileSync(`${dir}${file}`, frenchSpacing(html, lang));
         console.log(`  -> ${dir}${file}`);
       }
     } catch (error) {
