@@ -236,7 +236,7 @@ export const TOPICS = [
     topicName: 'Natural Wine',
     sourceDoc: 'enology-natural-wine',
     metaDescription:
-      'Nothing added, nothing taken away — and no legal definition anywhere. Everything we know about natural wine.',
+      'Nothing added, nothing taken away — and no legal definition in most places. Everything we know about natural wine.',
     // Bare "natural" is almost all false positives in the qa rows ("a
     // natural match", "naturally peppery", "natural cork", "natural
     // compounds"), so match the phrase instead, plus the two ways rows
@@ -262,7 +262,7 @@ export const TOPICS = [
     topicNameFr: 'Vin nature',
     frReady: true,
     metaDescriptionFr:
-      "Rien d'ajouté, rien de retiré — et aucune définition légale nulle part. Tout ce que nous savons sur le vin nature.",
+      "Rien d'ajouté, rien de retiré — et aucune définition légale dans la plupart des pays. Tout ce que nous savons sur le vin nature.",
   },
   {
     slug: 'fermentation',
