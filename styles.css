@@ -395,3 +395,67 @@ main.notfound .lede { max-width: 48ch; margin-bottom: 40px; }
 .body-copy li { margin-bottom: 6px; }
 .guide-back { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0; }
 .toc { margin: 0 0 56px; padding-left: 1.4em; font-size: 16px; line-height: 1.9; max-width: 72ch; }
+
+/* ---------- home (index.html, fr/index.html) ----------
+   A quieter homepage: paper ground instead of the gradient hero band, deep
+   turquoise as the only accent, one statement, and sections stacked down the
+   page as lists rather than card grids. Scoped to .home-quiet so no other
+   page is affected. */
+.home-quiet { padding: 0 0 0; }
+.home-quiet .q-gap { margin-top: clamp(96px, 14vw, 168px); }
+
+.home-quiet .q-hero { padding: clamp(64px, 12vw, 148px) 0 0; max-width: 760px; }
+.home-quiet .q-hero h1 {
+  font-family: var(--serif); font-weight: 400; font-size: clamp(44px, 7.6vw, 90px);
+  line-height: 1; letter-spacing: -0.02em; margin: 22px 0 26px; text-wrap: balance;
+}
+.home-quiet .q-hero h1 em { font-style: italic; color: var(--deep-turquoise); }
+.home-quiet .q-sub { font-size: 18px; color: var(--muted); margin: 0 0 52px; max-width: 44ch; }
+.home-quiet .q-search { display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--vintage); max-width: 620px; padding-bottom: 10px; }
+.home-quiet .q-search input {
+  flex: 1; min-width: 0; border: 0; background: transparent; color: var(--vintage);
+  font-family: var(--serif); font-size: clamp(22px, 3vw, 28px); line-height: 1.2; padding: 6px 0;
+}
+.home-quiet .q-search input::placeholder { color: #a3978b; font-style: italic; }
+.home-quiet .q-search input:focus { outline: none; }
+.home-quiet .q-search:focus-within { border-bottom-color: var(--deep-turquoise); }
+.home-quiet .q-search .hint { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; color: var(--muted); }
+
+.home-quiet .q-link { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--deep-turquoise); }
+.home-quiet .q-link:hover { color: var(--burnt-sunset); }
+.home-quiet .q-hero .q-link { margin-top: 26px; }
+
+.home-quiet .q-band { display: grid; grid-template-columns: 200px 1fr; gap: 24px 64px; }
+.home-quiet .q-band > .label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin: 0; padding-top: 10px; }
+
+.home-quiet .q-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
+.home-quiet .q-list li { border-bottom: 1px solid var(--hairline); }
+.home-quiet .q-list a { display: grid; grid-template-columns: minmax(0, 220px) 1fr; gap: 4px 32px; align-items: baseline; padding: 20px 0; color: var(--vintage); }
+.home-quiet .q-list .n { font-family: var(--serif); font-size: 30px; line-height: 1.1; }
+.home-quiet .q-list .d { color: var(--muted); font-size: 15.5px; }
+.home-quiet .q-list a:hover .n { color: var(--deep-turquoise); }
+
+.home-quiet .q-regions { font-family: var(--serif); font-size: clamp(22px, 2.6vw, 27px); line-height: 1.7; margin: 0; }
+.home-quiet .q-regions a { color: var(--vintage); white-space: nowrap; }
+.home-quiet .q-regions a:hover { color: var(--deep-turquoise); }
+.home-quiet .q-regions .dot { color: var(--hairline-strong); margin-inline: 0.45em; }
+
+.home-quiet .q-questions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 38px; }
+.home-quiet .q-questions a { display: block; color: var(--vintage); }
+.home-quiet .q-questions .q { font-family: var(--serif); font-size: clamp(24px, 2.8vw, 30px); line-height: 1.2; text-wrap: balance; }
+.home-quiet .q-questions .a { color: var(--muted); margin-top: 8px; font-size: 16px; }
+.home-quiet .q-questions a:hover .q { color: var(--deep-turquoise); }
+
+.home-quiet .q-cellar { background: var(--deep-turquoise); color: var(--beige); position: relative; overflow: hidden; padding: clamp(48px, 7vw, 88px) clamp(24px, 5vw, 64px); }
+.home-quiet .q-cellar img { position: absolute; right: -60px; bottom: -80px; width: 360px; max-width: 70%; opacity: 0.09; pointer-events: none; }
+.home-quiet .q-cellar .label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--rose); opacity: 0.8; margin: 0; }
+.home-quiet .q-cellar h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(34px, 5vw, 54px); line-height: 1.05; margin: 18px 0; max-width: 14ch; }
+.home-quiet .q-cellar p { margin: 0 0 28px; max-width: 46ch; color: #d9e4e1; }
+.home-quiet .q-cellar a { font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--rose); border-bottom: 1px solid var(--rose); padding-bottom: 4px; }
+
+@media (max-width: 760px) {
+  .home-quiet .q-band { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .home-quiet .q-list a { grid-template-columns: 1fr; }
+}
