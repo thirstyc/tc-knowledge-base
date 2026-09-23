@@ -15,6 +15,7 @@
     "audit:links": "node scripts/audit-links.mjs",
     "verify:region-answers": "node scripts/verify-region-answers.mjs",
     "verify:answer-coverage": "node scripts/verify-answer-coverage.mjs",
+    "reingest": "node scripts/reingest-from-pages.mjs",
     "content": "node scripts/content-generator.mjs",
     "translate:fr": "node scripts/translate-to-french.mjs",
     "translate:fr:deepl": "node scripts/translate-to-french-deepl.mjs"
