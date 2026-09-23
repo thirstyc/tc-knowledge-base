@@ -1,14 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
-
-const SUPABASE_URL = "https://qcyzcjikyqnzvnvmfwtk.supabase.co";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SERVICE_ROLE_KEY) {
-  console.error("❌ Error: SUPABASE_SERVICE_ROLE_KEY environment variable not set");
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+// Uses the shared client rather than building its own. A second service-role
+// client in this repo is a second way to reach the app's tables without the
+// ownership guard in lib/supabase.mjs seeing it, which is the whole point of
+// having the guard. This script only writes `regions` (pipeline-owned), so
+// routing it through changes nothing about what it does.
+import { supabase } from "./lib/supabase.mjs";
 
 const regions = [
   { name: "Tuscany", country: "Italy", is_appellation: false, obsidian_file: "region-italy-central" },
