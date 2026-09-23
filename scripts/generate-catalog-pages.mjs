@@ -28,6 +28,7 @@ import { renderMarkdown } from '../lib/markdown.mjs';
 import { articleSchema, topicSchema } from '../lib/schema-markup-templates.js';
 import { REDIRECTS } from '../redirects.config.mjs';
 import { englishSectionTitle, sectionAnchor, sectionPageHref } from '../lib/sections.mjs';
+import { buildRegionAnswerIndex } from '../lib/region-answers.mjs';
 import { TOPICS, BASE_URL, escapeRegex } from '../topics.config.mjs';
 
 // Public anon key, same as the other generators -- read-only, no secrets.
@@ -790,6 +791,24 @@ ${renderAnswerRows(answers, lang)}
 // section gets an anchor from lib/sections.mjs, which regions.html and the
 // topic pages link to.
 
+// Built from the English rows for both languages, and memoized so the French
+// pass reuses it rather than refetching. source_docs are never translated but
+// section headings are ("Galicia -> Galice", "Rhône Valley -> Vallée du
+// Rhône"), so matching French tokens against French headings would silently
+// drop every pair a translation respelled -- and English and French region
+// pages should carry the same answers anyway, since they're hreflang
+// alternates of each other.
+let regionAnswerIndexPromise = null;
+function regionAnswerIndex() {
+  regionAnswerIndexPromise ??= Promise.all([
+    fetchRows((q) => q.eq('chunk_type', 'region'), 'en'),
+    fetchAnswerRows('en'),
+  ]).then(([regionRows, answerRows]) =>
+    buildRegionAnswerIndex(regionRows, answerRows, (row) => splitHeading(row).heading)
+  );
+  return regionAnswerIndexPromise;
+}
+
 const ENOLOGY_DOC_NAMES = {
   'enology-chemistry-phenolics-ageing': {
     en: 'Wine Chemistry: Phenolics And Ageing',
@@ -813,6 +832,14 @@ const SECTION_PAGE_KINDS = {
     },
     // The region topic whose Overview comes from this same source_doc.
     relatedTopics: (sourceDoc) => TOPICS.filter((t) => t.kind === 'region' && t.sourceDoc === sourceDoc),
+    // Region-only, and enology has no equivalent: answers are filed by
+    // sub-region ("qa-region-barossa-style"), so there's nothing to join a
+    // wine-science document to the answers about it.
+    ownsAnswers: true,
+    answersHead: {
+      en: (n) => `${n} Answer${n !== 1 ? 's' : ''} From This Region`,
+      fr: (n) => `${n} réponse${n !== 1 ? 's' : ''} sur cette région`,
+    },
   },
   enology: {
     nav: null,
@@ -838,7 +865,16 @@ function buildSectionPages(chunkType) {
   return async (lang) => {
     const isFr = lang === 'fr';
     const ap = assetPrefixFor(lang);
-    const rows = await fetchRows((q) => q.eq('chunk_type', chunkType), lang);
+    // answerIndex is keyed by source_doc (language-independent); the rows it
+    // resolves to are this language's, so a French page shows French questions
+    // and links fr/answer-*.html. An answer whose page doesn't exist in this
+    // language is dropped by fetchAnswerRows, so neither side gets a dead link.
+    const [rows, answerIndex, answerRows] = await Promise.all([
+      fetchRows((q) => q.eq('chunk_type', chunkType), lang),
+      kind.ownsAnswers ? regionAnswerIndex() : null,
+      kind.ownsAnswers ? fetchAnswerRows(lang) : null,
+    ]);
+    const answerBySourceDoc = answerRows && new Map(answerRows.map((row) => [row.source_doc, row]));
     const pages = [];
     for (const [sourceDoc, groupRows] of groupBySourceDoc(rows)) {
       const sectionRows = groupRows.filter((row) => row.section_title !== 'Overview');
@@ -870,6 +906,18 @@ function buildSectionPages(chunkType) {
       const crumb = kind.crumb ? ` / <a href="${kind.crumb.href}">${kind.crumb[lang]}</a>` : '';
       const back = kind.back ? `      <p class="guide-back"><a href="${kind.back.href}">&larr; ${kind.back[lang]}</a></p>\n` : '';
 
+      // Same shape and position as the grape pages' answer list: after the
+      // document's own sections, before the "All regions" link.
+      const answers = [...(answerIndex?.get(sourceDoc) ?? [])]
+        .map((answerDoc) => answerBySourceDoc.get(answerDoc))
+        .filter(Boolean);
+      const answerList = answers.length
+        ? `      <p class="list-head">${escapeHtml(kind.answersHead[lang](answers.length))}</p>
+      <div style="margin-bottom: 56px">
+${renderAnswerRows(answers, lang)}
+      </div>\n`
+        : '';
+
       const html = renderPage({
         file,
         nav: kind.nav,
@@ -889,7 +937,7 @@ ${relatedLinks}      <ol class="toc">
 ${toc}
       </ol>
 ${renderSections(parts)}
-${back}    </div>
+${answerList}${back}    </div>
   </main>`,
       });
       pages.push([file, html]);

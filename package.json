@@ -13,6 +13,7 @@
     "generate:catalogs": "node scripts/generate-catalog-pages.mjs",
     "generate:pages": "node scripts/generate-missing-pages.mjs",
     "audit:links": "node scripts/audit-links.mjs",
+    "verify:region-answers": "node scripts/verify-region-answers.mjs",
     "content": "node scripts/content-generator.mjs",
     "translate:fr": "node scripts/translate-to-french.mjs",
     "translate:fr:deepl": "node scripts/translate-to-french-deepl.mjs"
