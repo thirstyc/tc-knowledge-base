@@ -101,6 +101,16 @@ function publishedChunks(lang) {
     .eq('lang', lang);
 }
 
+// A ceiling, not a page-length target: a topic keeps every answer that matches
+// it. At 100 it was truncating, and silently -- the dropped rows are the tail
+// of an (source_doc, id) sort, so whether an answer had a hub page at all came
+// down to its slug's alphabetical luck. Measured against the current corpus the
+// largest topic is Tannins at 211 matches, then Sparkling at 162 and Riesling
+// at 130, so 250 clears every topic with room to grow. Revisit if a topic ever
+// reaches it; a topic page that genuinely needs 250+ links wants splitting, not
+// a bigger number.
+const TOPIC_ANSWER_LIMIT = 250;
+
 // content.ilike matching against a single term or (for a topic like Oak,
 // where French rows use several different words for the same concept --
 // "chêne", but also "boisé"/"fût" when a row describes barrel ageing
@@ -151,10 +161,19 @@ async function fetchTopicData(topic, lang) {
   }
 
   const matchTerm = lang === 'fr' ? topic.matchTermFr ?? topic.matchTerm ?? topic.topicName : topic.matchTerm ?? topic.topicName;
-  let qa = matchingContent(
-    publishedChunks(lang).eq('chunk_type', topic.kind === 'region' ? 'region-qa' : 'qa'),
-    matchTerm
-  );
+  // Both answer chunk types, for every topic kind. This used to take region-qa
+  // for region topics and qa for everything else, which assumed answers are
+  // filed by the same axis as the topic -- and they aren't. Burgundy's own
+  // answers (qa-burgundy-pinot-age, qa-white-burgundy-pairing, qa-burgundy-
+  // grapes) are plain qa rows, so topic-burgundy listed 12 answers, most of
+  // them region-qa rows that only name-check Burgundy while describing Austria,
+  // Jura, Languedoc or Willamette. Matching both types takes it to 77, and
+  // Rhône Valley from 5 to 52. It cuts the other way too: a region-qa row about
+  // the Mosel belongs on topic-riesling.
+  //
+  // This is the same definition of "an answer" that generate-catalog-pages.mjs
+  // (fetchAnswerRows) and answers.html already use.
+  let qa = matchingContent(publishedChunks(lang).in('chunk_type', ['qa', 'region-qa']), matchTerm);
   if (topic.excludeTerm) qa = qa.not('content', 'ilike', `%${topic.excludeTerm}%`);
   const queries = [qa];
   if (topic.kind === 'enology') {
@@ -164,7 +183,7 @@ async function fetchTopicData(topic, lang) {
   }
   // id as tiebreaker keeps output stable run to run, so regenerating
   // unchanged content produces no diff.
-  const results = await Promise.all(queries.map((q) => q.order('source_doc').order('id').limit(100)));
+  const results = await Promise.all(queries.map((q) => q.order('source_doc').order('id').limit(TOPIC_ANSWER_LIMIT)));
   const failed = results.find((r) => r.error);
   if (failed) throw failed.error;
 
