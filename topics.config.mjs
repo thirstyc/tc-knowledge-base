@@ -43,6 +43,27 @@ export function effectiveKeywordPattern(topic) {
   return topic.keywordPatternFr ? `(?:${en})|(?:${topic.keywordPatternFr})` : en;
 }
 
+// Ceilings on a hub page's answer list, not page-length targets: a topic or
+// grape keeps every answer that matches it, and these exist only so one runaway
+// match set can't produce a page of thousands of links.
+//
+// They live here, in the one pure config module both generators already import,
+// so scripts/verify-answer-coverage.mjs can check the real match sets against
+// the real numbers rather than a copy that drifts.
+//
+// Both were previously binding and truncating silently. The lists are an
+// (source_doc, id) sort, so the rows a cap dropped were the alphabetical tail,
+// which made "does this answer have a hub page at all" a matter of its slug's
+// luck. Measured against the current corpus: the largest topic is Tannins at
+// 211 matches, then Sparkling at 162 and Riesling at 130, against the old limit
+// of 100; four grape pages passed the old 60, Pinot Noir and Sauvignon Blanc at
+// 104 each. Raised to clear both with headroom.
+//
+// If a page ever reaches one of these it wants splitting, not a bigger number
+// -- verify-answer-coverage.mjs fails first.
+export const TOPIC_ANSWER_LIMIT = 250;
+export const GRAPE_ANSWER_LIMIT = 120;
+
 // Static (non-topic) pages included in sitemap.xml, as paths relative to
 // the site root ('' = homepage). Deliberately excludes:
 //   - search.html, 404.html: standard practice, not real content pages.

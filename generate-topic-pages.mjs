@@ -13,7 +13,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
-import { TOPICS, BASE_URL, effectiveKeywordPattern } from './topics.config.mjs';
+import { TOPICS, BASE_URL, effectiveKeywordPattern, TOPIC_ANSWER_LIMIT } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
 import { topicSchema } from './lib/schema-markup-templates.js';
 import { REDIRECTS } from './redirects.config.mjs';
@@ -100,16 +100,6 @@ function publishedChunks(lang) {
     .eq('status', 'published')
     .eq('lang', lang);
 }
-
-// A ceiling, not a page-length target: a topic keeps every answer that matches
-// it. At 100 it was truncating, and silently -- the dropped rows are the tail
-// of an (source_doc, id) sort, so whether an answer had a hub page at all came
-// down to its slug's alphabetical luck. Measured against the current corpus the
-// largest topic is Tannins at 211 matches, then Sparkling at 162 and Riesling
-// at 130, so 250 clears every topic with room to grow. Revisit if a topic ever
-// reaches it; a topic page that genuinely needs 250+ links wants splitting, not
-// a bigger number.
-const TOPIC_ANSWER_LIMIT = 250;
 
 // content.ilike matching against a single term or (for a topic like Oak,
 // where French rows use several different words for the same concept --
