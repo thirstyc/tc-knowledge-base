@@ -34,9 +34,11 @@ function parseArgs() {
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // --- MODE=vault-scan ---------------------------------------------------
-// Both vault paths already exist elsewhere in this repo (add-intake.mjs /
-// process-knowledge-intake.mjs use the first; process-obsidian-to-supabase.js
-// uses the second) — this is the first script that reads both in one pass.
+// add-intake.mjs and process-knowledge-intake.mjs read the first vault. The
+// second had its own script (process-obsidian-to-supabase.js, deleted — it
+// held a service-role key and upserted to knowledge_chunks on a conflict
+// target that no longer has a matching unique index), so this is now the only
+// thing that reads it, and the only one that reads both in one pass.
 //
 // LOCAL USE ONLY. These are absolute paths on the machine running the
 // script, not anything checked into this repo — confirmed by actually
