@@ -26,7 +26,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
 import { supabase } from '../lib/supabase.mjs';
 import { existsSync } from 'node:fs';
-import { readAnswerRows, writeAnswerFile, answerFilePath } from '../lib/content-files.mjs';
+import { readAnswerRows, writeAnswerFile, answerFilePath, answerParts, answerWords } from '../lib/content-files.mjs';
 import { embed } from '../lib/embeddings.mjs';
 import { chunkText } from '../lib/chunking.mjs';
 import { slugify } from '../lib/page-shell.mjs';
@@ -251,8 +251,8 @@ async function expand({ topic, limit, minWords }) {
   const thin = readAnswerRows()
     .filter((r) => r.lang === 'en')
     .map((r) => {
-      const i = r.content.indexOf('? ');
-      return { ...r, q: i === -1 ? r.content : r.content.slice(0, i + 1), a: i === -1 ? '' : r.content.slice(i + 2) };
+      const { question, answer } = answerParts(r);
+      return { ...r, q: question, a: answer };
     })
     .filter((r) => r.a.split(/\s+/).filter(Boolean).length < floor)
     .filter((r) => !topic || r.content.toLowerCase().includes(topic.toLowerCase()))
@@ -341,13 +341,10 @@ Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
 async function translate({ topic, limit }) {
   const max = Number(limit) || 10;
   const rows = readAnswerRows();
-  const words = (r) => {
-    const i = r.content.indexOf('? ');
-    return (i === -1 ? '' : r.content.slice(i + 2)).split(/\s+/).filter(Boolean).length;
-  };
+  const words = answerWords;
   const part = (r) => {
-    const i = r.content.indexOf('? ');
-    return { q: i === -1 ? r.content : r.content.slice(0, i + 1), a: i === -1 ? '' : r.content.slice(i + 2) };
+    const { question, answer } = answerParts(r);
+    return { q: question, a: answer };
   };
   const fr = new Map(rows.filter((r) => r.lang === 'fr').map((r) => [r.source_doc, r]));
 

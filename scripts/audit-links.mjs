@@ -1,217 +1,199 @@
-// Crawls the deployed site + queries Supabase for content-health signals,
-// writes audit-report.json, and exits 1 when something needs a human.
+// Checks link integrity and content health, writes audit-report.json, and
+// exits 1 when something needs a human.
 //
-// Read-only end to end: public anon key for Supabase (same one committed in
-// supabase-client.js), plain GET for the live site. No secrets required —
-// this can run in CI with zero repo secrets configured.
+// Run: node scripts/audit-links.mjs   (or npm run audit:links)
+//      node scripts/audit-links.mjs --skip-live   (no network)
 //
-// Run: node scripts/audit-links.mjs   (writes ./audit-report.json)
+// No Supabase. The site's content lives in content/docs/ and content/answers/,
+// so the health checks read those files. The Supabase half of this script
+// counted chunks, looked for null embeddings and summaries, and hunted
+// "orphaned" chunks -- all describing a database no page reads any more. What
+// replaces it measures the thing that actually went wrong in Search Console:
+// answers too thin to index, French pages left behind their English pair, and
+// two URLs competing to answer one question.
+//
+// The live crawl used to fire one request per page at once -- Promise.all over
+// every .html file, unthrottled, with GET rather than HEAD. GitHub Pages
+// answers a burst like that with 429s and 503s, which the audit recorded as
+// broken links, failed the job over, and opened an issue about. It was
+// reporting its own traffic. It also only looked at the repo root, so the
+// pages under fr/ were never checked at all. Now: both directories, HEAD, and
+// a concurrency limit.
 
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
-import { createClient } from '@supabase/supabase-js';
+import path from 'node:path';
 import { TOPICS } from '../topics.config.mjs';
-import { fetchAllRows } from '../lib/pagination.mjs';
+import { readDocRows } from '../lib/content-docs.mjs';
+import { readAnswerRows, answerParts, answerWords } from '../lib/content-files.mjs';
 
 const SITE_URL = 'https://knowledge.thirstyc.com';
-const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
+const CONCURRENCY = 8;
+// Same floor content-generator --mode=expand uses. Below it, Google crawls a
+// page and declines to index it.
+const THIN_WORDS = 150;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// --- 1. Link integrity ------------------------------------------------------
+// GitHub Pages serves this repo 1:1, so the local .html file list *is* the
+// deployed page set -- no spidering needed to discover pages.
 
-// --- 1. Link crawl ----------------------------------------------------------
-// GitHub Pages serves this repo's root 1:1, so the local *.html file list
-// *is* the deployed page set — no need to discover pages by spidering.
-
-function localHtmlFiles() {
-  return readdirSync('.').filter((f) => f.endsWith('.html'));
+function allPages() {
+  const pages = readdirSync('.').filter((f) => f.endsWith('.html'));
+  if (existsSync('fr')) {
+    pages.push(...readdirSync('fr').filter((f) => f.endsWith('.html')).map((f) => `fr/${f}`));
+  }
+  return pages;
 }
 
 function extractLocalRefs(html) {
   const refs = new Set();
-  const attrRe = /(?:href|src)="([^"]+)"/g;
-  let m;
-  while ((m = attrRe.exec(html))) {
-    const ref = m[1];
+  for (const [, ref] of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
     if (
       ref.startsWith('#') ||
+      ref.startsWith('/') ||
       ref.startsWith('http') ||
       ref.startsWith('mailto:') ||
       ref.includes('${') // JS template literals caught by the same regex, not real hrefs
     ) {
       continue;
     }
-    refs.add(ref.split('?')[0].split('#')[0]);
+    const clean = ref.split('?')[0].split('#')[0];
+    if (clean) refs.add(clean);
   }
   return refs;
 }
 
-async function crawlLinks() {
-  const brokenLinks = [];
-  const htmlFiles = localHtmlFiles();
-
-  // 1a. Every local href/src must resolve to a file that actually exists.
-  for (const file of htmlFiles) {
-    const html = readFileSync(file, 'utf8');
-    for (const ref of extractLocalRefs(html)) {
-      if (!existsSync(ref)) {
-        brokenLinks.push({ type: 'missing_file', from: file, target: ref });
+// Every local href/src must resolve to a file that exists. Resolved relative
+// to the linking page, because fr/ pages link ../styles.css and each other.
+function brokenLocalLinks(pages) {
+  const broken = [];
+  for (const page of pages) {
+    const dir = path.dirname(path.resolve(page));
+    for (const ref of extractLocalRefs(readFileSync(page, 'utf8'))) {
+      if (!existsSync(path.resolve(dir, ref))) {
+        broken.push({ type: 'missing_file', from: page, target: ref });
       }
     }
   }
-
-  // 1b. Every file that's actually deployed must resolve live (catches
-  // Pages cache lag, unpushed commits, or a file deleted but still linked).
-  const deployed = [...htmlFiles, 'robots.txt', 'sitemap.xml', 'styles.css', 'supabase-client.js'];
-  await Promise.all(
-    deployed.map(async (path) => {
-      if (!existsSync(path)) return; // covered by 1a already
-      try {
-        const res = await fetch(`${SITE_URL}/${path}`, { method: 'GET' });
-        if (res.status !== 200) {
-          brokenLinks.push({ type: 'live_status', target: path, status: res.status });
-        }
-      } catch (err) {
-        brokenLinks.push({ type: 'fetch_error', target: path, error: err.message });
-      }
-    })
-  );
-
-  return brokenLinks;
+  return broken;
 }
 
-// --- 2. Supabase content health ---------------------------------------------
-
-async function chunkCounts() {
-  const data = await fetchAllRows(() => supabase.from('knowledge_chunks').select('chunk_type'));
-  const counts = {};
-  for (const row of data) counts[row.chunk_type] = (counts[row.chunk_type] || 0) + 1;
-  return counts;
-}
-
-async function missingData() {
-  const missing = [];
-
-  const { count: nullEmbedding, error: e1 } = await supabase
-    .from('knowledge_chunks')
-    .select('id', { count: 'exact', head: true })
-    .is('embedding', null);
-  if (e1) throw e1;
-  if (nullEmbedding > 0) missing.push({ type: 'null_embedding', count: nullEmbedding });
-
-  const { count: nullContent, error: e2 } = await supabase
-    .from('knowledge_chunks')
-    .select('id', { count: 'exact', head: true })
-    .or('content.is.null,content.eq.');
-  if (e2) throw e2;
-  if (nullContent > 0) missing.push({ type: 'null_content', count: nullContent });
-
-  // Dangling wine_id: a chunk pointing at a wine row that no longer exists.
-  // 0 rows use wine_id today, so this is a forward-looking integrity check,
-  // not a current defect — kept separate from orphaned_chunks below because
-  // it's a broken reference, not an unreachable-but-valid chunk.
-  const linked = await fetchAllRows(() =>
-    supabase.from('knowledge_chunks').select('id, wine_id').not('wine_id', 'is', null)
-  );
-  if (linked.length > 0) {
-    const wineIds = [...new Set(linked.map((r) => r.wine_id))];
-    const { data: existingWines, error: e4 } = await supabase
-      .from('wines')
-      .select('id')
-      .in('id', wineIds);
-    if (e4) throw e4;
-    const existingSet = new Set((existingWines || []).map((w) => w.id));
-    const dangling = linked.filter((r) => !existingSet.has(r.wine_id));
-    if (dangling.length > 0) {
-      missing.push({ type: 'dangling_wine_id', count: dangling.length, ids: dangling.map((r) => r.id) });
-    }
-  }
-
-  return missing;
-}
-
-// "Orphaned" here means unreachable by either routing mechanism the site
-// actually uses (a dedicated topic page, or the keyword fallback that same
-// page's config defines) for chunk_type='grape'/'region'/'enology' — NOT
-// "has no dedicated topic page", which is true for the large majority of
-// the corpus by design (only 18 of ~190+ grape/region docs get one) and
-// would make this check fire constantly on normal, expected state.
-async function orphanedChunks() {
-  const data = await fetchAllRows(() =>
-    supabase
-      .from('knowledge_chunks')
-      .select('id, source_doc, content, section_title, chunk_type')
-      .in('chunk_type', ['grape', 'region', 'enology'])
-      .eq('status', 'published')
-  );
-
-  const sourceDocSet = new Set(TOPICS.map((t) => t.sourceDoc));
-  const keywordPatterns = TOPICS.map((t) => ({
-    slug: t.slug,
-    re: new RegExp(t.keywordPattern ?? t.topicName.toLowerCase(), 'i'),
-  }));
-
-  const orphaned = [];
-  for (const row of data) {
-    if (sourceDocSet.has(row.source_doc)) continue;
-    const haystack = `${row.content || ''} ${row.section_title || ''}`;
-    if (keywordPatterns.some(({ re }) => re.test(haystack))) continue;
-    // Still reachable via search.html's ilike text match even without a
-    // dedicated page or keyword hit — only flag chunks whose own
-    // section_title/content give literally nothing else to search by,
-    // which in practice never happens for real content. Flag everything
-    // else too, but at low severity, since it's a coverage gap, not a bug.
-    orphaned.push({ id: row.id, source_doc: row.source_doc, chunk_type: row.chunk_type });
-  }
-  return orphaned;
-}
-
-// --- Run ---------------------------------------------------------------
-
-async function main() {
-  const [brokenLinks, counts, missing, orphaned] = await Promise.all([
-    crawlLinks(),
-    chunkCounts(),
-    missingData(),
-    orphanedChunks(),
-  ]);
-
-  const { count: draftCount } = await supabase
-    .from('knowledge_chunks')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'draft');
-
-  const { count: summaryMissingCount } = await supabase
-    .from('knowledge_chunks')
-    .select('id', { count: 'exact', head: true })
-    .is('summary', null);
-
-  const report = {
-    generated_at: new Date().toISOString(),
-    site_url: SITE_URL,
-    broken_links: brokenLinks,
-    orphaned_chunks: orphaned,
-    missing_data: missing,
-    chunk_counts: counts,
-    // Informational only — not a failure trigger. As of this writing 100%
-    // of rows have no summary, which is expected current state, not a
-    // regression; flagging it as a failure would fire every single run.
-    summary_coverage: { missing: summaryMissingCount ?? 0 },
-    draft_count: draftCount ?? 0,
+async function mapLimit(items, limit, fn) {
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) await fn(items[next++]);
   };
-
-  writeFileSync('audit-report.json', JSON.stringify(report, null, 2));
-
-  const hasFailure = brokenLinks.length > 0 || missing.length > 0;
-  console.log(
-    `Audit: ${brokenLinks.length} broken link(s), ${missing.length} missing-data issue(s), ` +
-      `${orphaned.length} orphaned chunk(s) (coverage gap, non-blocking), ${draftCount ?? 0} draft chunk(s) pending review.`
-  );
-
-  process.exit(hasFailure ? 1 : 0);
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
 }
 
-main().catch((err) => {
-  console.error('Audit failed to run:', err);
-  process.exit(1);
-});
+// Every deployed file must resolve live -- catches Pages cache lag, an
+// unpushed commit, or a file deleted while still linked. HEAD, not GET: this
+// only reads the status code, and 2,900 page bodies is a lot of transfer to
+// throw away.
+async function liveStatuses(pages) {
+  const broken = [];
+  const targets = [...pages, 'robots.txt', 'sitemap.xml', 'styles.css'].filter((p) => existsSync(p));
+  await mapLimit(targets, CONCURRENCY, async (target) => {
+    try {
+      const res = await fetch(`${SITE_URL}/${target}`, { method: 'HEAD' });
+      if (res.status !== 200) broken.push({ type: 'live_status', target, status: res.status });
+    } catch (err) {
+      broken.push({ type: 'fetch_error', target, error: err.message });
+    }
+  });
+  return broken;
+}
+
+// --- 2. Content health, read from the files ---------------------------------
+
+function contentHealth() {
+  const answers = readAnswerRows();
+  const en = answers.filter((r) => r.lang === 'en');
+  const fr = answers.filter((r) => r.lang === 'fr');
+  const frByDoc = new Map(fr.map((r) => [r.source_doc, r]));
+
+  // An English answer well ahead of its French pair: expanded on one side,
+  // untouched on the other. The two are hreflang alternates, so they claim to
+  // be the same page in two languages -- 180 words against 20 is not that.
+  // Same gate as content-generator --mode=translate, which closes them.
+  const diverged = en
+    .filter((r) => frByDoc.has(r.source_doc))
+    .filter((r) => {
+      const e = answerWords(r);
+      const f = answerWords(frByDoc.get(r.source_doc));
+      return f < THIN_WORDS && e >= 120 && e >= f * 2;
+    })
+    .map((r) => r.source_doc);
+
+  // Two URLs answering the same question compete with each other for it, and
+  // Google indexes neither. Exact question matches only -- near-duplicates
+  // need a human to judge, and live in drafts/duplicate-questions.md.
+  const byQuestion = new Map();
+  for (const row of en) {
+    const q = answerParts(row)
+      .question.toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    if (!q) continue;
+    byQuestion.set(q, [...(byQuestion.get(q) ?? []), row.source_doc]);
+  }
+  const duplicateQuestions = [...byQuestion.values()].filter((g) => g.length > 1);
+
+  const docs = readDocRows({ lang: 'en' });
+  const docTypes = {};
+  for (const row of docs) docTypes[row.chunk_type] = (docTypes[row.chunk_type] ?? 0) + 1;
+
+  // A topic whose source document has no file renders an empty page. This is
+  // the one content check that fails the run: it means a file was deleted or
+  // renamed out from under topics.config.mjs.
+  const docSources = new Set(docs.map((r) => r.source_doc));
+  const topicsWithoutContent = TOPICS.filter((t) => !docSources.has(t.sourceDoc)).map((t) => t.slug);
+
+  return {
+    answers: { en: en.length, fr: fr.length },
+    thin_answers: {
+      en: en.filter((r) => answerWords(r) < THIN_WORDS).length,
+      fr: fr.filter((r) => answerWords(r) < THIN_WORDS).length,
+    },
+    diverged_pairs: diverged,
+    duplicate_questions: duplicateQuestions,
+    doc_chunks_by_type: docTypes,
+    topics_without_content: topicsWithoutContent,
+  };
+}
+
+// --- Run --------------------------------------------------------------------
+
+const pages = allPages();
+const health = contentHealth();
+const localBroken = brokenLocalLinks(pages);
+const live = process.argv.includes('--skip-live') ? [] : await liveStatuses(pages);
+const brokenLinks = [...localBroken, ...live];
+
+writeFileSync(
+  'audit-report.json',
+  `${JSON.stringify(
+    {
+      generated_at: new Date().toISOString(),
+      site_url: SITE_URL,
+      pages_checked: pages.length,
+      broken_links: brokenLinks,
+      ...health,
+    },
+    null,
+    2
+  )}\n`
+);
+
+// Only breakage fails the run. Thin answers and duplicate questions are a
+// standing backlog being worked through, not a regression -- failing on them
+// would fire every night and train everyone to ignore the issue it files.
+const hasFailure = brokenLinks.length > 0 || health.topics_without_content.length > 0;
+
+console.log(
+  `Audit: ${pages.length} pages, ${brokenLinks.length} broken link(s), ` +
+    `${health.topics_without_content.length} topic(s) without content.\n` +
+    `Backlog: ${health.thin_answers.en} thin EN / ${health.thin_answers.fr} thin FR answer(s), ` +
+    `${health.diverged_pairs.length} diverged EN/FR pair(s), ` +
+    `${health.duplicate_questions.length} duplicated question(s).`
+);
+process.exit(hasFailure ? 1 : 0);

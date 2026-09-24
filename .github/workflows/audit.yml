@@ -21,9 +21,8 @@ jobs:
 
       - run: npm ci
 
-      # No secrets needed: audit-links.mjs reads Supabase with the public
-      # anon key (same one already committed in supabase-client.js) and
-      # crawls the public site.
+      # No secrets needed: audit-links.mjs reads the content files in this
+      # repo and sends a HEAD to each published page.
       - name: Run audit
         id: audit
         run: node scripts/audit-links.mjs

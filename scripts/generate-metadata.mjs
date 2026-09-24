@@ -1,10 +1,12 @@
-// Writes metadata.json: how many published English documents each
-// knowledge_chunks chunk_type holds (distinct source_doc, since one doc is
-// split into several chunks), plus the current sitemap.xml URL count.
+// Writes metadata.json: how many English documents each chunk_type holds
+// (distinct source_doc, since one document is several chunks), plus the
+// current sitemap.xml URL count.
 //
-// urlsByType counts content in Supabase, not pages on disk -- atlas and
-// producer docs have no generated pages yet, so totalUrls can differ from
-// sitemapUrls (which also counts fr/, topic and index pages).
+// Counts come from content/docs/ and content/answers/, not Supabase. atlas and
+// producer content appears in neither -- those types never had generated
+// pages, so there was nothing to extract them from when the content moved into
+// this repo, and they are gone. totalUrls drops accordingly. sitemapUrls also
+// counts fr/, topic and index pages, so the two were never meant to match.
 //
 // The file is only rewritten when a count changes, so the weekly
 // generate-pages workflow doesn't commit a timestamp-only diff.
@@ -13,42 +15,28 @@
 // (or npm run generate:metadata)
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { createClient } from '@supabase/supabase-js';
-import { fetchAllRows } from '../lib/pagination.mjs';
+import { readDocRows } from '../lib/content-docs.mjs';
+import { readAnswerRows } from '../lib/content-files.mjs';
 import { TOPICS } from '../topics.config.mjs';
 
-// Same public anon key as generate-missing-pages.mjs: published rows are
-// readable without secrets, so the workflow needs none.
-const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
 const METADATA_PATH = 'metadata.json';
-
-// Topic pages, for about.html's "Topics Covered" figure.
 const topicPages = TOPICS.length;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-async function publishedDocsByType() {
-  const rows = await fetchAllRows(() =>
-    supabase
-      .from('knowledge_chunks')
-      .select('chunk_type, source_doc')
-      .eq('status', 'published')
-      .eq('lang', 'en')
-      .order('id'),
-  );
+// Counted from the content files in this repo, not from Supabase. One
+// document can be several chunks, so this counts distinct source_docs --
+// the same thing the old `select distinct source_doc` did.
+function publishedDocsByType() {
   const docs = new Map();
-  for (const { chunk_type, source_doc } of rows) {
+  const add = ({ chunk_type, source_doc }) => {
     if (!docs.has(chunk_type)) docs.set(chunk_type, new Set());
     docs.get(chunk_type).add(source_doc);
-  }
-  return Object.fromEntries(
-    [...docs].map(([type, slugs]) => [type, slugs.size]).sort((a, b) => b[1] - a[1]),
-  );
+  };
+  readDocRows({ lang: 'en' }).forEach(add);
+  readAnswerRows().filter((r) => r.lang === 'en').forEach(add);
+  return Object.fromEntries([...docs].map(([type, slugs]) => [type, slugs.size]).sort((a, b) => b[1] - a[1]));
 }
 
-const urlsByType = await publishedDocsByType();
+const urlsByType = publishedDocsByType();
 const counts = {
   totalUrls: Object.values(urlsByType).reduce((sum, n) => sum + n, 0),
   urlsByType,
