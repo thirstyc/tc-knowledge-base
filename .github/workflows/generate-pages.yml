@@ -12,7 +12,12 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
+      # Full history: the sitemap's <lastmod> comes from each content file's
+      # last real commit (lib/content-dates.mjs), and the default fetch-depth
+      # of 1 cannot see it.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
