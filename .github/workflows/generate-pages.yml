@@ -37,6 +37,12 @@ jobs:
       - name: Generate catalog pages
         run: node scripts/generate-catalog-pages.mjs
 
+      # After the catalog pages, because it indexes the generated HTML rather
+      # than the content files -- so every href it records is a page that
+      # exists, in the spelling it is published under.
+      - name: Regenerate the search index
+        run: node scripts/generate-search-index.mjs
+
       - name: Regenerate sitemap
         run: node scripts/generate-sitemap.mjs
 
@@ -53,6 +59,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new or changed pages."
           else
-            git commit -m "Auto-generate answer/difficulty/topic/catalog pages and metadata from knowledge_chunks"
+            git commit -m "Auto-generate answer, topic and catalog pages, search index and metadata from content/"
             git push
           fi

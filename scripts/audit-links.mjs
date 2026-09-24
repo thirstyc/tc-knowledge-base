@@ -91,7 +91,10 @@ async function mapLimit(items, limit, fn) {
 // throw away.
 async function liveStatuses(pages) {
   const broken = [];
-  const targets = [...pages, 'robots.txt', 'sitemap.xml', 'styles.css'].filter((p) => existsSync(p));
+  // The search index is not linked from any page, so the local link check
+  // never sees it -- but search.html is dead without it.
+  const extras = ['robots.txt', 'sitemap.xml', 'styles.css', 'search-index-en.json', 'search-index-fr.json'];
+  const targets = [...pages, ...extras].filter((p) => existsSync(p));
   await mapLimit(targets, CONCURRENCY, async (target) => {
     try {
       const res = await fetch(`${SITE_URL}/${target}`, { method: 'HEAD' });
