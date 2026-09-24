@@ -37,6 +37,12 @@ on:
         required: false
         type: string
 
+# Calls the Anthropic API and writes drafts. Two overlapping runs would double
+# the bill and could draft the same answers twice.
+concurrency:
+  group: generate-content
+  cancel-in-progress: false
+
 jobs:
   generate-content:
     runs-on: ubuntu-latest

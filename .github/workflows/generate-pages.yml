@@ -8,6 +8,14 @@ on:
 permissions:
   contents: write
 
+# This job commits and pushes. Two overlapping runs would regenerate the same
+# 2,930 pages and race on push, so they queue rather than run together --
+# cancel-in-progress would be worse here, since a run killed between commit and
+# push leaves the branch behind what it just generated.
+concurrency:
+  group: generate-pages
+  cancel-in-progress: false
+
 jobs:
   generate:
     runs-on: ubuntu-latest

@@ -9,6 +9,12 @@ permissions:
   contents: read
   issues: write
 
+# Read-only, but two runs would crawl the site twice over and could both open
+# an issue about the same failure. The newer run is the one worth having.
+concurrency:
+  group: audit
+  cancel-in-progress: true
+
 jobs:
   audit:
     runs-on: ubuntu-latest
