@@ -4,3 +4,17 @@ node_modules/
 .DS_Store
 audit-report.json
 reingest-manifest.json
+
+# Local working files. GitHub Pages serves this repo's root verbatim, so
+# anything committed here is published: a `git add -A` on 2026-09-24 swept
+# 38 draft files, a scratch SQL file, a knowledge_chunks export and a stale
+# 2,823-URL sitemap onto knowledge.thirstyc.com. Ignored so that cannot
+# happen again by accident.
+drafts/
+scratch_*.sql
+sitemap-*.xml
+*.dump
+
+# Kept deliberately for the AI sommelier -- see the RETAINED DELIBERATELY note
+# at the top of the file. It is schema DDL with no credentials in it.
+!drafts/20260923190000_restore_knowledge_chunks_pipeline_columns.sql
