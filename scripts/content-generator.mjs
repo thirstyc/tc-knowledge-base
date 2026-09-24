@@ -185,7 +185,17 @@ async function askClaude(prompt, maxTokens = 4000) {
   try {
     return JSON.parse(json);
   } catch {
-    throw new Error(`Could not parse Claude's response as JSON: ${text.slice(0, 200)}`);
+    // Say which failure this is. "Could not parse Claude's response as JSON:
+    // [" was the whole message on two batches, which is true and useless --
+    // it hides whether the reply was truncated at max_tokens, refused, or
+    // simply malformed, and those want different responses. stop_reason and
+    // the output token count answer that in one line.
+    const used = message.usage?.output_tokens ?? '?';
+    const why =
+      message.stop_reason === 'max_tokens'
+        ? `hit max_tokens (${used}/${maxTokens}) -- the reply was cut off mid-JSON`
+        : `stop_reason=${message.stop_reason}, ${used} output tokens`;
+    throw new Error(`Could not parse Claude's response as JSON: ${why}. First 200 chars: ${text.slice(0, 200)}`);
   }
 }
 
@@ -287,15 +297,19 @@ ${HOUSE_STYLE}
 ${JSON.stringify(slice.map((r) => ({ id: r.source_doc, question: r.q, current: r.a })), null, 1)}
 
 Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
-        // 900 per answer, not 600. A 200-word answer is ~270 tokens, but the
-        // JSON wrapper, long em-dashed sentences and the occasional overrun
-        // push past a tight budget, and a truncated reply is unparseable --
-        // the whole batch is lost for the sake of a few hundred tokens.
-        slice.length * 900
+        // 1400 per answer, not 900. A 200-word answer is ~270 tokens, so 900
+        // looked generous -- but Sonnet 5 emits a thinking block before the
+        // text, and those tokens count against max_tokens too. A measured
+        // batch of five came back at 4,420 output tokens against a 4,500 cap,
+        // 98% of budget, and the batches that tipped over it were truncated
+        // mid-JSON and lost whole. Five of 28 batches failed that way on the
+        // first tranche. The cap costs nothing unless it is used; billing is
+        // on actual output.
+        slice.length * 1400
       );
     } catch (error) {
       // One bad batch should not discard the ones that worked.
-      console.log(`failed (${error.message.split('\n')[0].slice(0, 60)})`);
+      console.log(`failed (${error.message.replace(/\s+/g, ' ').slice(0, 220)})`);
       continue;
     }
     for (const { id, answer } of rewritten) if (id && answer) byId.set(id, answer);
@@ -386,10 +400,11 @@ Québec French: use "vous", metric, and natural Québécois usage where it is ge
 ${JSON.stringify(slice.map((r) => ({ id: r.source_doc, french_question: part(fr.get(r.source_doc)).q, english_answer: part(r).a })), null, 1)}
 
 Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
-        slice.length * 1100
+        // See the note in expand(): thinking tokens count against this too.
+        slice.length * 1600
       );
     } catch (error) {
-      console.log(`failed (${error.message.split('\n')[0].slice(0, 60)})`);
+      console.log(`failed (${error.message.replace(/\s+/g, ' ').slice(0, 220)})`);
       continue;
     }
     for (const { id, answer } of out) if (id && answer) byId.set(id, answer);
