@@ -17,6 +17,7 @@
 //   node scripts/content-generator.mjs --mode=vault-scan
 //   node scripts/content-generator.mjs --mode=qa-gen --topic="Chenin Blanc" --difficulty=Beginner
 //   node scripts/content-generator.mjs --mode=expand --topic="Sherry" --limit=6
+//   node scripts/content-generator.mjs --mode=translate --topic="Australian" --limit=19
 //   node scripts/content-generator.mjs --mode=wine-gen --region="Priorat"
 
 import { readdir, readFile } from 'node:fs/promises';
@@ -188,12 +189,12 @@ async function askClaude(prompt, maxTokens = 4000) {
   }
 }
 
-function writeDrafts(items, { chunkType = 'qa', sectionTitle = null } = {}) {
+function writeDrafts(items, { chunkType = 'qa', sectionTitle = null, lang = 'en' } = {}) {
   const written = [];
   for (const { source_doc, question, answer } of items) {
     if (!question || !answer) continue;
     written.push(
-      writeAnswerFile('en', {
+      writeAnswerFile(lang, {
         source_doc,
         chunk_type: chunkType,
         section_title: sectionTitle,
@@ -324,6 +325,94 @@ Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
   console.log('\nReview each, then move the answer into the original file and delete the --expanded draft.');
 }
 
+// --- MODE=translate ------------------------------------------------------
+//
+// Renders an expanded English answer into French, for pages where the two have
+// fallen out of step -- which is what promoting an English expansion does:
+// hreflang alternates reading 179 words against 18.
+//
+// Deliberately NOT expand pointed at content/answers/fr. Expanding the French
+// independently would produce a French answer that says different things from
+// the English one, and a pair that diverges in substance is worse than a pair
+// that diverges in length. This takes the English as the source of truth and
+// renders it, keeping the existing French question untouched because it is a
+// live URL.
+
+async function translate({ topic, limit }) {
+  const max = Number(limit) || 10;
+  const rows = readAnswerRows();
+  const words = (r) => {
+    const i = r.content.indexOf('? ');
+    return (i === -1 ? '' : r.content.slice(i + 2)).split(/\s+/).filter(Boolean).length;
+  };
+  const part = (r) => {
+    const i = r.content.indexOf('? ');
+    return { q: i === -1 ? r.content : r.content.slice(0, i + 1), a: i === -1 ? '' : r.content.slice(i + 2) };
+  };
+  const fr = new Map(rows.filter((r) => r.lang === 'fr').map((r) => [r.source_doc, r]));
+
+  const pending = rows
+    .filter((r) => r.lang === 'en' && words(r) >= 150)
+    .filter((r) => fr.has(r.source_doc) && words(fr.get(r.source_doc)) < 150)
+    .filter((r) => !topic || r.content.toLowerCase().includes(topic.toLowerCase()))
+    .filter((r) => !existsSync(answerFilePath('fr', `${r.source_doc}--translated`)))
+    .slice(0, max);
+
+  if (pending.length === 0) throw new Error(topic ? `No English answers ahead of their French pair matching "${topic}".` : 'No English answers ahead of their French pair.');
+  console.log(`Translating ${pending.length} answer(s)${topic ? ` matching "${topic}"` : ''}:`);
+  pending.forEach((r) => console.log(`  ${r.source_doc}  en ${words(r)}w -> fr ${words(fr.get(r.source_doc))}w`));
+
+  const BATCH = 4;
+  const byId = new Map();
+  for (let i = 0; i < pending.length; i += BATCH) {
+    const slice = pending.slice(i, i + BATCH);
+    process.stdout.write(`  requesting ${i + 1}-${i + slice.length} of ${pending.length}... `);
+    let out;
+    try {
+      out = await askClaude(
+        `Render each English wine answer below into French, for a Québec readership.
+
+This is a rendering, not a literal translation and not a rewrite. Say what the English says -- same facts, same figures, same structure, same order -- in French that reads as though it were written in French. Do not add claims the English does not make, and do not drop any it does.
+
+${HOUSE_STYLE}
+
+Québec French: use "vous", metric, and natural Québécois usage where it is genuinely idiomatic (croustilles, not chips). Wine terms take their French forms: macération carbonique, élevage, cépage, tanin, acidité. Grape and place names stay as they are.
+
+${JSON.stringify(slice.map((r) => ({ id: r.source_doc, french_question: part(fr.get(r.source_doc)).q, english_answer: part(r).a })), null, 1)}
+
+Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
+        slice.length * 1100
+      );
+    } catch (error) {
+      console.log(`failed (${error.message.split('\n')[0].slice(0, 60)})`);
+      continue;
+    }
+    for (const { id, answer } of out) if (id && answer) byId.set(id, answer);
+    console.log(`${out.length} back`);
+  }
+
+  const missing = pending.filter((r) => !byId.get(r.source_doc));
+  if (missing.length) {
+    console.warn(`\n  !! ${missing.length} came back empty or unmatched:`);
+    missing.forEach((r) => console.warn(`     ${r.source_doc}`));
+  }
+
+  const files = writeDrafts(
+    pending
+      .filter((r) => byId.get(r.source_doc))
+      .map((r) => ({ source_doc: `${r.source_doc}--translated`, question: part(fr.get(r.source_doc)).q, answer: byId.get(r.source_doc) })),
+    { lang: 'fr', sectionTitle: null }
+  );
+  if (files.length === 0) {
+    console.error('\nNothing was written. Nothing was changed.');
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`\nWrote ${files.length} French draft(s):`);
+  files.forEach((f) => console.log(`  ${f}`));
+  console.log('\nReview each, then move the answer into the original French file and delete the --translated draft.');
+}
+
 // --- MODE=wine-gen ---------------------------------------------------------
 // Writes to wines_draft, NOT the live `wines` table. `wines` is read
 // directly by ~10 tc-cellar-mobile features (wine-of-the-day,
@@ -384,6 +473,8 @@ async function main() {
   switch (args.mode) {
     case 'vault-scan':
       return vaultScan(args);
+    case 'translate':
+      return translate(args);
     case 'expand':
       return expand(args);
     case 'qa-gen':
@@ -391,7 +482,7 @@ async function main() {
     case 'wine-gen':
       return wineGen(args);
     default:
-      throw new Error(`Unknown or missing --mode (got "${args.mode}"). Expected: vault-scan | qa-gen | expand | wine-gen`);
+      throw new Error(`Unknown or missing --mode (got "${args.mode}"). Expected: vault-scan | qa-gen | expand | translate | wine-gen`);
   }
 }
 
