@@ -1,0 +1,75 @@
+---
+source_doc: region-languedoc-roussillon
+chunk_type: region
+---
+
+## Le Languedoc — présentation générale {#the-languedoc-overview}
+
+Le Languedoc est une vaste région viticole, chaude et ensoleillée, qui s'étend le long de la côte méditerranéenne française. Historiquement, c'est le plus grand producteur du pays en volume. Autrefois synonyme de vin en vrac bon marché, la région s'est transformée au cours des dernières décennies pour devenir une source de vins de caractère, souvent d'un excellent rapport qualité-prix, et un pôle d'attraction pour les vignerons indépendants ambitieux. L’appellation régionale générique « Languedoc » regroupe les vins de l’ensemble de cette vaste zone selon des règles communes, notamment en matière de cépages. Environ 80 % de la production est constituée de vins rouges, dominés par les assemblages méditerranéens. Le climat chaud et sec ainsi que la garrigue (végétation sauvage) confèrent aux vins un caractère herbacé distinctif, marqué par le soleil.
+À recommander lorsque : l’utilisateur recherche des vins rouges méditerranéens issus d’un climat chaud, d’un bon rapport qualité-prix et aux arômes herbacés, ou s’il souhaite découvrir des producteurs français indépendants ou artisanaux.
+
+## Les vins rouges du Languedoc — le cœur du GSM {#languedoc-reds-the-gsm-heart}
+
+La colonne vertébrale des vins rouges du Languedoc est l’assemblage méditerranéen fondé sur la Syrah, le Grenache et le Mourvèdre (le trio « GSM »), souvent complété par du Carignan et du Cinsault. Le Carignan — qui a toujours été le cépage phare — est fréquemment vinifié par macération carbonique afin d’adoucir ses tanins naturellement fermes, et le Carignan issu de vieilles vignes peut présenter un caractère véritablement unique. Ces vins rouges ont tendance à être chaleureux, aux arômes de bruyère et d’herbes, avec des notes de mûre, de cerise noire, d’herbes de garrigue, d’olive noire et de poivre.
+Température de service : 16–18 °C.
+À recommander lorsque : le consommateur souhaite un vin rouge corsé et ensoleillé pour accompagner des viandes grillées, de l’agneau, un cassoulet ou une cuisine méditerranéenne aux herbes.
+
+## Les blancs du Languedoc {#languedoc-whites}
+
+Bien que le rouge domine, le Languedoc produit des assemblages de blancs de plus en plus sophistiqués à partir d'une palette méditerranéenne : Grenache Blanc, Clairette, Bourboulenc, Picpoul, Roussanne, Marsanne, Vermentino (Rolle) et Viognier. Ils vont de vins vifs et citronnés à des vins amples, texturés et aromatiques.
+
+À recommander quand : l'utilisateur recherche un assemblage blanc plus ample, de climat chaud, ou un blanc méditerranéen pour accompagner du poisson grillé et des plats aux herbes.
+
+## Les appellations du Languedoc à connaître {#named-languedoc-appellations-to-know}
+
+Au sein de cette vaste région, on trouve des appellations plus spécifiques dotées d’une identité propre, notamment les Corbières, le Minervois, les Faugères, Saint-Chinian, le Pic Saint-Loup, La Clape et les Terrasses du Larzac. Celles-ci témoignent généralement d’une ambition plus grande et d’un terroir plus distinctif que le Languedoc de base. Le Pic Saint-Loup, par exemple, est réputé pour ses vins rouges plus frais et élégants, dominés par la Syrah, grâce à son altitude plus fraîche ; les Terrasses du Larzac, quant à elles, sont connues pour leurs assemblages structurés et aptes au vieillissement.
+À recommander lorsque : le consommateur souhaite passer à un niveau supérieur par rapport au Languedoc d’entrée de gamme, ou recherche un style spécifique (par exemple, des vins rouges plus frais et plus vifs du Pic Saint-Loup).
+
+## Faugères {#faug-res}
+
+Faugères, situé dans les collines de l’ouest du Languedoc, a obtenu sa propre appellation en 1982 grâce à ses sols schisteux caractéristiques, entremêlés de sable et de calcaire. La pauvreté des sols et l’altitude se traduisent par de faibles rendements, mais donnent des vins rouges (et désormais des rosés et des blancs) au caractère bien affirmé. Les coopératives jouent un rôle moins important ici que dans la plupart du Languedoc, et de nombreux vignerons pratiquent l’agriculture biologique ou biodynamique — Faugères est réputé pour ses producteurs individualistes.
+À recommander lorsque : le consommateur recherche un vin rouge minéral, marqué par le schiste et doté d’un véritable caractère, ou un vin du Languedoc issu de l’agriculture biologique ou biodynamique.
+
+## Picpoul de Pinet {#picpoul-de-pinet}
+
+Le Picpoul de Pinet est une appellation côtière du Languedoc qui désigne un vin blanc sec et vif, issu du cépage Picpoul (Piquepoul), cultivé sur des sols sablonneux près de la lagune, à proximité de l'ancien port viticole de Sète. Parfumé de citron, vif et aux notes iodées, il est devenu un vin blanc tendance et incontournable pour accompagner les fruits de mer — l’équivalent régional du Muscadet ou de l’Albariño.
+Température de service : 8 à 10 °C.
+À recommander lorsque : le consommateur déguste des huîtres, des fruits de mer ou du poisson grillé, ou s’il recherche un vin blanc côtier vif et abordable.
+
+## Vins doux naturels du Languedoc (Muscat) {#languedoc-vins-doux-naturels-muscat}
+
+La côte languedocienne compte des appellations historiques de vins doux naturels (VDN) au muscat — des vins doux fortifiés tels que le Muscat de Frontignan, le Muscat de Mireval et le Muscat de Lunel. Ce sont des vins de dessert aux arômes de raisin, floraux et miellés, élaborés en ajoutant de l'eau-de-vie de raisin pour arrêter la fermentation, ce qui permet de préserver leur douceur naturelle. Ils présentent aujourd'hui surtout un intérêt historique et local.
+À recommander lorsque : le consommateur souhaite un apéritif doux et aromatique, un vin de dessert, ou un accompagnement pour des tartes aux fruits et du fromage bleu.
+
+## Le Roussillon — présentation {#roussillon-overview}
+
+Le Roussillon est une région montagneuse, chaude et ensoleillée, située à l'extrême sud de la France, adossée à la frontière espagnole et aux Pyrénées — aussi catalane que française sur le plan culturel. Plus chaude et plus sèche que la majeure partie du Languedoc, avec des sols spectaculaires composés de schiste, de granit et de calcaire, elle se spécialise dans les rouges secs puissants, les blancs secs exotiques et, surtout, ses vins doux naturels fortifiés historiques. Les vieilles vignes en buisson à faible rendement — en particulier le grenache dans ses différentes variétés — constituent le trésor de la région.
+À recommander lorsque : l’utilisateur recherche des vins rouges du Sud concentrés et gorgés de soleil, des vins blancs secs caractéristiques ou des vins doux liquoreux classiques.
+
+## Vins Doux Naturels (VDN) du Roussillon {#roussillon-vins-doux-naturels-vdn}
+
+Le Roussillon est le berceau des Vins Doux Naturels (VDN) français, des vins doux élaborés en ajoutant de l'eau-de-vie de raisin en cours de fermentation afin de préserver la douceur naturelle du raisin. Les principales appellations sont :
+
+- Banyuls — le plus célèbre, élaboré principalement à partir de grenache sur les terrasses schisteuses escarpées du littoral, près de la frontière espagnole. Il offre une large palette, allant des vins de « rimage » frais et fruités aux vins « rancio » oxydatifs et longuement vieillis, aux notes de café, de cacao, de figue sèche et de noix. Un accord classique avec les desserts au chocolat.
+- Maury — situé à l’intérieur des terres, également à base de grenache, dans la même veine que le Banyuls, il produit des vins rouges doux et riches.
+- Rivesaltes et Muscat de Rivesaltes — des appellations larges regroupant à la fois des vins doux fortifiés à base de grenache et à base de muscat.
+
+Température de service : 12 à 16 °C pour les VDN rouges ; 8 à 10 °C pour les VDN de Muscat.
+À recommander lorsque : le consommateur recherche un vin pour accompagner des desserts au chocolat ou au café, une alternative au porto, ou un apéritif doux et aromatique (Muscat de Rivesaltes).
+
+## Collioure — l’équivalent sec du Banyuls {#collioure-the-dry-counterpart-to-banyuls}
+
+Collioure est l’appellation de vins secs qui couvre les mêmes terrasses schisteuses escarpées du littoral que celles où est produit le Banyuls, et qui tire son nom du joli port de pêche. Les rouges sont profonds, robustes et chaleureux — à dominante grenache, de plus en plus complétée par de la syrah et du mourvèdre —, presque plus espagnols que français par leur intensité. Des blancs secs puissants sont également élaborés à partir de grenache gris et de grenache blanc.
+Température de service : 16 à 18 °C pour les rouges ; 10 à 12 °C pour les blancs.
+À recommander lorsque : le consommateur souhaite un rouge côtier puissant et gorgé de soleil ou un blanc du sud riche et texturé.
+
+## Les vins blancs secs du Roussillon et les Côtes Catalanes {#roussillon-dry-whites-c-tes-catalanes}
+
+Au-delà de la tradition des vins fortifiés, le Roussillon produit des vins blancs secs envoûtants à partir d’une palette exotique de cépages — souvent du grenache blanc et gris issu de vieilles vignes, du macabeu, du carignan blanc et d’autres encore — dont beaucoup sont commercialisés sous l’appellation IGP Côtes Catalanes. Une vague de producteurs indépendants, souvent adeptes de l’agriculture naturelle, a démontré que le Roussillon pouvait produire d’excellents vins blancs secs aptes au vieillissement, dont le caractère provient de ses sols schisteux et granitiques plutôt que des tendances internationales. Ces vins blancs sont texturés, minéraux et distinctifs.
+À recommander lorsque : le consommateur recherche un vin blanc sec original, minéral et de caractère, hors des sentiers battus, ou qu’il souhaite découvrir les vins naturels ou indépendants du sud de la France.
+
+## Bref aperçu régional : Languedoc {#quick-regional-summary-languedoc}
+
+- Languedoc : vaste, chaud, côtier ; vins rouges à base de GSM + Carignan/Cinsault (80 % de la production), assemblages blancs méditerranéens, Picpoul de Pinet vif, Faugères aux arômes de schiste, Muscat VDN moelleux. Une région qui a su passer d’une production de masse à une production alliant valeur et caractère.
+- Roussillon : plus chaud, catalan, montagneux ; Grenache issu de vieilles vignes ; réputé pour ses vins fortifiés VDN de Banyuls, Maury et Rivesaltes, ses rouges secs puissants de Collioure et ses blancs secs minéraux et exotiques (Côtes Catalanes).
+- Points communs : des arômes de garrigue et d’herbes aromatiques, de vieilles vignes en gobelet, une forte culture de producteurs indépendants, bio et naturels, ainsi qu’un excellent rapport qualité-prix par rapport aux régions françaises plus célèbres.
