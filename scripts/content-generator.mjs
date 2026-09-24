@@ -351,9 +351,17 @@ async function translate({ topic, limit }) {
   };
   const fr = new Map(rows.filter((r) => r.lang === 'fr').map((r) => [r.source_doc, r]));
 
+  // The test is divergence, not an absolute length. Gating on "English >= 150"
+  // silently skipped a pair sitting at 148 English words against 20 French --
+  // expanded on one side, untouched on the other, which is exactly what this
+  // mode exists to catch.
   const pending = rows
-    .filter((r) => r.lang === 'en' && words(r) >= 150)
-    .filter((r) => fr.has(r.source_doc) && words(fr.get(r.source_doc)) < 150)
+    .filter((r) => r.lang === 'en' && fr.has(r.source_doc))
+    .filter((r) => {
+      const en = words(r);
+      const f = words(fr.get(r.source_doc));
+      return f < 150 && en >= 120 && en >= f * 2;
+    })
     .filter((r) => !topic || r.content.toLowerCase().includes(topic.toLowerCase()))
     .filter((r) => !existsSync(answerFilePath('fr', `${r.source_doc}--translated`)))
     .slice(0, max);

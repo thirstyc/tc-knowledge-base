@@ -13,6 +13,7 @@
     "generate:catalogs": "node scripts/generate-catalog-pages.mjs",
     "generate:pages": "node scripts/generate-missing-pages.mjs",
     "export:content": "node scripts/export-content-files.mjs",
+    "promote": "node scripts/promote-drafts.mjs",
     "audit:links": "node scripts/audit-links.mjs",
     "verify:region-answers": "node scripts/verify-region-answers.mjs",
     "verify:answer-coverage": "node scripts/verify-answer-coverage.mjs",
