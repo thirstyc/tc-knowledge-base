@@ -6,4 +6,4 @@ section_title: Beginner
 
 What pairs with Lebanese wine?
 
-Grilled kafta. Lamb kebabs. A full mezze spread. Built for the same table that invented mezze.
+Mezze, mostly. Grilled kafta, lamb kebabs, pomegranate-glazed meats, a whole table of small plates rather than one big dish. Lebanese reds carry enough structure for charred meat and enough freshness not to flatten everything around them — which is exactly what a spread of sharp, herby, smoky things needs.
