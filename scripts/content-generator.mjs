@@ -1,14 +1,22 @@
-// Three content-ingestion modes for knowledge_chunks (and, for wine-gen,
-// the wines_draft staging table). Everything this script writes lands as
-// status='draft' — nothing it does is visible on the live site until
-// someone runs `npm run publish` (process-knowledge-intake.mjs --publish).
+// Four content-generation modes. Everything this script writes lands as a
+// draft — nothing reaches the live site until a human reviews it.
 //
-// Needs SUPABASE_SERVICE_ROLE_KEY (via lib/supabase.mjs) because inserting
-// into knowledge_chunks requires bypassing the public-read-only RLS policy.
+// Where each mode writes:
+//   qa-gen, expand   content/answers/en/*.md with `status: draft`. Answer
+//                    content lives in this repo, not Supabase — see
+//                    lib/content-files.mjs. Review the file, delete the
+//                    status line, run `npm run generate:pages`.
+//   vault-scan       knowledge_chunks as status='draft' (atlas chunks, which
+//                    have no page generator and so no file representation).
+//   wine-gen         the wines_draft staging table.
+//
+// The two Supabase modes need SUPABASE_SERVICE_ROLE_KEY via lib/supabase.mjs;
+// qa-gen and expand need only ANTHROPIC_API_KEY.
 //
 // Usage:
 //   node scripts/content-generator.mjs --mode=vault-scan
 //   node scripts/content-generator.mjs --mode=qa-gen --topic="Chenin Blanc" --difficulty=Beginner
+//   node scripts/content-generator.mjs --mode=expand --topic="Sherry" --limit=6
 //   node scripts/content-generator.mjs --mode=wine-gen --region="Priorat"
 
 import { readdir, readFile } from 'node:fs/promises';
@@ -16,6 +24,7 @@ import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
 import { supabase } from '../lib/supabase.mjs';
+import { readAnswerRows, writeAnswerFile } from '../lib/content-files.mjs';
 import { embed } from '../lib/embeddings.mjs';
 import { chunkText } from '../lib/chunking.mjs';
 import { slugify } from '../lib/page-shell.mjs';
@@ -138,69 +147,137 @@ async function vaultScan({ limit } = {}) {
   console.log(`Added ${added} new chunks as draft${skipped ? ` (${skipped} file(s) already ingested, skipped)` : ''}.`);
 }
 
-// --- MODE=qa-gen ---------------------------------------------------------
+// --- MODE=qa-gen / MODE=expand -------------------------------------------
+//
+// Both write .md files into content/answers/en with `status: draft`, so
+// nothing reaches the site until a human removes that line. Neither touches
+// Supabase: answer content lives in this repo (see lib/content-files.mjs).
+//
+// The house style these prompts ask for is NOT the old one. The previous
+// qa-gen prompt asked for "terse, factual, no fluff" and offered
+// "Why does Refosco taste so dark and peppery? Slovenian/Italian red. High
+// tannin. Pepper. Dark." as the model to match. That prompt is where a large
+// part of the thin-content problem came from: 844 of 1,170 English answers are
+// under 150 words, and Google responds by crawling them and declining to index
+// them. Generating more of those would make the problem worse, so the brief
+// now asks for the thing that was missing -- the mechanism behind the answer.
 
 const VALID_DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'];
 
-async function qaGen({ topic, difficulty }) {
-  if (!topic) throw new Error('qa-gen requires --topic="..."');
-  const normalizedDifficulty =
-    VALID_DIFFICULTIES.find((d) => d.toLowerCase() === (difficulty || '').toLowerCase()) || 'Beginner';
+const HOUSE_STYLE = `Voice: candid, irreverent, intimate -- like a knowledgeable friend over a glass, not a textbook and not a wine merchant. Confident, never snobby. A little dry humour is welcome; jokes for their own sake are not. No emojis. No filler phrases ("at the end of the day", "game-changer", "in this guide"). Never open by restating the question.
 
+Length: 150-200 words. This is the whole point of the exercise -- a four-word answer is what we are replacing.
+
+Substance: explain the actual mechanism, not the label. Not "high acidity, mineral, coastal" but why the acidity is there and what it does on the table. Name grapes, places, techniques, numbers and temperatures where they are real. If there is a common misconception, correct it. If there is a practical instruction (serving temperature, when to drink it, what to avoid), give it.
+
+Accuracy matters more than flourish. Do not invent appellation rules, vintages, percentages or producer names. If you are not certain of a figure, describe it qualitatively instead.`;
+
+async function askClaude(prompt, maxTokens = 4000) {
   const message = await anthropic.messages.create({
     model: CONTENT_MODEL,
-    max_tokens: 2000,
-    messages: [
-      {
-        role: 'user',
-        content: `Generate 5-10 wine Q&A pairs about "${topic}" at ${normalizedDifficulty} difficulty.
-
-Match this exact house style — terse, factual, no fluff, short sentences, ends assertively:
-
-"Is Assyrtiko Only From Santorini? Mostly. Santorini is home. You'll find small plantings in Paros and other Aegean islands. But 90%+ is Santorini. The volcanic terroir is the story."
-
-"Why does Refosco taste so dark and peppery? Slovenian/Italian red. High tannin. Pepper. Dark."
-
-Respond with ONLY a minified JSON array, no other text: [{"question": "...", "answer": "..."}]`,
-      },
-    ],
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
   });
-
   const text = message.content.find((b) => b.type === 'text')?.text ?? '[]';
-  let pairs;
+  const json = text.slice(text.indexOf('['), text.lastIndexOf(']') + 1);
   try {
-    pairs = JSON.parse(text);
+    return JSON.parse(json);
   } catch {
     throw new Error(`Could not parse Claude's response as JSON: ${text.slice(0, 200)}`);
   }
+}
 
-  const rows = [];
-  const stamp = Date.now();
-  for (let i = 0; i < pairs.length; i++) {
-    const { question, answer } = pairs[i];
+function writeDrafts(items, { chunkType = 'qa', sectionTitle = null } = {}) {
+  const written = [];
+  for (const { source_doc, question, answer } of items) {
     if (!question || !answer) continue;
-    const content = `${question} ${answer}`;
-    rows.push({
-      source_doc: `qa-gen-${slugify(topic)}-${normalizedDifficulty.toLowerCase()}-${stamp}-${i}`,
-      content,
-      chunk_type: 'qa',
-      section_title: normalizedDifficulty,
-      // Local, deterministic, no extra API call — a truncated answer is a
-      // reasonable proxy summary and matches "generate locally" for this mode.
-      summary: answer.length > 150 ? `${answer.slice(0, 150)}...` : answer,
-      status: 'draft',
-      embedding: await embed(content),
-    });
+    written.push(
+      writeAnswerFile('en', {
+        source_doc,
+        chunk_type: chunkType,
+        section_title: sectionTitle,
+        status: 'draft',
+        question,
+        answer,
+      })
+    );
   }
+  return written;
+}
 
-  if (rows.length === 0) throw new Error('Claude returned no usable Q&A pairs.');
+// New questions on a topic. Adds pages, so use it where coverage is genuinely
+// missing -- not as a way to bulk up a topic that already has thin pages,
+// which is what MODE=expand is for.
+async function qaGen({ topic, difficulty, count }) {
+  if (!topic) throw new Error('qa-gen requires --topic="..."');
+  const level =
+    VALID_DIFFICULTIES.find((d) => d.toLowerCase() === (difficulty || '').toLowerCase()) || 'Beginner';
+  const n = Number(count) || 6;
 
-  const { error } = await supabase.from('knowledge_chunks').insert(rows);
-  if (error) throw error;
+  const existing = readAnswerRows({ includeDrafts: true })
+    .filter((r) => r.lang === 'en' && r.content.toLowerCase().includes(topic.toLowerCase()))
+    .map((r) => r.content.slice(0, r.content.indexOf('? ') + 1))
+    .filter(Boolean);
 
-  console.log(
-    `Generated ${rows.length} Q&A drafts — review at https://supabase.com/dashboard/project/qcyzcjikyqnzvnvmfwtk/editor`
+  const pairs = await askClaude(`Write ${n} wine Q&A pairs about "${topic}" for a ${level.toLowerCase()} reader.
+
+${HOUSE_STYLE}
+
+These questions already exist and must NOT be duplicated or rephrased:
+${existing.length ? existing.map((q) => `- ${q}`).join('\n') : '(none yet)'}
+
+Respond with ONLY a JSON array: [{"question": "...", "answer": "..."}]`);
+
+  const stamp = Date.now();
+  const files = writeDrafts(
+    pairs.map((p, i) => ({ ...p, source_doc: `qa-${slugify(topic)}-${slugify(p.question).slice(0, 40)}-${stamp}-${i}` })),
+    { sectionTitle: level }
   );
+  if (files.length === 0) throw new Error('Claude returned no usable Q&A pairs.');
+  console.log(`Wrote ${files.length} draft(s):`);
+  files.forEach((f) => console.log(`  ${f}`));
+  console.log('\nReview them, drop the "status: draft" line to publish, then: npm run generate:pages');
+}
+
+// Rewrites answers that are already published but too short. This is the mode
+// that addresses "Crawled - currently not indexed": same questions, same URLs,
+// more substance. Drafts are written alongside as {slug}--expanded so the
+// original is never overwritten unreviewed.
+async function expand({ topic, limit, minWords }) {
+  const floor = Number(minWords) || 150;
+  const max = Number(limit) || 6;
+  const thin = readAnswerRows()
+    .filter((r) => r.lang === 'en')
+    .map((r) => {
+      const i = r.content.indexOf('? ');
+      return { ...r, q: i === -1 ? r.content : r.content.slice(0, i + 1), a: i === -1 ? '' : r.content.slice(i + 2) };
+    })
+    .filter((r) => r.a.split(/\s+/).filter(Boolean).length < floor)
+    .filter((r) => !topic || r.content.toLowerCase().includes(topic.toLowerCase()))
+    .slice(0, max);
+
+  if (thin.length === 0) throw new Error(topic ? `No answers under ${floor} words matching "${topic}".` : `No answers under ${floor} words.`);
+  console.log(`Expanding ${thin.length} answer(s)${topic ? ` matching "${topic}"` : ''}:`);
+  thin.forEach((r) => console.log(`  ${r.source_doc} (${r.a.split(/\s+/).filter(Boolean).length}w)`));
+
+  const rewritten = await askClaude(`Rewrite each of these wine answers at proper length. Keep the question exactly as given -- it is a live URL. Keep whatever the current answer asserts as true unless it is plainly wrong; you are deepening it, not replacing it.
+
+${HOUSE_STYLE}
+
+${JSON.stringify(thin.map((r) => ({ id: r.source_doc, question: r.q, current: r.a })), null, 1)}
+
+Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`, 8000);
+
+  const byId = new Map(rewritten.map((r) => [r.id, r.answer]));
+  const files = writeDrafts(
+    thin
+      .filter((r) => byId.get(r.source_doc))
+      .map((r) => ({ source_doc: `${r.source_doc}--expanded`, question: r.q, answer: byId.get(r.source_doc) })),
+    { sectionTitle: null }
+  );
+  console.log(`\nWrote ${files.length} draft(s) alongside the originals:`);
+  files.forEach((f) => console.log(`  ${f}`));
+  console.log('\nReview each, then move the answer into the original file and delete the --expanded draft.');
 }
 
 // --- MODE=wine-gen ---------------------------------------------------------
@@ -263,12 +340,14 @@ async function main() {
   switch (args.mode) {
     case 'vault-scan':
       return vaultScan(args);
+    case 'expand':
+      return expand(args);
     case 'qa-gen':
       return qaGen(args);
     case 'wine-gen':
       return wineGen(args);
     default:
-      throw new Error(`Unknown or missing --mode (got "${args.mode}"). Expected: vault-scan | qa-gen | wine-gen`);
+      throw new Error(`Unknown or missing --mode (got "${args.mode}"). Expected: vault-scan | qa-gen | expand | wine-gen`);
   }
 }
 
