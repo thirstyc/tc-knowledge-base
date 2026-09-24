@@ -19,11 +19,14 @@
 // in-page anchors regions.html links to. Verify the anchors round-trip after
 // running this, which scripts/verify-doc-roundtrip.mjs does.
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
-import { writeDocFile, DOCS_DIR } from '../lib/content-docs.mjs';
+import { writeDocFile, docFilePath, parseDoc, DOCS_DIR } from '../lib/content-docs.mjs';
 
 const DRY_RUN = process.argv.includes('--dry-run');
+// --only=region-burgundy limits the run to one source_doc. Re-extracting all
+// 490 documents to repair one is a lot of blast radius for no reason.
+const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length) ?? null;
 
 // Which page prefixes hold which chunk_type. Topic pages are the odd one:
 // their Overview belongs to the topic's own sourceDoc (grape-riesling,
@@ -113,6 +116,7 @@ for (const [dir, lang] of [['.', 'en'], ['fr', 'fr']]) {
       const html = readFileSync(path.join(dir, file), 'utf8');
       if (/Redirect stub/.test(html)) continue;
       const sourceDoc = file.replace(/\.html$/, '');
+      if (ONLY && sourceDoc !== ONLY) continue;
 
       const sections = [];
       if (hasOverview) {
@@ -136,6 +140,7 @@ for (const [dir, lang] of [['.', 'en'], ['fr', 'fr']]) {
   // file at all.
   const { TOPICS } = await import('../topics.config.mjs');
   for (const topic of TOPICS) {
+    if (ONLY && topic.sourceDoc !== ONLY) continue;
     const file = path.join(dir, `topic-${topic.slug}.html`);
     let html;
     try {
@@ -151,7 +156,19 @@ for (const [dir, lang] of [['.', 'en'], ['fr', 'fr']]) {
     if (topic.kind === 'enology') sections.push(...sectionsOf(html));
     if (sections.length === 0) continue;
 
-    if (!DRY_RUN) writeDocFile(lang, { source_doc: topic.sourceDoc, chunk_type: topic.kind, sections });
+    // MERGE, do not overwrite. A topic's sourceDoc is often also a page the
+    // KINDS pass above already extracted -- topic-burgundy's Overview belongs
+    // to region-burgundy, which has its own region-burgundy.html with eleven
+    // sections in it. Writing this file outright threw those away and left a
+    // document holding nothing but an Overview, which buildSectionPages()
+    // then skips for having no sections, so the stale page survived and
+    // silently stopped being regenerated.
+    const existing = existsSync(docFilePath(lang, topic.sourceDoc))
+      ? parseDoc(readFileSync(docFilePath(lang, topic.sourceDoc), 'utf8'), docFilePath(lang, topic.sourceDoc)).sections
+      : [];
+    const kept = existing.filter((s) => s.heading !== 'Overview');
+    const merged = [...sections, ...kept.filter((s) => !sections.some((n) => n.heading === s.heading))];
+    if (!DRY_RUN) writeDocFile(lang, { source_doc: topic.sourceDoc, chunk_type: topic.kind, sections: merged });
     written[lang]++;
   }
 }

@@ -1,7 +1,9 @@
-// Single source of truth for topic-*.html pages AND for the answer-card
-// routing table in supabase-client.js (TOPIC_PAGE_SLUGS, SOURCE_DOC_SLUG_
-// OVERRIDES, TOPIC_KEYWORDS). Add an entry here and run
-// `npm run generate:topics` instead of hand-editing either.
+// Single source of truth for topic-*.html pages. Add an entry here and run
+// `npm run generate:topics`.
+//
+// It used to also generate a routing table into the browser client, for answer
+// cards rendered at runtime. Nothing renders cards in the browser now, so
+// TOPIC_KEYWORDS below is read only at build time.
 //
 // kind determines which Supabase query shape generate-topic-pages.mjs uses:
 //   - 'grape'    chunk_type=grape overview, single chunk_type=qa QA fetch
@@ -13,9 +15,9 @@
 // omitted. excludeTerm is rare (only cabernet-sauvignon needs it, to keep
 // "Cabernet Franc" mentions out of the Cabernet Sauvignon page).
 //
-// keywordPattern (regex source, no slashes, always case-insensitive) is what
-// supabase-client.js uses to route an arbitrary answer card to this topic
-// page when its source_doc doesn't already resolve one. Defaults to the
+// keywordPattern (regex source, no slashes, always case-insensitive) routes an
+// arbitrary answer to this topic page when its source_doc doesn't already
+// resolve one -- see resolveTopicLink() in scripts/generate-missing-pages.mjs. Defaults to the
 // escaped topicName when omitted — only set it when that default would be
 // wrong (topicName has an extra word the content doesn't use, like "Niagara
 // Peninsula", or needs to allow for a spelling/boundary variant).

@@ -10,7 +10,7 @@
 // idea: section_title on qa/region-qa rows is always a difficulty label
 // ("Beginner"/"Intermediate"), never a per-answer identifier -- see
 // deriveQuestion() in lib/page-shell.mjs and the commit that fixed the
-// same misunderstanding in supabase-client.js. One page per chunk row
+// same misunderstanding in the old browser client. One page per chunk row
 // (keyed by its unique, already-readable source_doc) is what actually
 // closes the "detail pages" gap flagged in PIPELINE-GAP-AUDIT.md.
 //

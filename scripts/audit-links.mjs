@@ -93,7 +93,7 @@ async function liveStatuses(pages) {
   const broken = [];
   // The search index is not linked from any page, so the local link check
   // never sees it -- but search.html is dead without it.
-  const extras = ['robots.txt', 'sitemap.xml', 'styles.css', 'search-index-en.json', 'search-index-fr.json'];
+  const extras = ['robots.txt', 'sitemap.xml', 'styles.css', 'site.js', 'search-index-en.json', 'search-index-fr.json'];
   const targets = [...pages, ...extras].filter((p) => existsSync(p));
   await mapLimit(targets, CONCURRENCY, async (target) => {
     try {

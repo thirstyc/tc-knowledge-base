@@ -11,7 +11,7 @@
 // If a topic's fetch fails, its existing file is left as-is and the script
 // exits 1 — a network blip never ships an empty topic page.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { readDocRows } from './lib/content-docs.mjs';
 import { readAnswerRows } from './lib/content-files.mjs';
 import { TOPICS, BASE_URL, effectiveKeywordPattern, TOPIC_ANSWER_LIMIT } from './topics.config.mjs';
@@ -165,7 +165,7 @@ function parseOverview(content) {
 
 // --- Page body -------------------------------------------------------------
 
-// Mirrors deriveCardTitle() in supabase-client.js.
+// Mirrored deriveCardTitle() in the old browser client; now the only copy.
 function rowTitle(chunk) {
   if (chunk.chunk_type === 'enology') return chunk.section_title || chunk.content.split('\n')[0];
   return deriveQuestion(chunk.content);
@@ -250,16 +250,15 @@ function renderFooter(topic, lang) {
 }
 
 function renderPage(topic, lang, data) {
-  // supabase-client.js is still loaded for the row modal and the shared
-  // header behaviour (Android App Store guard).
+  // site.js comes from renderFooter(), so every page gets it -- see
+  // lib/page-shell.mjs.
   return [
     renderHead(topic, lang),
     renderHeader(topic, lang),
     renderMain(topic, lang, data),
     renderFooter(topic, lang),
     '',
-    `  <script src="${assetPrefixFor(lang)}supabase-client.js"></script>
-</body>
+    `</body>
 </html>
 `,
   ].join('\n');
@@ -291,75 +290,10 @@ for (const { topic, lang, outPath, data, error } of results) {
 console.log(`Generated ${jobs.length - failedTopics} of ${jobs.length} topic page(s).`);
 if (failedTopics) process.exitCode = 1;
 
-// --- Answer-card routing table in supabase-client.js -----------------------
-// TOPIC_PAGE_SLUGS, SOURCE_DOC_SLUG_OVERRIDES, and TOPIC_KEYWORDS are all
-// derivable from the same config, so generate them here instead of
-// hand-maintaining a second list that has to be kept in sync manually.
-
-function wrapList(items, perLine = 6) {
-  const lines = [];
-  for (let i = 0; i < items.length; i += perLine) {
-    lines.push('  ' + items.slice(i, i + perLine).join(', ') + ',');
-  }
-  return lines.join('\n');
-}
-
-function renderTopicPageSlugs() {
-  const items = TOPICS.map((t) => `'${t.slug}'`);
-  return `const TOPIC_PAGE_SLUGS = new Set([\n${wrapList(items)}\n]);`;
-}
-
-function renderSourceDocSlugOverrides() {
-  const entries = TOPICS.filter((t) => {
-    const prefix = `${t.kind}-`;
-    return t.sourceDoc.startsWith(prefix) && t.sourceDoc.slice(prefix.length) !== t.slug;
-  }).map((t) => `  '${t.sourceDoc}': '${t.slug}',`);
-  return `const SOURCE_DOC_SLUG_OVERRIDES = {\n${entries.join('\n')}\n};`;
-}
-
-function renderTopicKeywords() {
-  const entries = TOPICS.map((t) => `  { pattern: /${effectiveKeywordPattern(t)}/i, slug: '${t.slug}' },`);
-  return `const TOPIC_KEYWORDS = [\n${entries.join('\n')}\n];`;
-}
-
-const ROUTING_BLOCK_START = '// --- BEGIN GENERATED TOPIC ROUTING (source: topics.config.mjs; run `npm run generate:topics`) ---';
-const ROUTING_BLOCK_END = '// --- END GENERATED TOPIC ROUTING ---';
-
-function renderRoutingBlock() {
-  return [
-    ROUTING_BLOCK_START,
-    '// Topics with a dedicated topic-[slug].html page. Anything not resolved',
-    '// here falls back to the inline modal so a link never points at a 404.',
-    renderTopicPageSlugs(),
-    '',
-    '// Maps a region-/enology-prefixed source_doc to its topic slug when the two',
-    '// differ. Anything not listed here just strips the prefix as-is.',
-    renderSourceDocSlugOverrides(),
-    '',
-    '// Ordered longest-phrase-first (see topics.config.mjs) so e.g. "Chenin',
-    '// Blanc" matches before a shorter, coincidental single-word hit would.',
-    '// Used only for chunk_types that don\'t carry their own grape-/region-/',
-    '// enology-prefixed source_doc, or whose prefix lookup didn\'t resolve.',
-    renderTopicKeywords(),
-    ROUTING_BLOCK_END,
-  ].join('\n');
-}
-
-const clientPath = 'supabase-client.js';
-const clientSrc = readFileSync(clientPath, 'utf8');
-const blockRegex = new RegExp(
-  `${ROUTING_BLOCK_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${ROUTING_BLOCK_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
-);
-
-if (!blockRegex.test(clientSrc)) {
-  console.error(`Could not find generated-routing markers in ${clientPath}. Skipping.`);
-} else {
-  const updated = clientSrc.replace(blockRegex, renderRoutingBlock());
-  writeFileSync(clientPath, updated);
-  console.log(`  -> ${clientPath} (routing table)`);
-}
-
-// --- sitemap.xml -------------------------------------------------------
-
-const sitemapCount = writeSitemap('.');
-console.log(`  -> sitemap.xml (${sitemapCount} urls)`);
+// The answer-card routing table that used to be generated into
+// the browser client lived here. It mapped a chunk to its topic page for cards
+// rendered by renderAnswerCard(); every page now renders its own links at build
+// time, so the table had no reader left and the client itself is gone. The routing itself
+// is not lost -- resolveTopicLink() in scripts/generate-missing-pages.mjs and
+// TOPIC_KEYWORDS in topics.config.mjs do the same job at build time, from the
+// same config this generated from.

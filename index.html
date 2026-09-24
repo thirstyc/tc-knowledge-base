@@ -86,8 +86,8 @@
         <div>
           <ul class="q-list q-questions" id="featured-answers">
           <li><a href="answer-cabernet-sauvignon-aging.html"><span class="q">Why Does Cabernet Sauvignon Age So Well?</span><span class="a">High tannin. High acidity.</span></a></li>
-          <li><a href="answer-nebbiolo-barolo-vs-barbaresco.html"><span class="q">What's the Difference Between Barolo and Barbaresco?</span><span class="a">Same grape (Nebbiolo). Barolo is more powerful, higher tannin, needs more age (10–15 years).</span></a></li>
-          <li><a href="answer-sangiovese-food.html"><span class="q">Why Does Sangiovese Require Food?</span><span class="a">High tannin, high acidity. On its own, it's aggressive.</span></a></li>
+          <li><a href="answer-nebbiolo-barolo-vs-barbaresco.html"><span class="q">What&#39;s the Difference Between Barolo and Barbaresco?</span><span class="a">Same grape (Nebbiolo). Barolo is more powerful, higher tannin, needs more age (10–15 years).</span></a></li>
+          <li><a href="answer-sangiovese-food.html"><span class="q">Why Does Sangiovese Require Food?</span><span class="a">High tannin, high acidity. On its own, it&#39;s aggressive.</span></a></li>
           </ul>
           <a class="q-link" style="margin-top: 22px" href="answers.html">All answers &rarr;</a>
         </div>
@@ -139,47 +139,9 @@
     </div>
   </footer>
 
-  <script src="supabase-client.js"></script>
-  <script>
-    // Curated real answers, keyed by source_doc (shared between a row and its
-    // French translation) so index.html and fr/index.html use the same list.
-    // The page ships with the first three already rendered; this only
-    // refreshes them, so a failed request leaves real content in place.
-    const FEATURED_ANSWER_SOURCE_DOCS = [
-      'qa-cabernet-sauvignon-aging',
-      'qa-nebbiolo-barolo-vs-barbaresco',
-      'qa-sangiovese-food',
-    ];
-
-    function firstSentences(text, count) {
-      const sentences = text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+/);
-      return sentences.slice(0, count).join(' ');
-    }
-
-    async function renderFeaturedAnswers() {
-      const list = document.getElementById('featured-answers');
-      if (!list) return;
-
-      // fetchChunks adds status=published and the page's language.
-      const chunks = await window.KnowledgeBase.fetchChunks(
-        `select=id,content,source_doc,chunk_type,section_title&source_doc=in.(${FEATURED_ANSWER_SOURCE_DOCS.join(',')})`
-      );
-      if (chunks.length === 0) return;
-
-      chunks.sort((a, b) => FEATURED_ANSWER_SOURCE_DOCS.indexOf(a.source_doc) - FEATURED_ANSWER_SOURCE_DOCS.indexOf(b.source_doc));
-      list.innerHTML = chunks.map((chunk) => {
-        const question = window.KnowledgeBase.deriveCardTitle(chunk);
-        const answer = (chunk.content || '').slice(question.length).trim();
-        return `<li><a ${window.KnowledgeBase.chunkLinkAttrs(chunk)}>
-          <span class="q">${question}</span>
-          <span class="a">${firstSentences(answer, 2)}</span>
-        </a></li>`;
-      }).join('');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      renderFeaturedAnswers();
-    });
-  </script>
+  <script src="site.js"></script>
+  <!-- The three featured answers above are written by
+       scripts/generate-featured-answers.mjs from content/answers.
+       They used to be re-fetched from Supabase here on every page load. -->
 </body>
 </html>

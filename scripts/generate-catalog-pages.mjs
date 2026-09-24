@@ -178,7 +178,7 @@ function guideTitleFr(strippedSlug) {
 }
 
 // Where a grape/region row lives (mirrored by chunkHref() in
-// supabase-client.js). hrefs are plain same-directory filenames: English
+// the old browser client). hrefs are plain same-directory filenames: English
 // and French catalog pages each sit next to their own language's pages.
 //   - a source_doc with a topic page: that topic page (grape Overview rows,
 //     and the Overview row of the six region topics)
@@ -222,7 +222,7 @@ function renderPage({ file, nav = file, title, description, main, script = '', l
       enHref: isFr ? `../${file}` : null,
     }),
     '',
-    `  <script src="${ap}supabase-client.js"></script>${script}
+    `${script}
 </body>
 </html>
 `,
@@ -620,7 +620,7 @@ ${items}
 
 // Each guide/comparison has its own page named after its source_doc
 // (guide-how-to-taste-wine.html), in the same directory as guides.html.
-// Mirrored by chunkHref() in supabase-client.js.
+// Was mirrored by chunkHref() in the browser client; now the only copy.
 function guidePagePath(sourceDoc) {
   return `${sourceDoc}.html`;
 }

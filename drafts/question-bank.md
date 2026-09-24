@@ -1,0 +1,556 @@
+# Question Bank — 500 Target Questions
+
+Source: the 500-question list shared on 2026-09-17. Status markers:
+
+- `[x]` published (source_doc in brackets)
+- `[d]` drafted, awaiting publish
+- `[~]` covered by another answer; don't create a separate page (thin duplicate)
+- `[ ]` open
+
+Several questions appear more than once in the list; later duplicates are
+marked `[~]` pointing at the first.
+
+## Category 1: Food Pairing
+
+- [x] 1. What wine goes with steak? (qa-pairing-steak)
+- [~] 2. Best wine for ribeye steak? → 1
+- [~] 3. Wine with filet mignon? → 1
+- [~] 4. Wine with grilled beef? → 1
+- [x] 5. What wine pairs with lamb? (qa-pairing-lamb)
+- [x] 6. Best wine for duck? (qa-pairing-duck)
+- [x] 7. Wine with chicken? (qa-pairing-chicken)
+- [~] 8. Wine with grilled chicken? → 7
+- [x] 9. What wine goes with salmon? (qa-pairing-salmon)
+- [~] 10. Wine pairing with fish? → 12
+- [~] 11. Wine with grilled fish? → 12
+- [x] 12. Best wine for seafood? (qa-pairing-seafood)
+- [x] 13. Wine with oysters? (qa-pairing-oysters)
+- [x] 14. What wine goes with mussels? (qa-pairing-mussels)
+- [x] 15. Wine with shrimp? (qa-pairing-shrimp)
+- [x] 16. Wine with pork? (qa-pairing-pork)
+- [x] 17. Wine with pulled pork? (qa-pairing-pulled-pork)
+- [x] 18. Wine with ham? (qa-pairing-ham)
+- [x] 19. What wine goes with turkey? (qa-pairing-turkey)
+- [x] 20. Wine with venison? (qa-pairing-venison)
+- [x] 21. Wine with pasta? (qa-pairing-pasta)
+- [x] 22. Wine pairing with tomato sauce? (qa-pairing-tomato-sauce)
+- [x] 23. Best wine for mushroom risotto? (qa-pairing-mushroom-risotto)
+- [x] 24. Wine with asparagus? (qa-pairing-asparagus)
+- [x] 25. Wine with broccoli? (qa-pairing-broccoli)
+- [x] 26. Wine with spinach? (qa-pairing-spinach)
+- [x] 27. Wine with roasted vegetables? (qa-pairing-roasted-vegetables)
+- [x] 28. What wine goes with curry? (qa-pairing-curry)
+- [x] 29. Wine with Thai food? (qa-pairing-thai-food)
+- [x] 30. Wine with Indian food? (qa-pairing-indian-food)
+- [x] 31. Wine with spicy food? (qa-pairing-spicy-food)
+- [x] 32. Wine with Mexican food? (qa-pairing-mexican-food)
+- [x] 33. Wine with Asian cuisine? (qa-pairing-asian-food)
+- [x] 34. Wine with sushi? (qa-pairing-sushi)
+- [x] 35. Wine with ramen? (qa-pairing-ramen)
+- [x] 36. What wine pairs with cheese? (qa-pairing-cheese)
+- [x] 37. Wine with cheddar cheese? (qa-pairing-cheddar)
+- [x] 38. Wine with Brie? (qa-pairing-brie)
+- [x] 39. Wine with blue cheese? (qa-pairing-blue-cheese)
+- [x] 40. Wine with goat cheese? (qa-pairing-goat-cheese)
+- [x] 41. Wine with mozzarella? (qa-pairing-mozzarella)
+- [x] 42. Wine with feta? (qa-pairing-feta)
+- [x] 43. Wine with cream sauce? (qa-pairing-cream-sauce)
+- [x] 44. Wine with butter sauce? (qa-pairing-butter-sauce)
+- [x] 45. Wine with chocolate? (qa-pairing-chocolate)
+- [~] 46. Best wine for chocolate dessert? → 45
+- [x] 47. Wine with cake? (qa-pairing-cake)
+- [x] 48. Wine with fruit desserts? (qa-pairing-fruit-desserts)
+- [x] 49. Wine with caramel? (qa-pairing-caramel)
+- [x] 50. Wine with nuts? (qa-pairing-nuts)
+- [~] 51. Wine with berries? → 48
+- [x] 52. Wine with ice cream? (qa-pairing-ice-cream)
+- [x] 53. Wine with pie? (qa-pairing-pie)
+- [~] 54. Wine with tomato-based dishes? → 22
+- [~] 55. Wine with red sauce? → 22
+- [~] 56. Wine with white cream sauce? → 43
+- [x] 57. Wine with olive oil? (qa-pairing-olive-oil)
+- [x] 58. Wine with garlic? (qa-pairing-garlic)
+- [x] 59. Wine with vinegar-based sauce? (qa-pairing-vinegar-sauce)
+- [x] 60. Wine with BBQ sauce? (qa-pairing-bbq-sauce)
+- [x] 61. Wine with teriyaki? (qa-pairing-teriyaki)
+- [x] 62. Best wine for a date night? (qa-date-night-wine)
+- [~] 63. Wine for a romantic dinner? → 62
+- [x] 64. Best wine for a dinner party? (qa-dinner-party-wine)
+- [x] 65. Wine for a business dinner? (qa-business-dinner-wine)
+- [x] 66. Wine for a celebration? (qa-celebration-wine)
+- [~] 67. Wine for a holiday meal? → 69
+- [~] 68. Wine for Thanksgiving? → 19
+- [x] 69. Wine for Christmas? (qa-christmas-wine)
+- [x] 70. Wine for Easter? (qa-easter-wine)
+- [x] 71. Wine for a picnic? (qa-picnic-wine)
+- [~] 72. Wine for a casual dinner? → 473
+- [~] 73. Wine for a formal dinner? → 65
+
+## Category 2: Buying & Selection
+
+- [x] 74. Best wine under $15? (covered by qa-buying-under-20)
+- [x] 75. Best wine under $20? (qa-buying-under-20)
+- [x] 76. Best wine under $30? (qa-buying-under-30)
+- [x] 77. Best wine under $50? (qa-buying-under-50)
+- [x] 78. Good cheap wine? (qa-buying-cheap-wine)
+- [x] 79. Best affordable wine? (covered by qa-buying-value-wine)
+- [x] 80. Quality wine on a budget? (merged into qa-buying-cheap-wine)
+- [x] 81. Best value wine? (qa-buying-value-wine)
+- [x] 82. Best wine for the price? (covered by qa-buying-value-wine)
+- [x] 83. Best red wine for beginners? (qa-buying-red-beginners)
+- [x] 84. Best white wine for beginners? (qa-buying-white-beginners)
+- [~] 85. Best wine for first-time drinkers? → 83
+- [x] 86. Best wine to learn with? (qa-learning-wine)
+- [x] 87. Best light red wine? (qa-buying-light-red)
+- [x] 88. Best full-bodied red wine? (qa-buying-full-bodied-red)
+- [x] 89. Best crisp white wine? (qa-buying-crisp-white)
+- [x] 90. Best fruity wine? (qa-buying-fruity-wine)
+- [x] 91. Best dry wine? (qa-buying-dry-wine)
+- [x] 92. Best semi-sweet wine? (qa-buying-semi-sweet)
+- [x] 93. Best sweet wine? (qa-buying-sweet-wine)
+- [x] 94. Best natural wine? (qa-buying-natural-wine)
+- [x] 95. Best biodynamic wine? (qa-buying-biodynamic-wine)
+- [x] 96. Best organic wine? (qa-buying-organic-wine)
+- [x] 97. Best orange wine? (qa-buying-orange-wine)
+- [x] 98. Best low-alcohol wine? (qa-buying-low-alcohol)
+- [~] 99. Best zero-alcohol wine? → 458
+- [x] 100. Best wine with low sulfites? (qa-buying-low-sulfite)
+- [x] 101. Best Burgundy wine? (qa-buying-burgundy)
+- [x] 102. Best Loire Valley wine? (qa-buying-loire)
+- [x] 103. Best Rioja wine? (qa-buying-rioja)
+- [x] 104. Best Priorat wine? (qa-buying-priorat)
+- [x] 105. Best Bordeaux wine? (qa-buying-bordeaux)
+- [x] 106. Best Napa wine? (qa-buying-napa)
+- [~] 107. Best Sonoma wine? covered by qa-region-sonoma-special
+- [x] 108. Best California wine? (qa-buying-california)
+- [x] 109. Best French wine? (qa-buying-french-wine)
+- [x] 110. Best Italian wine? (qa-buying-italian-wine)
+- [x] 111. Best Spanish wine? (qa-buying-spanish-wine)
+- [~] 112. Best German wine? (covered by qa-region-germany-special)
+- [x] 113. Best Portuguese wine? (qa-buying-portuguese-wine)
+- [x] 114. Best Australian wine? (qa-buying-australian-wine)
+- [x] 115. Best New Zealand wine? (qa-buying-nz-wine)
+- [x] 116. Best Chilean wine? (qa-buying-chilean-wine)
+- [x] 117. Best Argentine wine? (qa-buying-argentine-wine)
+- [x] 118. Best South African wine? (qa-buying-south-african-wine)
+- [x] 119. Best wine for a gift? (qa-wine-gift)
+- [~] 120. Best wine to give as a present? → 119
+- [~] 121. Good wine gift ideas? → 119
+- [x] 122. Best wine for a wine lover? (qa-wine-gift-wine-lover)
+- [~] 123. Best wine for beginners as a gift? → 119
+- [x] 124. Best wine for a wedding? (qa-wedding-wine)
+- [x] 125. Best wine for an anniversary? (qa-anniversary-wine)
+- [~] 126. Best wine to impress? → 119
+- [~] 127. Best wine for entertaining? → 64
+- [x] 128. Best budget wine brands? (reframed, merged into qa-buying-cheap-wine)
+- [x] 129. Best affordable Cabernet Sauvignon brands? (qa-buying-affordable-cabernet)
+
+## Category 3: Grape/Varietal Comparison
+
+- [~] 130. Cabernet Sauvignon vs Merlot — which is better? covered by qa-merlot-easy-cabernet
+- [~] 131. What's the difference between Cabernet and Merlot? covered by qa-merlot-easy-cabernet
+- [x] 132. Pinot Noir vs Cabernet Sauvignon? (qa-compare-pinot-cabernet)
+- [x] 133. Cabernet vs Shiraz? (qa-compare-cabernet-shiraz)
+- [~] 134. Merlot vs Pinot Noir? covered by qa-merlot-easy-cabernet + 132
+- [x] 135. Syrah vs Grenache? (qa-compare-syrah-grenache)
+- [~] 136. Nebbiolo vs Barolo? (covered by qa-what-is-barolo)
+- [x] 137. Tempranillo vs Garnacha? (qa-compare-tempranillo-garnacha)
+- [x] 138. Barbera vs Sangiovese? (qa-compare-barbera-sangiovese)
+- [x] 139. Gamay vs Pinot Noir? (qa-compare-gamay-pinot)
+- [x] 140. Zinfandel vs Cabernet? (qa-compare-zinfandel-cabernet)
+- [x] 141. Petite Sirah vs Syrah? (qa-compare-petite-sirah-syrah)
+- [x] 142. Chardonnay vs Sauvignon Blanc? (qa-compare-chardonnay-sauvignon)
+- [x] 143. Riesling vs Sauvignon Blanc? (qa-compare-riesling-sauvignon)
+- [x] 144. Pinot Grigio vs Chardonnay? (qa-compare-pinot-grigio-chardonnay)
+- [x] 145. Sauvignon Blanc vs Grüner Veltliner? (qa-compare-sauvignon-gruner)
+- [x] 146. Albariño vs Vermentino? (qa-compare-albarino-vermentino)
+- [x] 147. Chablis vs Chardonnay? (qa-compare-chablis-chardonnay)
+- [x] 148. Gewürztraminer vs Riesling? (qa-compare-gewurztraminer-riesling)
+- [x] 149. Champagne vs Prosecco? (qa-compare-champagne-prosecco)
+- [x] 150. Cava vs Champagne? (qa-compare-cava-champagne)
+- [x] 151. Muscadet vs Sancerre? (qa-compare-muscadet-sancerre)
+- [x] 152. Verdicchio vs Pinot Grigio? (qa-compare-verdicchio-pinot-grigio)
+- [~] 153. Prosecco vs Champagne — what's the difference? → 149
+- [~] 154. Champagne vs Cava? → 150
+- [x] 155. What is Crémant? (qa-what-is-cremant)
+- [~] 156. Prosecco vs Cava? → 150
+- [x] 157. Brut vs Extra Dry Champagne? (qa-compare-brut-extra-dry)
+- [x] 158. Blanc de Blancs vs Blanc de Noirs? (qa-compare-blanc-de-blancs-noirs)
+- [x] 159. Port vs Sherry? (qa-compare-port-sherry)
+- [x] 160. Madeira vs Port? (qa-compare-madeira-port)
+- [x] 161. Vermouth vs Sherry? (qa-compare-vermouth-sherry)
+- [x] 162. What grape makes Burgundy wine? (qa-burgundy-grapes)
+- [~] 163. What is Cabernet Sauvignon made from? → 164
+- [x] 164. Which grapes make Bordeaux? (qa-bordeaux-grapes)
+- [x] 165. What's the best red wine grape? (qa-best-red-grape)
+- [x] 166. What's the best white wine grape? (qa-best-white-grape)
+- [x] 167. What are noble wine grapes? (qa-noble-grapes)
+- [x] 168. What makes a wine dry vs sweet? (covered by qa-what-is-dry-wine)
+- [x] 169. What's the difference between old-world vs new-world grapes? (qa-old-new-world-grapes)
+
+## Category 4: Regional/Style Questions
+
+- [x] 170. What is Burgundy wine? (qa-what-is-burgundy)
+- [x] 171. What is Bordeaux wine? (qa-what-is-bordeaux)
+- [x] 172. What is Rioja wine? (qa-what-is-rioja)
+- [x] 173. What is Priorat wine? (qa-what-is-priorat)
+- [x] 174. What is Rioja Reserva vs Crianza? (qa-compare-rioja-reserva-crianza)
+- [x] 175. What is Champagne? (qa-what-is-champagne)
+- [x] 176. What is Prosecco? (qa-what-is-prosecco)
+- [x] 177. What is Chianti? (qa-what-is-chianti)
+- [x] 178. What is Barolo? (qa-what-is-barolo)
+- [~] 179. What is Nebbiolo? (covered by topic-nebbiolo + qa-nebbiolo-aging)
+- [x] 180. What is Brunello? (qa-what-is-brunello)
+- [x] 181. What is Vino Nobile di Montepulciano? (qa-what-is-vino-nobile)
+- [x] 182. What is natural wine? (qa-what-is-natural-wine)
+- [x] 183. What is orange wine? (qa-what-is-orange-wine)
+- [x] 184. What is natural wine vs organic wine? (qa-compare-natural-organic)
+- [~] 185. What is biodynamic wine? → 95
+- [~] 186. What is natural fermentation? → 287
+- [x] 187. What is skin-contact wine? (covered by qa-what-is-orange-wine)
+- [x] 188. What is skin contact fermentation? (qa-skin-contact-fermentation)
+- [~] 189. What is wild yeast fermentation? → 287
+- [x] 190. What is malolactic fermentation? (qa-what-is-malolactic)
+- [~] 191. What is a natural wine sommelier? → 450
+- [~] 192. What is low-intervention wine? → 449
+- [~] 193. What is funky wine? → 452
+- [x] 194. What does "terroir" mean in wine? (covered by qa-what-is-terroir)
+- [x] 195. What does "vintage" mean? (covered by qa-why-vintage-matters)
+- [x] 196. What does "appellation" mean? (covered by qa-what-is-appellation)
+- [x] 197. What is "old-world" wine? (qa-old-world-wine)
+- [x] 198. What is "new-world" wine? (qa-new-world-wine)
+- [x] 199. What's special about Loire Valley wines? (qa-region-loire-special)
+- [~] 200. Why is Burgundy so famous? (covered by topic-burgundy + 170)
+- [~] 201. What makes Bordeaux wines unique? (covered by 171)
+- [x] 202. What are Rhone Valley wines? (qa-region-rhone-special)
+- [x] 203. What's the Alsace wine region known for? (qa-region-alsace-special)
+- [x] 204. What makes Napa Valley wines special? (qa-region-napa-special)
+- [x] 205. What are Sonoma wines like? (qa-region-sonoma-special)
+- [~] 206. What's unique about Australian Shiraz? (covered by 114 + qa-buying-australian-wine)
+- [~] 207. What are New Zealand wines known for? (covered by 115)
+- [~] 208. What makes Chilean wine special? (covered by 116)
+- [~] 209. What are Argentine wines like? (covered by 117)
+- [~] 210. What makes Niagara wines unique? (covered by topic-niagara)
+- [~] 211. What are English wines like? (covered by qa-region-england-style)
+- [~] 212. What are Jura wines known for? (covered by topic-jura)
+- [~] 213. What makes Etna wines unique? (covered by topic-etna + 220)
+- [x] 214. What are German wines like? (qa-region-germany-special)
+- [x] 215. What are Italian wine regions? (qa-italian-wine-regions)
+- [x] 216. What are Spanish wine regions? (qa-spanish-wine-regions)
+- [x] 217. What makes Portuguese wine unique? (qa-portuguese-wine-unique)
+- [~] 218. What are South African wines like? (covered by 118)
+- [x] 219. What makes Tuscany wines special? (qa-region-tuscany-special)
+- [x] 220. What are Sicilian wines? (qa-region-sicily-special)
+- [x] 221. What are Sardinian wines? (qa-sardinian-wines)
+- [x] 222. What are Veneto wines? (qa-veneto-wines)
+- [x] 223. What makes Piedmont wine special? (qa-region-piedmont-special)
+- [x] 224. What are Corsican wines? (qa-corsican-wines)
+- [x] 225. What makes Provence wine unique? (qa-region-provence-special)
+
+## Category 5: Grape-Specific Questions
+
+- [x] 226. Why is Pinot Noir so hard to grow? (qa-pinot-noir-difficult)
+- [x] 227. Why are Rieslings so good? (qa-riesling-quality)
+- [~] 228. Why is Nebbiolo hard to drink young? (covered by qa-nebbiolo-aging + qa-barolo-young)
+- [x] 229. Why is Cabernet Sauvignon so popular? (qa-cabernet-popularity)
+- [x] 230. Why is Chardonnay so versatile? (qa-chardonnay-versatility)
+- [x] 231. Why is Sauvignon Blanc so crisp? (qa-sauvignon-blanc-crispness)
+- [~] 232. Why is Gamay best fresh? (covered by topic-gamay answers)
+- [~] 233. Why is Grenache so underrated? (covered by existing Grenache answers)
+- [x] 234. Why is Syrah/Shiraz so bold? (qa-syrah-boldness)
+- [~] 235. Why is Merlot misunderstood? (covered by qa-merlot-easy-cabernet)
+- [x] 236. Why is Tempranillo underrated? (qa-tempranillo-underrated)
+- [x] 237. Why is Albariño so drinkable? (qa-albarino-drinkable)
+- [x] 238. Why is Muscadet so food-friendly? (covered by expanded qa-muscadet-pairing)
+- [x] 239. Why is Chenin Blanc so versatile? (qa-chenin-versatility)
+- [x] 240. Why is Gewürztraminer so aromatic? (covered by expanded qa-gewurztraminer-floral)
+- [x] 241. Why is Vermentino so refreshing? (covered by expanded qa-vermentino-summer)
+- [x] 242. Why is Verdicchio so mineral? (covered by expanded qa-verdicchio-mineral)
+- [x] 243. How long does Cabernet age? (qa-cabernet-ageing)
+- [~] 244. How long does Nebbiolo age? (covered by qa-nebbiolo-aging)
+- [x] 245. How long does Pinot Noir age? (qa-pinot-noir-age)
+- [x] 246. How long does Riesling age? (covered by expanded qa-riesling-age)
+- [x] 247. How long does Chardonnay age? (covered by expanded qa-chardonnay-age)
+- [x] 248. How to age wine at home? (qa-age-wine-at-home)
+- [x] 249. Which wines improve with age? (qa-wines-that-age)
+- [~] 250. Which wines should you drink fresh? (covered by 249)
+- [x] 251. Which grapes have high tannins? (qa-high-tannin-grapes)
+- [x] 252. Which grapes are high in acidity? (qa-high-acid-grapes)
+- [x] 253. Which white wines have the most acidity? (merged into qa-high-acid-grapes)
+- [x] 254. Which red wines are lightest bodied? (covered by qa-buying-light-red)
+- [x] 255. Which red wines are fullest bodied? (covered by qa-buying-full-bodied-red)
+
+## Category 6: Wine Knowledge/Education
+
+- [x] 256. How to taste wine? (qa-how-to-taste-wine)
+- [~] 257. How to taste wine properly? → 256
+- [x] 258. How to read a wine label? (qa-read-wine-label)
+- [x] 259. What do wine ratings mean? (qa-wine-ratings)
+- [x] 260. What does "dry" mean in wine? (qa-what-is-dry-wine)
+- [x] 261. What does "off-dry" mean? (qa-what-is-off-dry)
+- [x] 262. What does "brut" mean? (covered by qa-compare-brut-extra-dry)
+- [x] 263. What does "tannins" mean? (qa-what-are-tannins)
+- [~] 264. How do tannins affect wine? → 263
+- [~] 265. What are tannins in wine? → 263
+- [x] 266. How do tannins age? (qa-how-tannins-age)
+- [x] 267. What is acidity in wine? (qa-what-is-acidity)
+- [~] 268. How does acidity affect wine? → 267
+- [x] 269. What is body in wine? (qa-what-is-body)
+- [~] 270. What does "full-bodied" mean? → 269
+- [~] 271. What does "light-bodied" mean? → 269
+- [x] 272. What is alcohol content in wine? (qa-alcohol-content)
+- [~] 273. How much alcohol is in wine? → 272
+- [x] 274. What are wine notes/tasting notes? (qa-what-are-tasting-notes)
+- [x] 275. How to describe wine? (qa-how-to-describe-wine)
+- [x] 276. What are wine faults? (qa-what-are-wine-faults)
+- [~] 277. What is cork taint? → 281
+- [~] 278. How to detect cork taint? → 281
+- [~] 279. What is volatile acidity? → 492
+- [~] 280. What is oxidized wine? → 498
+- [x] 281. What is "corked" wine? (qa-corked-wine)
+- [~] 282. What is brettanomyces? → 491
+- [x] 283. What is sulfites in wine? (qa-what-are-sulfites)
+- [~] 284. Are sulfites in all wine? → 283
+- [~] 285. What are sulfites used for? → 283
+- [x] 286. Do sulfites cause headaches? (qa-sulfites-headaches)
+- [x] 287. What is fermentation in wine? (qa-what-is-fermentation)
+- [x] 288. What is oak aging? (qa-what-is-oak-ageing)
+- [~] 289. How does oak affect wine? → 288
+- [~] 290. What is malolactic fermentation? → 190
+- [~] 291. What is barrel aging? → 288
+- [~] 292. What is lees contact? → 288
+- [~] 293. What is skin contact? → 183
+- [~] 294. What is maceration? → 183
+- [x] 295. What is terroir? (qa-what-is-terroir)
+- [~] 296. How does terroir affect wine? → 295
+- [~] 297. Why does terroir matter? → 295
+- [~] 298. How do soil types affect wine? → 295
+- [x] 299. How does climate affect wine? (qa-climate-and-wine)
+- [x] 300. How does altitude affect wine? (qa-altitude-wine)
+- [x] 301. How does aspect (sun exposure) affect wine? (qa-aspect-wine)
+- [~] 302. Why do the same grapes taste different in different regions? → 295
+- [x] 303. What is appellation control? (qa-what-is-appellation)
+- [~] 304. What is AOC vs Vin de France? → 303
+- [x] 305. What is Bordeaux blend? (qa-what-is-bordeaux-blend)
+- [x] 306. What is Rhone blend? (qa-what-is-rhone-blend)
+- [x] 307. What is Meritage? (qa-what-is-meritage)
+- [~] 308. What does "vintage" mean? → 195
+- [x] 309. How do I know if my wine is ready to drink? (qa-when-to-drink-wine)
+- [~] 310. What is a vintage chart? → 314
+- [~] 311. Does older wine always taste better? → 309
+- [~] 312. How do I read vintage information? → 314
+- [~] 313. What is bottle variation? → 497
+- [x] 314. Why do vintage years matter? (qa-why-vintage-matters)
+- [x] 315. Best Burgundy vintages? (qa-vintages-burgundy)
+- [x] 316. Best Bordeaux vintages? (qa-vintages-bordeaux)
+- [x] 317. Best Champagne vintages? (qa-vintages-champagne)
+- [x] 318. Best Riesling vintages? (qa-vintages-riesling)
+- [x] 319. Best Pinot Noir vintages? (qa-vintages-pinot-noir)
+
+## Category 7: Storage, Serving & Care
+
+- [x] 320. What temperature to serve red wine? (qa-serving-temp-red)
+- [x] 321. What temperature to serve white wine? (qa-serving-temp-white)
+- [x] 322. What temperature to serve Champagne? (qa-serving-temp-champagne)
+- [x] 323. What temperature to serve rosé? (qa-serving-temp-rose)
+- [x] 324. How to chill wine quickly? (qa-chill-wine-quickly)
+- [~] 325. How long to chill wine? → 324
+- [x] 326. How long before wine is ready to drink after opening? (qa-wine-breathing-time)
+- [x] 327. How to open wine without a corkscrew? (qa-open-without-corkscrew)
+- [x] 328. How to remove a broken cork? (covered by qa-broken-cork)
+- [~] 329. How to serve wine? → 320
+- [~] 330. What size wine glasses should I use? → 331
+- [x] 331. Do wine glasses matter? (qa-do-glasses-matter)
+- [~] 332. How full should I pour wine? → 331
+- [x] 333. How to store wine? (qa-how-to-store-wine)
+- [~] 334. How to store wine long-term? → 333
+- [x] 335. How long does wine last after opening? (qa-open-wine-how-long)
+- [~] 336. How long does opened wine stay good? → 335
+- [~] 337. Does wine go bad? → 493
+- [~] 338. How to tell if wine is bad? → 494
+- [~] 339. How to keep wine fresh after opening? → 335
+- [~] 340. Best way to store wine bottles? → 333
+- [x] 341. Does wine need to be stored horizontally? (qa-store-bottles-horizontally)
+- [~] 342. Do I need a wine fridge? → 343
+- [x] 343. How to store wine without a wine fridge? (qa-store-wine-no-fridge)
+- [~] 344. What temperature should I store wine at? → 333
+- [~] 345. How to age wine at home? → 248
+- [~] 346. Is my wine storage too warm? → 333
+- [~] 347. What is proper wine storage humidity? → 333
+- [~] 348. How to store opened wine? → 335
+- [x] 349. How long does wine last in a wine fridge? (qa-wine-fridge-how-long)
+- [~] 350. Can I store wine in my regular fridge? → 343
+- [~] 351. How to keep wine from oxidizing? → 335
+- [~] 352. Best wine storage solutions? → 343
+- [x] 353. How to travel with wine? (qa-travel-with-wine)
+- [~] 354. Can I bring wine on an airplane? → 353
+- [~] 355. How to pack wine for travel? → 353
+- [~] 356. How to transport wine in a car? → 353
+
+## Category 8: Health & Lifestyle
+
+- [x] 357. How many calories in wine? (qa-wine-calories)
+- [~] 358. How many calories in red wine? → 357
+- [~] 359. How many calories in white wine? → 357
+- [~] 360. How many calories in Champagne? → 357
+- [x] 361. Is wine healthy? (qa-is-wine-healthy)
+- [~] 362. Are there health benefits to wine? → 361
+- [~] 363. Does wine help with heart health? → 361
+- [~] 364. Is red wine good for you? → 361
+- [x] 365. Wine and diabetes? (qa-wine-diabetes)
+- [x] 366. Wine and weight loss? (qa-wine-weight-loss)
+- [x] 367. Wine and metabolism? (qa-wine-metabolism)
+- [~] 368. Wine nutrition facts? → 357
+- [x] 369. Does wine have carbs? (qa-wine-carbs)
+- [x] 370. How much sugar in wine? (qa-wine-sugar)
+- [~] 371. Sugar content in different wines? → 370
+- [x] 372. Does wine cause bloating? (qa-wine-bloating)
+- [x] 373. Does wine cause hangovers? (qa-wine-hangovers)
+- [x] 374. How to avoid wine hangovers? (qa-avoid-hangovers)
+- [x] 375. Wine and migraines? (qa-wine-migraines)
+- [~] 376. Do sulfites cause headaches? → 286
+- [x] 377. Wine and allergies? (qa-wine-allergies)
+- [x] 378. Wine and gluten? (qa-wine-gluten)
+- [~] 379. Organic wine health benefits? → 96
+- [~] 380. Natural wine and health? → 94
+- [x] 381. How much wine should I drink? (qa-how-much-wine)
+- [~] 382. What is moderate wine consumption? → 381
+- [~] 383. How many glasses of wine per week? → 381
+- [x] 384. Is it OK to drink wine every day? (qa-wine-every-day)
+- [x] 385. How to enjoy wine responsibly? (qa-drink-responsibly)
+- [x] 386. How to pair wine with a healthy diet? (qa-wine-healthy-diet)
+
+## Category 9: Wine Collecting & Investment
+
+- [~] 387. What wine should I collect? → 390
+- [~] 388. Which wines appreciate in value? → 391
+- [~] 389. Best wines to invest in? → 391
+- [x] 390. How to start a wine collection? (qa-collecting-start)
+- [x] 391. Should I invest in wine? (qa-collecting-invest)
+- [~] 392. What's the best Burgundy for collectors? → 101
+- [~] 393. What's the best Bordeaux for investment? → 391
+- [~] 394. Which wines hold value? → 391
+- [x] 395. How to authenticate wine? (qa-collecting-authenticate)
+- [x] 396. Is Vega Sicilia worth the price? (reframed as qa-buying-iconic-wine)
+- [x] 397. Why is Screaming Eagle so expensive? (reframed as qa-cult-wine-expensive)
+- [~] 398. How to evaluate wine as an investment? → 391
+- [x] 399. What is a wine auction? (qa-wine-auction)
+
+## Category 10: Wine Culture & Events
+
+- [~] 400. What is a wine tasting? → 401
+- [x] 401. How to host a wine tasting? (qa-host-wine-tasting)
+- [x] 402. What is wine pairing dinner? (qa-wine-pairing-dinner)
+- [x] 403. What is a wine club? (qa-wine-club)
+- [~] 404. How to join a wine club? → 403
+- [x] 405. What is a wine bar? (qa-what-is-wine-bar)
+- [x] 406. What is a sommelier? (qa-what-is-sommelier)
+- [x] 407. How to become a sommelier? (qa-become-sommelier)
+- [x] 408. What is WSET? (qa-what-is-wset)
+- [x] 409. What is Court of Master Sommeliers? (qa-court-of-master-sommeliers)
+- [~] 410. What's the difference between a sommelier and a wine expert? → 406
+- [~] 411. What is wine education? → 408
+- [~] 412. Best wine courses online? → 408
+
+## Category 11: Buying & Sourcing
+
+- [x] 413. Where to buy wine? (qa-sourcing-where-to-buy)
+- [x] 414. Best online wine shops? (qa-sourcing-online-shops)
+- [x] 415. How to buy wine online? (qa-sourcing-buy-online)
+- [x] 416. How to find rare wine? (qa-sourcing-find-rare)
+- [x] 417. How to buy wine at a liquor store? (qa-sourcing-liquor-store)
+- [x] 418. How to buy wine at a winery? (qa-sourcing-winery)
+- [~] 419. Should I buy wine at the winery or in stores? → 418
+- [x] 420. How to negotiate wine prices? (qa-sourcing-negotiate)
+- [x] 421. What to ask a wine merchant? (qa-sourcing-ask-merchant)
+- [~] 422. How to get wine recommendations from a sommelier? → 406
+- [x] 423. Is buying wine direct from producer cheaper? (qa-sourcing-direct-cheaper)
+- [~] 424. Best wine delivery services? → 414
+- [x] 425. Can I have wine shipped to me? (qa-sourcing-shipping)
+- [~] 426. Wine shipping laws by state/region? → 425
+
+## Category 12: Specific Producer/Brand Questions
+
+- [x] 427. Is Barefoot wine good? (reframed as qa-buying-mass-market-wine)
+- [x] 428. Is Yellow Tail wine good? (reframed as qa-buying-mass-market-wine)
+- [x] 429. Is Barefoot Cabernet worth it? (reframed, merged into qa-buying-affordable-cabernet)
+- [~] 430. Best budget wine brands? → 128
+- [~] 431. Best affordable Cabernet Sauvignon brands? → 129
+- [x] 432. What is the best Chianti? (qa-buying-chianti)
+- [~] 433. Best Rioja producers? → 103
+- [~] 434. Best Burgundy producers? → 101
+- [~] 435. Best Bordeaux chateau? → 105
+- [x] 436. Is Vega Sicilia the best Spanish wine? (reframed, covered by qa-buying-spanish-wine)
+- [x] 437. Why is Opus One so expensive? (reframed as qa-cult-wine-expensive)
+- [~] 438. Best natural wine producers? → 94
+- [~] 439. Best biodynamic wine producers? → 95
+- [x] 440. Best orange wine producers? (reframed, merged into qa-buying-orange-wine)
+- [~] 441. Where to find natural wine? → 94
+- [~] 442. Best small winery wines? → 416
+- [~] 443. Best natural wine under $20? → 94
+
+## Category 13: Trend/Emerging Questions
+
+- [x] 444. What is pet-nat wine? (qa-what-is-pet-nat)
+- [~] 445. What is "skin contact" or "natural" white wine? → 183
+- [~] 446. What is ancestral method sparkling? → 444
+- [~] 447. What is pét-nat? → 444
+- [~] 448. What is low-intervention wine? → 192
+- [x] 449. What is minimal wine? (qa-minimal-intervention)
+- [x] 450. What is natural wine certification? (qa-natural-wine-certification)
+- [x] 451. Why are natural wines cloudy? (qa-natural-wine-cloudy)
+- [x] 452. Are natural wines worth the hype? (qa-natural-wine-hype)
+- [x] 453. Why are natural wines so expensive? (qa-natural-wine-expensive)
+- [~] 454. Why do natural wines taste funky? → 491
+- [~] 455. What is orange wine? → 183
+- [x] 456. How to taste orange wine? (qa-taste-orange-wine)
+- [x] 457. Why orange wine is trendy? (qa-orange-wine-trendy)
+- [x] 458. What is zero-alcohol wine? (qa-zero-alcohol-wine)
+- [x] 459. What is low-alcohol wine? (covered by qa-buying-low-alcohol)
+- [~] 460. What is alcohol-free wine? → 458
+- [~] 461. Best low-alcohol wine? → 98
+- [~] 462. Best zero-alcohol wine brands? → 458
+- [x] 463. What is club soda wine? (qa-wine-spritzer)
+- [x] 464. What is wine aperitif? (qa-wine-aperitif)
+- [~] 465. What is natural wine sommelier? → 191
+- [~] 466. What is biodynamic farming? → 95
+- [x] 467. Why are some wines vegan? (qa-vegan-wine)
+- [~] 468. Are all wines vegan? → 467
+- [~] 469. What does "vegan wine" mean? → 467
+- [x] 470. Best vegan wines? (qa-best-vegan-wines)
+
+## Category 14: Wine & Lifestyle Occasions
+
+- [~] 471. Best wine for a first date? → 62
+- [~] 472. Best wine to impress someone? → 62
+- [x] 473. Wine for a casual night in? (qa-night-in-wine)
+- [~] 474. Wine for a girls night? → 64
+- [~] 475. Wine for a guys night? → 64
+- [x] 476. Wine for a book club? (qa-book-club-wine)
+- [~] 477. Wine for outdoor entertaining? → 71
+- [~] 478. Wine for a cocktail party? → 64
+- [x] 479. Best wine for summer? (qa-season-summer)
+- [x] 480. Best wine for winter? (qa-season-winter)
+- [x] 481. Best wine for fall/autumn? (qa-season-autumn)
+- [x] 482. Best wine for spring? (qa-season-spring)
+- [~] 483. Seasonal wine recommendations? → 479
+- [~] 484. Holiday wine guide? → 69
+- [~] 485. Best wine for New Year's Eve? → 66
+- [x] 486. Wine for Super Bowl Sunday? (qa-super-bowl-wine)
+- [x] 487. Wine for Mother's Day? (qa-mothers-day-wine)
+- [x] 488. Wine for Father's Day? (qa-fathers-day-wine)
+
+## Category 15: Wine Problems/Troubleshooting
+
+- [~] 489. Why does my wine taste corky? → 281
+- [x] 490. Why is my wine cloudy? (qa-cloudy-wine)
+- [x] 491. Why does my wine smell bad? (qa-wine-smells-bad)
+- [x] 492. Why does my wine taste like vinegar? (qa-wine-tastes-vinegar)
+- [x] 493. Why did my wine go bad? (qa-why-wine-went-bad)
+- [x] 494. Is this wine safe to drink? (qa-is-wine-safe)
+- [x] 495. How to fix a broken cork? (qa-broken-cork)
+- [x] 496. Wine opened early — is it still good? (qa-wine-opened-early)
+- [x] 497. Wine stored incorrectly — is it ruined? (qa-badly-stored-wine)
+- [x] 498. Can you fix oxidized wine? (qa-fix-oxidized-wine)
+- [~] 499. Is re-corking wine possible? → 495
+- [x] 500. Why does wine have sediment? (qa-wine-sediment)
