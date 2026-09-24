@@ -108,6 +108,26 @@ async function liveStatuses(pages) {
 
 // --- 2. Content health, read from the files ---------------------------------
 
+// Two pages describing themselves identically are two pages telling a search
+// engine they are the same page. Read from the built HTML rather than the
+// content files, because that is where a template bug would show up -- a
+// title built from a field that turns out not to be unique produces this and
+// nothing else.
+function metadataHealth(pages) {
+  const byTitle = new Map();
+  const byDescription = new Map();
+  for (const page of pages) {
+    const html = readFileSync(page, 'utf8');
+    if (/Redirect stub/.test(html)) continue;
+    const title = html.match(/<title>([^<]*)<\/title>/)?.[1];
+    const description = html.match(/<meta name="description" content="([^"]*)"/)?.[1];
+    if (title) byTitle.set(title, [...(byTitle.get(title) ?? []), page]);
+    if (description) byDescription.set(description, [...(byDescription.get(description) ?? []), page]);
+  }
+  const groups = (map) => [...map.values()].filter((g) => g.length > 1).sort((a, b) => b.length - a.length);
+  return { duplicate_titles: groups(byTitle), duplicate_descriptions: groups(byDescription) };
+}
+
 function contentHealth() {
   const answers = readAnswerRows();
   const en = answers.filter((r) => r.lang === 'en');
@@ -167,7 +187,7 @@ function contentHealth() {
 // --- Run --------------------------------------------------------------------
 
 const pages = allPages();
-const health = contentHealth();
+const health = { ...contentHealth(), ...metadataHealth(pages) };
 const localBroken = brokenLocalLinks(pages);
 const live = process.argv.includes('--skip-live') ? [] : await liveStatuses(pages);
 const brokenLinks = [...localBroken, ...live];
@@ -190,13 +210,16 @@ writeFileSync(
 // Only breakage fails the run. Thin answers and duplicate questions are a
 // standing backlog being worked through, not a regression -- failing on them
 // would fire every night and train everyone to ignore the issue it files.
-const hasFailure = brokenLinks.length > 0 || health.topics_without_content.length > 0;
+const hasFailure =
+  brokenLinks.length > 0 || health.topics_without_content.length > 0 || health.duplicate_titles.length > 0;
 
 console.log(
   `Audit: ${pages.length} pages, ${brokenLinks.length} broken link(s), ` +
-    `${health.topics_without_content.length} topic(s) without content.\n` +
+    `${health.topics_without_content.length} topic(s) without content, ` +
+    `${health.duplicate_titles.length} duplicate title(s).\n` +
     `Backlog: ${health.thin_answers.en} thin EN / ${health.thin_answers.fr} thin FR answer(s), ` +
     `${health.diverged_pairs.length} diverged EN/FR pair(s), ` +
-    `${health.duplicate_questions.length} duplicated question(s).`
+    `${health.duplicate_questions.length} duplicated question(s), ` +
+    `${health.duplicate_descriptions.length} duplicated description(s).`
 );
 process.exit(hasFailure ? 1 : 0);

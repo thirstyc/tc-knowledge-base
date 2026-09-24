@@ -31,6 +31,7 @@ import { REDIRECTS } from '../redirects.config.mjs';
 import { englishSectionTitle, sectionAnchor, sectionPageHref } from '../lib/sections.mjs';
 import { buildRegionAnswerIndex } from '../lib/region-answers.mjs';
 import { grapeAnswerMatcher } from '../lib/grape-answers.mjs';
+import { titleNameFor } from '../lib/page-titles.mjs';
 import { TOPICS, BASE_URL, GRAPE_ANSWER_LIMIT } from '../topics.config.mjs';
 
 
@@ -81,9 +82,18 @@ function parseOverview(content) {
   return { eyebrow: eyebrow.trim(), name: name.trim(), lede: lede.trim(), facts };
 }
 
-function shorten(text, max = 160) {
+// Used for both the hero lede and the meta description on these pages.
+//
+// Was max = 160 with a bare slice, which did two things wrong: the ellipsis
+// pushed the result to 161, one past the length a description is cut at, and
+// the slice landed mid-word ("...the world's most detailed expr…"). 155 leaves
+// room for the ellipsis, and the cut moves back to the last space.
+function shorten(text, max = 155) {
   const flat = text.replace(/\s+/g, ' ').trim();
-  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
+  if (flat.length <= max) return flat;
+  const cut = flat.slice(0, max);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[,;:\s]+$/, '')}…`;
 }
 
 function groupBySourceDoc(rows) {
@@ -634,7 +644,7 @@ function splitPart(content) {
 
 function guidePreview(group) {
   const body = stripMarkdown(splitPart(group.rows[0].content).body);
-  return body.length > 160 ? `${body.slice(0, 160)}…` : body;
+  return shorten(body);
 }
 
 async function fetchGuideGroups(lang) {
@@ -1004,7 +1014,9 @@ ${renderAnswerRows(answers, lang)}
         file,
         nav: kind.nav,
         lang,
-        title: isFr ? `${name} — Thirsty Cunt` : `${name} — Thirsty Cunt Knowledge Base`,
+        // Only the title is qualified; the hero and breadcrumb below keep the
+        // plain name. See lib/page-titles.mjs.
+        title: `${titleNameFor(file, lang, name)}${isFr ? ' — Thirsty Cunt' : ' — Thirsty Cunt Knowledge Base'}`,
         description: escapeHtml(description),
         jsonLd: [topicSchema({ name, description, url: `${isFr ? 'fr/' : ''}${file}`, kind: chunkType, lang })],
         main: `  <main class="has-hero">

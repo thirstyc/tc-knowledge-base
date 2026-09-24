@@ -38,6 +38,7 @@ import {
   renderHead,
   renderHeader,
   renderFooter,
+  metaDescription,
   deriveQuestion,
   escapeHtml,
   answerPagePath,
@@ -110,7 +111,7 @@ function renderAnswerPage(row, related, lang) {
   return [
     renderHead({
       title: `${escapeHtml(question)} — Thirsty Cunt`,
-      description: escapeHtml(answerBody.replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).slice(0, 2).join(' ')),
+      description: escapeHtml(metaDescription(question, answerBody)),
       lang,
       assetPrefix: ap,
       alternates: hreflangAlternates(slugPath),
