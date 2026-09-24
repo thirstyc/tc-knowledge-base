@@ -98,6 +98,23 @@ function matchesTerm(content, term) {
   return [].concat(term).some((t) => haystack.includes(String(t).toLowerCase()));
 }
 
+// How central a term is to an answer: named in the question is the strongest
+// signal that the answer is ABOUT it, repeated mentions the next, a single
+// mention in the body the weakest. Ties keep source_doc order, so the output
+// is stable run to run.
+function rankByRelevance(rows, term) {
+  const terms = [].concat(term).map((t) => String(t).toLowerCase());
+  const score = (row) => {
+    const content = row.content.toLowerCase();
+    const split = content.indexOf('? ');
+    const question = split === -1 ? content : content.slice(0, split);
+    const inQuestion = terms.some((t) => question.includes(t));
+    const mentions = terms.reduce((n, t) => n + content.split(t).length - 1, 0);
+    return (inQuestion ? 100 : 0) + Math.min(mentions, 10);
+  };
+  return [...rows].sort((a, b) => score(b) - score(a) || a.source_doc.localeCompare(b.source_doc));
+}
+
 // Same queries the topic pages used to run in the browser. Most topics are
 // unchanged proper nouns in French (Grenache, Riesling, Rhône...), so the
 // English match term still finds French rows too; a few translate to a
@@ -147,7 +164,22 @@ async function fetchTopicData(topic, lang) {
     qaRows = qaRows.concat(others);
   }
 
-  return { overview: parseOverview(overviewRow.content), sections, qaRows: qaRows.slice(0, TOPIC_ANSWER_LIMIT) };
+  // Rank before truncating. The list is capped at TOPIC_ANSWER_LIMIT, and it
+  // used to be cut in source_doc order, so whichever answers sorted late in
+  // the alphabet were the ones dropped -- "Zinfandel tannin" lost to
+  // "Aglianico tannin" for no reason but its first letter.
+  //
+  // Expansion made this bite. A 12-word answer mentioned tannin only if it was
+  // about tannin; a 160-word one explaining a mechanism mentions it in
+  // passing, so topic-tannins went from comfortably inside the cap to 270
+  // matches the moment the first tranche landed, silently dropping 20. Ranking
+  // by how central the term is means the cap removes the passing mentions
+  // rather than the tail of the alphabet.
+  return {
+    overview: parseOverview(overviewRow.content),
+    sections,
+    qaRows: rankByRelevance(qaRows, matchTerm).slice(0, TOPIC_ANSWER_LIMIT),
+  };
 }
 
 // Overview content is "eyebrow\n\nname\n\nlede\n\nKey: value\nKey: value".
