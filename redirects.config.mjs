@@ -30,6 +30,23 @@ export const REDIRECTS = {
   'fr/difficulty-beginner.html': 'fr/answers.html',
   'fr/difficulty-intermediate.html': 'fr/answers.html',
   'guide-tasting-notes.html': 'guides.html',
+  // Duplicate questions, not duplicate pages: each of these asked the same
+  // thing as the page it now points at, and both were answered in five or six
+  // words. The survivor carries a full answer; this retires the twin so Google
+  // has one URL per question instead of two competing thin ones.
+  'answer-beaujolais-casual-pairing.html': 'answer-beaujolais-pairing.html',
+  'fr/answer-beaujolais-casual-pairing.html': 'fr/answer-beaujolais-pairing.html',
+  'answer-beaujolais-fun-fruity.html': 'answer-beaujolais-fruity.html',
+  'fr/answer-beaujolais-fun-fruity.html': 'fr/answer-beaujolais-fruity.html',
+  'answer-beaujolais-everyday.html': 'answer-beaujolais-price.html',
+  'fr/answer-beaujolais-everyday.html': 'fr/answer-beaujolais-price.html',
+  'answer-vermouth-aperitivo-pairing.html': 'answer-vermouth-pairing.html',
+  'fr/answer-vermouth-aperitivo-pairing.html': 'fr/answer-vermouth-pairing.html',
+  'answer-vermouth-botanical.html': 'answer-vermouth-herbal.html',
+  'fr/answer-vermouth-botanical.html': 'fr/answer-vermouth-herbal.html',
+  'answer-vermouth-styles-vary.html': 'answer-vermouth-variation.html',
+  'fr/answer-vermouth-styles-vary.html': 'fr/answer-vermouth-variation.html',
+
   'answer-oak-influence-age.html': 'topic-oak.html',
   // Same question as answer-burgundy-pinot-pairing.html with a near-identical
   // answer -- duplicate content. Unpublish qa-burgundy-pinot-premium-pairing
