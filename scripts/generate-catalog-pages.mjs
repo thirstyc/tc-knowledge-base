@@ -1,5 +1,6 @@
-// Generates the three browse pages -- grapes.html, regions.html and
-// guides.html, in English and French -- pre-rendered from knowledge_chunks,
+// Generates the four browse pages -- answers.html, grapes.html, regions.html
+// and guides.html, in English and French -- pre-rendered from the content
+// files in this repo,
 // so crawlers that don't run JavaScript see the full catalog instead of a
 // "Loading…" shell.
 //
@@ -9,7 +10,7 @@
 // grapes, ~35 region groups and 7 guides, so empty means the request
 // failed), that page keeps its existing file and the script exits 1.
 
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { readDocRows } from '../lib/content-docs.mjs';
 import { readAnswerRows } from '../lib/content-files.mjs';
 import {
@@ -441,6 +442,174 @@ ${sections}
   });
 }
 
+// --- answers.html -----------------------------------------------------------
+// The full A-Z index of every answer page.
+//
+// This page was hand-authored and fetched its list from Supabase at runtime,
+// so once the table emptied it served a permanent "Loading answers..." with no
+// links in it at all. That made the site's #2 page by inbound links -- 4,027
+// of them -- a dead end for crawlers and readers alike, and its meta
+// description still promised "904 wine answers, each one fresh from Supabase."
+//
+// Pre-rendering it puts every answer one hop from a page the entire site
+// already links, which is what closes the last of the sibling-only answer
+// pages the SEO audit found: reachable from the sitemap, and from nothing a
+// crawler would follow.
+//
+// Letters come from the subject, not the question -- every question starts
+// "What", "How" or "Why", so filing by question initial would put the whole
+// corpus under three letters.
+function answerSubject(sourceDoc) {
+  return sourceDoc.replace(/^qa-/, '');
+}
+
+// Answer pages that exist on disk but have no file in content/answers -- a
+// hand-authored page, written before the pipeline or outside it. There is one
+// today (answer-grenache-alcohol-tannin.html, ~500 words, its own template,
+// one inbound link on the entire site), and listing it by scanning rather
+// than naming it means the next one is picked up on its own. Redirect stubs
+// are excluded; their targets are already in the list.
+function handAuthoredAnswers(lang, covered) {
+  const dir = lang === 'fr' ? 'fr' : '.';
+  return readdirSync(dir)
+    .filter((f) => /^answer-.+\.html$/.test(f))
+    .filter((f) => !covered.has(f))
+    .filter((f) => !(`${lang === 'fr' ? 'fr/' : ''}${f}` in REDIRECTS))
+    .map((f) => {
+      const html = readFileSync(`${dir}/${f}`, 'utf8');
+      if (/Redirect stub/.test(html)) return null;
+      // The <h1> is the question as the page itself puts it. Falling back to
+      // the slug would read worse than anything on the page.
+      const heading = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1];
+      if (!heading) return null;
+      return {
+        href: f,
+        subject: f.replace(/^answer-/, '').replace(/\.html$/, ''),
+        question: heading.replace(/<[^>]+>/g, '').trim(),
+        kind: null,
+      };
+    })
+    .filter(Boolean);
+}
+
+async function buildAnswers(lang) {
+  const isFr = lang === 'fr';
+  const generated = fetchAnswerRows(lang).map((row) => ({
+    href: answerPagePath(row.source_doc),
+    subject: answerSubject(row.source_doc),
+    question: deriveQuestion(row.content),
+    kind: kindLabel(row.chunk_type, lang),
+  }));
+  const covered = new Set(generated.map((r) => r.href));
+  const rows = [...generated, ...handAuthoredAnswers(lang, covered)].sort((a, b) =>
+    a.subject.localeCompare(b.subject)
+  );
+  if (rows.length === 0) throw new Error(`no ${lang} answer rows returned`);
+
+  // No data-name: the question is already in the row as text and the subject
+  // is already in the href, so repeating both lowercased added ~90KB per
+  // language to a page that is mostly links already. The filter builds its
+  // own index from those two at load.
+  const items = rows
+    .map(
+      ({ href, subject, question, kind }) => `        <a class="row-item" data-letter="${initialOf(subject)}" href="${href}">
+          <span class="t">${escapeHtml(question)}</span>
+          ${kind ? `<span class="k">${escapeHtml(kind)}</span>` : ''}
+        </a>`
+    )
+    .join('\n');
+
+  // Topic chips came from a hand-maintained list that had drifted out of step
+  // with topics.config.mjs. Generated from it instead, so a new topic page
+  // appears here without anyone remembering to add it.
+  const chips = TOPICS.filter((t) => t.kind === 'enology')
+    .map((t) => `        <a class="chip" href="topic-${t.slug}.html">${escapeHtml(t.topicName)}</a>`)
+    .join('\n');
+
+  const t = isFr
+    ? {
+        home: 'Accueil',
+        crumb: 'Réponses',
+        title: 'Toutes Nos Réponses',
+        placeholder: 'rechercher une réponse',
+        browse: 'Parcourir par thème',
+        count: (n) => `${n.toLocaleString('fr-FR')} réponses`,
+        noMatch: 'Aucune réponse ne correspond à cette recherche.',
+        lede: 'Chaque question à laquelle nous avons répondu, classée par sujet. Cherchez, filtrez par lettre, ou faites simplement défiler.',
+      }
+    : {
+        home: 'Home',
+        crumb: 'Answers',
+        title: "Every Answer We've Written",
+        placeholder: 'search all answers',
+        browse: 'Browse by topic',
+        count: (n) => `${n.toLocaleString('en-US')} answers`,
+        noMatch: 'No answers match that search.',
+        lede: 'Every question we have answered, filed by subject. Search it, filter by letter, or just scroll.',
+      };
+
+  return renderPage({
+    file: 'answers.html',
+    lang,
+    title: isFr ? 'Réponses — Thirsty Cunt' : 'Every Answer — Thirsty Cunt Knowledge Base',
+    description: isFr
+      ? `Les ${rows.length.toLocaleString('fr-FR')} réponses de la base de connaissances, classées par sujet.`
+      : `All ${rows.length.toLocaleString('en-US')} answers in the knowledge base, filed by subject.`,
+    main: `  <main>
+    <div class="wrap">
+      <p class="breadcrumb"><a href="${assetPrefixFor(lang)}index.html">${t.home}</a> / ${t.crumb}</p>
+      <h1 class="page-title">${escapeHtml(t.title)}</h1>
+      <p class="lede sm">${t.lede}</p>
+
+      <input class="search-input" type="search" id="answerSearch" placeholder="${t.placeholder}" aria-label="${t.placeholder}" style="margin-bottom: 20px" />
+${renderAlphaFilter(rows.map((r) => initialOf(r.subject)), lang)}
+
+      <p class="list-head" style="margin-top: 36px">${t.browse}</p>
+      <div class="chip-row" style="margin-top: 16px; margin-bottom: 44px">
+        <a class="chip" href="grapes.html">${isFr ? 'Cépages' : 'Grapes'}</a>
+        <a class="chip" href="regions.html">${isFr ? 'Régions' : 'Regions'}</a>
+        <a class="chip" href="guides.html">${isFr ? 'Guides' : 'Guides'}</a>
+${chips}
+      </div>
+
+      <p class="count" id="answerCount">${t.count(rows.length)}</p>
+      <div id="answersList" class="grid stack">
+${items}
+      </div>
+    </div>
+  </main>`,
+    // Filters the pre-rendered list in place. Everything is in the HTML
+    // already, so this only hides rows -- with JavaScript off the full index
+    // is still there, which is the entire point of pre-rendering it.
+    script: `
+  <script>
+    (() => {${ALPHA_FILTER_SCRIPT}
+      const input = document.getElementById('answerSearch');
+      const count = document.getElementById('answerCount');
+      const items = [...document.querySelectorAll('#answersList .row-item')].map((el) => ({
+        el,
+        // Question text plus the slug, which carries the subject words the
+        // question itself sometimes leaves implicit.
+        name: \`\${el.querySelector('.t').textContent} \${el.getAttribute('href').replace(/[-.]/g, ' ')}\`.toLowerCase(),
+      }));
+      let letter = '';
+      function apply() {
+        const q = input.value.trim().toLowerCase();
+        let shown = 0;
+        for (const { el, name } of items) {
+          el.hidden = (Boolean(q) && !name.includes(q)) || (Boolean(letter) && el.dataset.letter !== letter);
+          if (!el.hidden) shown++;
+        }
+        const noun = ${isFr ? "'réponse'" : "'answer'"};
+        count.textContent = shown === 0 ? '${t.noMatch}' : \`\${shown.toLocaleString('${isFr ? 'fr-FR' : 'en-US'}')} \${noun}\${shown !== 1 ? 's' : ''}\`;
+      }
+      input.addEventListener('input', apply);
+      wireAlphaFilter((l) => { letter = l; apply(); });
+    })();
+  </script>`,
+  });
+}
+
 // --- guides.html ------------------------------------------------------------
 // guide/comparison chunks come in 2-3 rows per source_doc ("Concept" +
 // "Teaching", "Overview" + "Practice", ...). One card per source_doc, opening
@@ -863,6 +1032,7 @@ ${answerList}${back}    </div>
 // Single-page builds return one HTML string; multi-page builds return
 // [[file, html], ...].
 const builds = [
+  ['answers.html', buildAnswers],
   ['grapes.html', buildGrapes],
   ['regions.html', buildRegions],
   ['guides.html', buildGuides],
