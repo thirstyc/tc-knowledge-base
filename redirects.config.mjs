@@ -115,4 +115,18 @@ export const REDIRECTS = {
   // in knowledge_chunks when convenient; this entry already retires the page.
   'answer-burgundy-pinot-premium-pairing.html': 'answer-burgundy-pinot-pairing.html',
   'fr/answer-burgundy-pinot-premium-pairing.html': 'fr/answer-burgundy-pinot-pairing.html',
+
+  // "Albarin" was Albariño misspelled, not Albarín Blanco. All three answers
+  // describe a Galician coastal white, which is Albariño; Albarín Blanco is a
+  // different grape, from Asturias and Castilla y León. answer-albarin-rare
+  // went further and called Albariño "a niche Galician grape with barely any
+  // vineyard acreage", which is the opposite of true for the flagship of Rías
+  // Baixas. Each one had an Albariño page asking the same question with a
+  // better answer, so they compete for the same queries and lose.
+  'answer-albarin-pairing.html': 'answer-albarino-pairing.html',
+  'fr/answer-albarin-pairing.html': 'fr/answer-albarino-pairing.html',
+  'answer-albarin-briny.html': 'answer-albarino-mineral.html',
+  'fr/answer-albarin-briny.html': 'fr/answer-albarino-mineral.html',
+  'answer-albarin-rare.html': 'answer-albarino-underrated.html',
+  'fr/answer-albarin-rare.html': 'fr/answer-albarino-underrated.html',
 };
