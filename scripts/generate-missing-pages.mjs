@@ -1,7 +1,10 @@
-// Generates one answer-{slug}.html (and fr/answer-{slug}.html once a row has
-// a French translation) per published qa/region-qa chunk. Run from the repo root:
+// Generates one answer-{slug}.html (and fr/answer-{slug}.html where a French
+// file exists) per answer in content/answers/. Run from the repo root:
 // node scripts/generate-missing-pages.mjs [--dry-run] [--force]
 // (writes into the repo root, same as generate-topic-pages.mjs)
+//
+// The content lives in this repo, not in Supabase -- see lib/content-files.mjs.
+// To change an answer, edit its .md file and re-run this.
 //
 // Deliberately NOT built from topics.config.mjs's "distinct section_title"
 // idea: section_title on qa/region-qa rows is always a difficulty label
@@ -29,8 +32,7 @@
 // (see redirects.config.mjs).
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { createClient } from '@supabase/supabase-js';
-import { fetchAllRows } from '../lib/pagination.mjs';
+import { readAnswerRows, CONTENT_DIR } from '../lib/content-files.mjs';
 import {
   renderHeroBand,
   renderHead,
@@ -53,11 +55,6 @@ const DRY_RUN = process.argv.includes('--dry-run');
 // every future run overwrites it normally, without needing the flag again.
 const FORCE = process.argv.includes('--force');
 
-const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Marks a file as safe to regenerate/overwrite on the next run. Hand-authored
 // files (like answer-grenache-alcohol-tannin.html) never carry this, so a
@@ -167,16 +164,15 @@ function isSafeToWrite(path) {
 }
 
 async function main() {
-  const fetchedRows = await fetchAllRows(() =>
-    supabase
-      .from('knowledge_chunks')
-      .select('id, content, source_doc, section_title, chunk_type, lang')
-      .in('chunk_type', ['qa', 'region-qa'])
-      .eq('status', 'published')
-      // Without an explicit order, .range() pages can skip or repeat rows,
-      // and list order shifts whenever a row is edited.
-      .order('id')
-  );
+  // Content comes from content/answers/{en,fr}/*.md, not from Supabase. See
+  // lib/content-files.mjs for why, and for how ids are assigned. Editing an
+  // answer is editing a file in this repo and re-running this script.
+  const fetchedRows = readAnswerRows();
+  if (fetchedRows.length === 0) {
+    console.error(`No content found in ${CONTENT_DIR}/. Run: node scripts/export-content-files.mjs`);
+    process.exitCode = 1;
+    return;
+  }
 
   // Rows whose page is listed in redirects.config.mjs are retired: no page,
   // and no links to them from related cards or difficulty archives.
