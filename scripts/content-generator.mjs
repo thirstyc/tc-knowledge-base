@@ -24,7 +24,8 @@ import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
 import { supabase } from '../lib/supabase.mjs';
-import { readAnswerRows, writeAnswerFile } from '../lib/content-files.mjs';
+import { existsSync } from 'node:fs';
+import { readAnswerRows, writeAnswerFile, answerFilePath } from '../lib/content-files.mjs';
 import { embed } from '../lib/embeddings.mjs';
 import { chunkText } from '../lib/chunking.mjs';
 import { slugify } from '../lib/page-shell.mjs';
@@ -254,27 +255,70 @@ async function expand({ topic, limit, minWords }) {
     })
     .filter((r) => r.a.split(/\s+/).filter(Boolean).length < floor)
     .filter((r) => !topic || r.content.toLowerCase().includes(topic.toLowerCase()))
+    // Resumable: anything that already has a draft beside it is skipped, so a
+    // rerun fills the gaps left by a failed batch instead of paying to
+    // regenerate what worked. Delete a draft to have it redone.
+    .filter((r) => !existsSync(answerFilePath('en', `${r.source_doc}--expanded`)))
     .slice(0, max);
 
   if (thin.length === 0) throw new Error(topic ? `No answers under ${floor} words matching "${topic}".` : `No answers under ${floor} words.`);
   console.log(`Expanding ${thin.length} answer(s)${topic ? ` matching "${topic}"` : ''}:`);
   thin.forEach((r) => console.log(`  ${r.source_doc} (${r.a.split(/\s+/).filter(Boolean).length}w)`));
 
-  const rewritten = await askClaude(`Rewrite each of these wine answers at proper length. Keep the question exactly as given -- it is a live URL. Keep whatever the current answer asserts as true unless it is plainly wrong; you are deepening it, not replacing it.
+  // Batched, because one call cannot hold them all. Each answer costs roughly
+  // 450 output tokens, so eighteen in one request overruns any sane max_tokens
+  // and the reply comes back truncated -- which used to parse into a short
+  // array, match no ids, and report "Wrote 0 draft(s)" as though it had
+  // succeeded. Five at a time, sized to the batch, and anything that does not
+  // come back is named rather than silently dropped.
+  const BATCH = 5;
+  const byId = new Map();
+  for (let i = 0; i < thin.length; i += BATCH) {
+    const slice = thin.slice(i, i + BATCH);
+    process.stdout.write(`  requesting ${i + 1}-${i + slice.length} of ${thin.length}... `);
+    let rewritten;
+    try {
+      rewritten = await askClaude(
+        `Rewrite each of these wine answers at proper length. Keep the question exactly as given -- it is a live URL. Keep whatever the current answer asserts as true unless it is plainly wrong; you are deepening it, not replacing it.
 
 ${HOUSE_STYLE}
 
-${JSON.stringify(thin.map((r) => ({ id: r.source_doc, question: r.q, current: r.a })), null, 1)}
+${JSON.stringify(slice.map((r) => ({ id: r.source_doc, question: r.q, current: r.a })), null, 1)}
 
-Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`, 8000);
+Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
+        // 900 per answer, not 600. A 200-word answer is ~270 tokens, but the
+        // JSON wrapper, long em-dashed sentences and the occasional overrun
+        // push past a tight budget, and a truncated reply is unparseable --
+        // the whole batch is lost for the sake of a few hundred tokens.
+        slice.length * 900
+      );
+    } catch (error) {
+      // One bad batch should not discard the ones that worked.
+      console.log(`failed (${error.message.split('\n')[0].slice(0, 60)})`);
+      continue;
+    }
+    for (const { id, answer } of rewritten) if (id && answer) byId.set(id, answer);
+    console.log(`${rewritten.length} back`);
+  }
 
-  const byId = new Map(rewritten.map((r) => [r.id, r.answer]));
+  const missing = thin.filter((r) => !byId.get(r.source_doc));
+  if (missing.length) {
+    console.warn(`\n  !! ${missing.length} answer(s) came back empty or unmatched:`);
+    missing.forEach((r) => console.warn(`     ${r.source_doc}`));
+  }
+
   const files = writeDrafts(
     thin
       .filter((r) => byId.get(r.source_doc))
       .map((r) => ({ source_doc: `${r.source_doc}--expanded`, question: r.q, answer: byId.get(r.source_doc) })),
     { sectionTitle: null }
   );
+
+  if (files.length === 0) {
+    console.error('\nNothing was written. Nothing was changed.');
+    process.exitCode = 1;
+    return;
+  }
   console.log(`\nWrote ${files.length} draft(s) alongside the originals:`);
   files.forEach((f) => console.log(`  ${f}`));
   console.log('\nReview each, then move the answer into the original file and delete the --expanded draft.');
