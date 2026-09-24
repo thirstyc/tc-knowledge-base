@@ -170,7 +170,7 @@ const HOUSE_STYLE = `Voice: candid, irreverent, intimate -- like a knowledgeable
 
 Length: 150-200 words. This is the whole point of the exercise -- a four-word answer is what we are replacing.
 
-Substance: explain the actual mechanism, not the label. Not "high acidity, mineral, coastal" but why the acidity is there and what it does on the table. Name grapes, places, techniques, numbers and temperatures where they are real. If there is a common misconception, correct it. If there is a practical instruction (serving temperature, when to drink it, what to avoid), give it.
+Substance: explain the actual mechanism, not the label. Not "high acidity, mineral, coastal" but why the acidity is there and what it does on the table. Name grapes, places, techniques, numbers and temperatures where they are real. Metric only -- serving temperatures in Celsius, never Fahrenheit. The readership is Quebecois and the rest of the corpus is Celsius throughout. If there is a common misconception, correct it. If there is a practical instruction (serving temperature, when to drink it, what to avoid), give it.
 
 Accuracy matters more than flourish. Do not invent appellation rules, vintages, percentages or producer names. If you are not certain of a figure, describe it qualitatively instead.`;
 
