@@ -32,6 +32,14 @@ const CONCURRENCY = 8;
 // page and declines to index it.
 const THIN_WORDS = 150;
 
+// A French answer materially shorter than its English pair. The multiplier
+// used to be 2x, which let four pairs through at 1.7-1.95: 85-94 French words
+// against 166 English. Those are not translations that read shorter because
+// French is denser -- they are half a page missing, and the check called them
+// fine. 1.5x catches them and nothing else; at 1.4x the count does not move,
+// so it is not sitting on a cliff.
+const DIVERGENCE_RATIO = 1.5;
+
 // --- 1. Link integrity ------------------------------------------------------
 // GitHub Pages serves this repo 1:1, so the local .html file list *is* the
 // deployed page set -- no spidering needed to discover pages.
@@ -143,7 +151,7 @@ function contentHealth() {
     .filter((r) => {
       const e = answerWords(r);
       const f = answerWords(frByDoc.get(r.source_doc));
-      return f < THIN_WORDS && e >= 120 && e >= f * 2;
+      return f < THIN_WORDS && e >= 120 && e >= f * DIVERGENCE_RATIO;
     })
     .map((r) => r.source_doc);
 

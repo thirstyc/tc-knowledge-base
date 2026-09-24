@@ -36,7 +36,34 @@ for (const lang of LANGS) {
     const originalPath = answerFilePath(lang, originalDoc);
 
     if (!existsSync(originalPath)) {
-      problems.push(`${file}: no original at ${originalPath}`);
+      // A French translation of an answer that had no French page at all --
+      // what --mode=translate now produces for a newly written English answer.
+      // There is nothing to merge into, so the draft becomes the page: its own
+      // translated question (it has no live URL to preserve), and chunk_type
+      // and section_title taken from the English original, which is where
+      // those belong anyway.
+      const sourcePath = answerFilePath(lang === 'fr' ? 'en' : 'fr', originalDoc);
+      if (lang !== 'fr' || !existsSync(sourcePath)) {
+        problems.push(`${file}: no original at ${originalPath}`);
+        continue;
+      }
+      const source = parseAnswer(readFileSync(sourcePath, 'utf8'), sourcePath);
+      if (!DRY_RUN) {
+        writeFileSync(
+          originalPath,
+          serializeAnswer({
+            source_doc: originalDoc,
+            chunk_type: source.chunk_type,
+            section_title: source.section_title,
+            status: source.status,
+            question: draft.question,
+            answer: draft.answer,
+          })
+        );
+        rmSync(draftPath);
+      }
+      promoted += 1;
+      console.log(`  ${lang}   new      ${draft.answer.split(/\s+/).filter(Boolean).length}w  ${originalDoc}`);
       continue;
     }
     if (!draft.answer.trim()) {

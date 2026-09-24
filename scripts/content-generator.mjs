@@ -33,6 +33,14 @@ import { slugify } from '../lib/page-shell.mjs';
 
 const CONTENT_MODEL = 'claude-sonnet-5';
 
+// A French answer materially shorter than its English pair. The multiplier
+// used to be 2x, which let four pairs through at 1.7-1.95: 85-94 French words
+// against 166 English. Those are not translations that read shorter because
+// French is denser -- they are half a page missing, and the check called them
+// fine. 1.5x catches them and nothing else; at 1.4x the count does not move,
+// so it is not sitting on a cliff.
+export const DIVERGENCE_RATIO = 1.5;
+
 function parseArgs() {
   const args = {};
   for (const arg of process.argv.slice(2)) {
@@ -419,20 +427,34 @@ async function translate({ topic, limit }) {
   // silently skipped a pair sitting at 148 English words against 20 French --
   // expanded on one side, untouched on the other, which is exactly what this
   // mode exists to catch.
+  // Two kinds of work, both of which leave an English answer without a French
+  // equal: a pair that has drifted apart -- the English expanded, the French
+  // left at its old length -- and an English answer with no French file at
+  // all, which is what qa-gen produces. The second used to be unreachable,
+  // since this required fr.has(source_doc), so a newly written answer could
+  // never be translated and its page linked an hreflang to nothing.
   const pending = rows
-    .filter((r) => r.lang === 'en' && fr.has(r.source_doc))
+    .filter((r) => r.lang === 'en')
     .filter((r) => {
+      if (!fr.has(r.source_doc)) return true;
       const en = words(r);
       const f = words(fr.get(r.source_doc));
-      return f < 150 && en >= 120 && en >= f * 2;
+      return f < 150 && en >= 120 && en >= f * DIVERGENCE_RATIO;
     })
     .filter((r) => !topic || r.content.toLowerCase().includes(topic.toLowerCase()))
     .filter((r) => !existsSync(answerFilePath('fr', `${r.source_doc}--translated`)))
     .slice(0, max);
 
   if (pending.length === 0) throw new Error(topic ? `No English answers ahead of their French pair matching "${topic}".` : 'No English answers ahead of their French pair.');
+  const isNew = (r) => !fr.has(r.source_doc);
   console.log(`Translating ${pending.length} answer(s)${topic ? ` matching "${topic}"` : ''}:`);
-  pending.forEach((r) => console.log(`  ${r.source_doc}  en ${words(r)}w -> fr ${words(fr.get(r.source_doc))}w`));
+  pending.forEach((r) =>
+    console.log(
+      isNew(r)
+        ? `  ${r.source_doc}  en ${words(r)}w -> no French page yet`
+        : `  ${r.source_doc}  en ${words(r)}w -> fr ${words(fr.get(r.source_doc))}w`
+    )
+  );
 
   const BATCH = 4;
   const byId = new Map();
@@ -451,17 +473,28 @@ ${HOUSE_STYLE}
 
 Québec French: use "vous", metric, and natural Québécois usage where it is genuinely idiomatic (croustilles, not chips). Wine terms take their French forms: macération carbonique, élevage, cépage, tanin, acidité. Grape and place names stay as they are.
 
-${JSON.stringify(slice.map((r) => ({ id: r.source_doc, french_question: part(fr.get(r.source_doc)).q, english_answer: part(r).a })), null, 1)}
+${JSON.stringify(
+          slice.map((r) =>
+            isNew(r)
+              ? { id: r.source_doc, english_question: part(r).q, english_answer: part(r).a, translate_question: true }
+              : { id: r.source_doc, french_question: part(fr.get(r.source_doc)).q, english_answer: part(r).a }
+          ),
+          null,
+          1
+        )}
 
-Return one item per input: its id exactly as given, and the rewritten answer.`,
+An item with french_question keeps that question exactly as given -- it is a live URL -- and returns it unchanged. An item with english_question and translate_question needs its question rendered into French too.
+
+Return one item per input: its id exactly as given, the French question, and the French answer.`,
         // See the note in expand(): thinking tokens count against this too.
-        slice.length * 1600
+        slice.length * 1600,
+        { id: { type: 'string' }, question: { type: 'string' }, answer: { type: 'string' } }
       );
     } catch (error) {
       console.log(`failed (${error.message.replace(/\s+/g, ' ').slice(0, 220)})`);
       continue;
     }
-    for (const { id, answer } of out) if (id && answer) byId.set(id, answer);
+    for (const { id, question, answer } of out) if (id && answer) byId.set(id, { question, answer });
     // Written per batch, not at the end. The English pass ran for 45 minutes
     // and wrote nothing until it finished, so a crash at batch 130 would have
     // discarded 130 batches of paid output. Each batch is independent; there
@@ -470,7 +503,16 @@ Return one item per input: its id exactly as given, and the rewritten answer.`,
       ...writeDrafts(
         slice
           .filter((r) => byId.get(r.source_doc))
-          .map((r) => ({ source_doc: `${r.source_doc}--translated`, question: part(fr.get(r.source_doc)).q, answer: byId.get(r.source_doc) })),
+          .map((r) => {
+            const got = byId.get(r.source_doc);
+            // An existing French page keeps its own question, which is a live
+            // URL. A new one takes the translated question, having none.
+            return {
+              source_doc: `${r.source_doc}--translated`,
+              question: isNew(r) ? got.question || part(r).q : part(fr.get(r.source_doc)).q,
+              answer: got.answer,
+            };
+          }),
         { lang: 'fr', sectionTitle: null }
       )
     );
