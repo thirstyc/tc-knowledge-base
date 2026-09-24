@@ -1,16 +1,16 @@
 {
-  "generated": "2026-09-24T14:28:12Z",
-  "totalUrls": 1410,
+  "generated": "2026-09-24T18:55:16Z",
+  "totalUrls": 1441,
   "urlsByType": {
-    "qa": 924,
+    "qa": 957,
     "region-qa": 243,
-    "grape": 188,
+    "grape": 186,
     "region": 36,
     "enology": 12,
     "comparison": 4,
     "guide": 3
   },
-  "sitemapUrls": 2837,
+  "sitemapUrls": 2866,
   "topicPages": 22,
   "lastUpdated": "2026-09-24"
 }

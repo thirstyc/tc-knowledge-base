@@ -129,4 +129,23 @@ export const REDIRECTS = {
   'fr/answer-albarin-briny.html': 'fr/answer-albarino-mineral.html',
   'answer-albarin-rare.html': 'answer-albarino-underrated.html',
   'fr/answer-albarin-rare.html': 'fr/answer-albarino-underrated.html',
+
+  // The grape page behind those answers, and the same confusion in one
+  // document: it is titled "Albarin", lists "Albarín Blanco" as another name
+  // for it, and then describes Galicia and Rías Baixas -- which is Albariño's
+  // home, not Albarín Blanco's (Asturias and Castilla y León). With its three
+  // answers retired it also listed nothing at all. Retiring it means Albarín
+  // Blanco is not covered; writing it properly would be a new page about a
+  // genuinely obscure grape, which is a different piece of work.
+  'grape-albarin.html': 'grape-albarino.html',
+  'fr/grape-albarin.html': 'fr/grape-albarino.html',
+
+  // Two pages for one wine. grape-vinho-verde covers it and matches 27
+  // answers; grape-vinho-verde-green is the same Portuguese white under a
+  // name nobody writes -- "Green" is a translation of "Verde", not a
+  // qualifier -- so it matched none, which is why it turned up in the
+  // empty-page list at all. Writing answers for it would have split one
+  // subject across two URLs; its three new answers went to the real page.
+  'grape-vinho-verde-green.html': 'grape-vinho-verde.html',
+  'fr/grape-vinho-verde-green.html': 'fr/grape-vinho-verde.html',
 };

@@ -255,7 +255,8 @@ function writeDrafts(items, { chunkType = 'qa', sectionTitle = null, lang = 'en'
 // New questions on a topic. Adds pages, so use it where coverage is genuinely
 // missing -- not as a way to bulk up a topic that already has thin pages,
 // which is what MODE=expand is for.
-async function qaGen({ topic, difficulty, count }) {
+async function qaGen(args) {
+  const { topic, difficulty, count } = args;
   if (!topic) throw new Error('qa-gen requires --topic="..."');
   const level =
     VALID_DIFFICULTIES.find((d) => d.toLowerCase() === (difficulty || '').toLowerCase()) || 'Beginner';
@@ -273,11 +274,28 @@ ${HOUSE_STYLE}
 These questions already exist and must NOT be duplicated or rephrased:
 ${existing.length ? existing.map((q) => `- ${q}`).join('\n') : '(none yet)'}
 
-Return one item per pair.`, 4000, { question: { type: 'string' }, answer: { type: 'string' } });
+Return one item per pair. facet is ONE word where possible and never more than two, lowercase and hyphenated, naming what the question is about -- pairing, price, style, serving, ageing, minerality, value, underrated. It becomes part of the page's permanent URL, so it must be a label, never a restatement of the question.`,
+    4000,
+    { question: { type: 'string' }, answer: { type: 'string' }, facet: { type: 'string' } }
+  );
 
-  const stamp = Date.now();
+  // Slugs become permanent URLs, so they follow the convention the rest of the
+  // corpus uses -- qa-{subject}-{facet}, as in qa-albarino-pairing. They used
+  // to be qa-{topic}-{first 40 characters of the question}-{Date.now()}-{i},
+  // which put a Unix timestamp in the middle of a URL that can never change
+  // without a redirect. The model names the facet; --slug overrides the
+  // subject when slugify(topic) would not match the page the answers belong
+  // to.
+  const subject = slugify(args.slug || topic);
+  const taken = new Set(readAnswerRows({ includeDrafts: true }).map((r) => r.source_doc));
   const files = writeDrafts(
-    pairs.map((p, i) => ({ ...p, source_doc: `qa-${slugify(topic)}-${slugify(p.question).slice(0, 40)}-${stamp}-${i}` })),
+    pairs.map((p) => {
+      const base = `qa-${subject}-${slugify(p.facet || p.question).slice(0, 24).replace(/-$/, '')}`;
+      let slug = base;
+      for (let n = 2; taken.has(slug); n += 1) slug = `${base}-${n}`;
+      taken.add(slug);
+      return { ...p, source_doc: slug };
+    }),
     { sectionTitle: level }
   );
   if (files.length === 0) throw new Error('Claude returned no usable Q&A pairs.');
@@ -418,6 +436,7 @@ async function translate({ topic, limit }) {
 
   const BATCH = 4;
   const byId = new Map();
+  const written = [];
   for (let i = 0; i < pending.length; i += BATCH) {
     const slice = pending.slice(i, i + BATCH);
     process.stdout.write(`  requesting ${i + 1}-${i + slice.length} of ${pending.length}... `);
@@ -443,6 +462,18 @@ Return one item per input: its id exactly as given, and the rewritten answer.`,
       continue;
     }
     for (const { id, answer } of out) if (id && answer) byId.set(id, answer);
+    // Written per batch, not at the end. The English pass ran for 45 minutes
+    // and wrote nothing until it finished, so a crash at batch 130 would have
+    // discarded 130 batches of paid output. Each batch is independent; there
+    // is no reason to hold them.
+    written.push(
+      ...writeDrafts(
+        slice
+          .filter((r) => byId.get(r.source_doc))
+          .map((r) => ({ source_doc: `${r.source_doc}--translated`, question: part(fr.get(r.source_doc)).q, answer: byId.get(r.source_doc) })),
+        { lang: 'fr', sectionTitle: null }
+      )
+    );
     console.log(`${out.length} back`);
   }
 
@@ -452,12 +483,7 @@ Return one item per input: its id exactly as given, and the rewritten answer.`,
     missing.forEach((r) => console.warn(`     ${r.source_doc}`));
   }
 
-  const files = writeDrafts(
-    pending
-      .filter((r) => byId.get(r.source_doc))
-      .map((r) => ({ source_doc: `${r.source_doc}--translated`, question: part(fr.get(r.source_doc)).q, answer: byId.get(r.source_doc) })),
-    { lang: 'fr', sectionTitle: null }
-  );
+  const files = written;
   if (files.length === 0) {
     console.error('\nNothing was written. Nothing was changed.');
     process.exitCode = 1;

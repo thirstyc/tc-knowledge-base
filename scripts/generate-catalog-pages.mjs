@@ -620,6 +620,19 @@ ${items}
   });
 }
 
+// An answer whose question names the grape is about it; one that mentions it
+// once in the body is not. Ties keep source_doc order so output is stable.
+function rankGrapeAnswers(rows, base) {
+  const needle = base.toLowerCase();
+  const score = (row) => {
+    const content = row.content.toLowerCase();
+    const split = content.indexOf('? ');
+    const inQuestion = (split === -1 ? content : content.slice(0, split)).includes(needle);
+    return (inQuestion ? 100 : 0) + Math.min(content.split(needle).length - 1, 10);
+  };
+  return [...rows].sort((a, b) => score(b) - score(a) || a.source_doc.localeCompare(b.source_doc));
+}
+
 // --- guides.html ------------------------------------------------------------
 // guide/comparison chunks come in 2-3 rows per source_doc ("Concept" +
 // "Teaching", "Overview" + "Practice", ...). One card per source_doc, opening
@@ -826,7 +839,15 @@ async function buildGrapePages(lang) {
     const name = overview.name || humanizeSlug(sourceDoc.replace(/^grape-/, ''));
     const matcher = grapeAnswerMatcher(name);
     const matchName = matcher.base;
-    const answers = answerRows.filter((row) => matcher.matches(row.content)).slice(0, GRAPE_ANSWER_LIMIT);
+    // Ranked before truncating, for the same reason the topic pages are: the
+    // cut used to fall in source_doc order, so an over-limit grape dropped
+    // whatever sorted late in the alphabet. Expansion pushed pinot-noir,
+    // chardonnay and sauvignon-blanc past 120, because a 160-word answer names
+    // more grapes in passing than a 12-word one did.
+    const answers = rankGrapeAnswers(answerRows.filter((row) => matcher.matches(row.content)), matcher.base).slice(
+      0,
+      GRAPE_ANSWER_LIMIT
+    );
     // Regional takes on a topic grape ("Riesling (Australia)") also point to
     // that grape's topic page.
     const baseTopic = TOPICS.find((t) => t.kind === 'grape' && t.topicName === matchName);

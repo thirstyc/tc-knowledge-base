@@ -46,13 +46,25 @@ function answerFixtures() {
     });
 }
 
+// Redirect stubs are skipped, and a page with no <h1> is dropped rather than
+// passed on with an empty name. grapeAnswerMatcher('') builds a regex that
+// matches every answer, so retiring two grape pages made the harness report
+// 1,244 matches each against a limit of 120 -- a number with no meaning,
+// produced by measuring pages that no longer exist.
 const grapeFixtures = () =>
   readdirSync('.')
     .filter((f) => /^grape-.*\.html$/.test(f))
-    .map((file) => ({
-      file,
-      name: decode((readFileSync(file, 'utf8').match(/<h1 class="display">([\s\S]*?)<\/h1>/) || [])[1] || '').trim(),
-    }));
+    .map((file) => {
+      const html = readFileSync(file, 'utf8');
+      if (/Redirect stub/.test(html)) return null;
+      const name = decode((html.match(/<h1 class="display">([\s\S]*?)<\/h1>/) || [])[1] || '').trim();
+      if (!name) {
+        console.warn(`  !! ${file} has no <h1 class="display"> -- skipped, it cannot be matched against`);
+        return null;
+      }
+      return { file, name };
+    })
+    .filter(Boolean);
 
 // `content ILIKE %term%` for each of the topic's terms, OR'd -- plus the
 // excludeTerm NOT ILIKE that Cabernet Sauvignon uses to keep Cabernet Franc out.
