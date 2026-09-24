@@ -174,29 +174,64 @@ Substance: explain the actual mechanism, not the label. Not "high acidity, miner
 
 Accuracy matters more than flourish. Do not invent appellation rules, vintages, percentages or producer names. If you are not certain of a figure, describe it qualitatively instead.`;
 
-async function askClaude(prompt, maxTokens = 4000) {
+// Asks for a list of items and gets one back, as data rather than as text
+// that happens to look like JSON.
+//
+// This used to ask for "ONLY a JSON array" in the prompt and then
+// JSON.parse the reply. That works most of the time and fails the rest:
+// across 133 batches, 19 came back with JSON that began correctly and broke
+// somewhere in the middle -- an unescaped character inside an answer, a stray
+// bracket -- taking 99 answers with them. The failures were not reproducible;
+// re-running the same batch usually succeeded, so there was no prompt wording
+// that would have fixed it. Billing does not care that the reply was
+// unusable, so each failure was paid for twice.
+//
+// A tool with an input_schema constrains generation to that shape, so the
+// reply arrives already parsed. itemProperties describes one item; the tool
+// wraps them in a list.
+function listTool(itemProperties) {
+  return {
+    name: 'submit',
+    description: 'Return the completed items.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: itemProperties,
+            required: Object.keys(itemProperties),
+          },
+        },
+      },
+      required: ['items'],
+    },
+  };
+}
+
+async function askClaude(prompt, maxTokens = 4000, itemProperties = { id: { type: 'string' }, answer: { type: 'string' } }) {
+  const tool = listTool(itemProperties);
   const message = await anthropic.messages.create({
     model: CONTENT_MODEL,
     max_tokens: maxTokens,
+    tools: [tool],
+    tool_choice: { type: 'tool', name: tool.name },
     messages: [{ role: 'user', content: prompt }],
   });
-  const text = message.content.find((b) => b.type === 'text')?.text ?? '[]';
-  const json = text.slice(text.indexOf('['), text.lastIndexOf(']') + 1);
-  try {
-    return JSON.parse(json);
-  } catch {
-    // Say which failure this is. "Could not parse Claude's response as JSON:
-    // [" was the whole message on two batches, which is true and useless --
-    // it hides whether the reply was truncated at max_tokens, refused, or
-    // simply malformed, and those want different responses. stop_reason and
-    // the output token count answer that in one line.
+
+  const call = message.content.find((b) => b.type === 'tool_use');
+  if (!call) {
     const used = message.usage?.output_tokens ?? '?';
     const why =
       message.stop_reason === 'max_tokens'
-        ? `hit max_tokens (${used}/${maxTokens}) -- the reply was cut off mid-JSON`
-        : `stop_reason=${message.stop_reason}, ${used} output tokens`;
-    throw new Error(`Could not parse Claude's response as JSON: ${why}. First 200 chars: ${text.slice(0, 200)}`);
+        ? `hit max_tokens (${used}/${maxTokens}) -- the reply was cut off before the tool call completed`
+        : `stop_reason=${message.stop_reason}, ${used} output tokens, no tool_use block`;
+    throw new Error(`No structured reply: ${why}`);
   }
+  const items = call.input?.items;
+  if (!Array.isArray(items)) throw new Error(`Tool call had no items array: ${JSON.stringify(call.input).slice(0, 200)}`);
+  return items;
 }
 
 function writeDrafts(items, { chunkType = 'qa', sectionTitle = null, lang = 'en' } = {}) {
@@ -238,7 +273,7 @@ ${HOUSE_STYLE}
 These questions already exist and must NOT be duplicated or rephrased:
 ${existing.length ? existing.map((q) => `- ${q}`).join('\n') : '(none yet)'}
 
-Respond with ONLY a JSON array: [{"question": "...", "answer": "..."}]`);
+Return one item per pair.`, 4000, { question: { type: 'string' }, answer: { type: 'string' } });
 
   const stamp = Date.now();
   const files = writeDrafts(
@@ -296,7 +331,7 @@ ${HOUSE_STYLE}
 
 ${JSON.stringify(slice.map((r) => ({ id: r.source_doc, question: r.q, current: r.a })), null, 1)}
 
-Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
+Return one item per input: its id exactly as given, and the rewritten answer.`,
         // 1400 per answer, not 900. A 200-word answer is ~270 tokens, so 900
         // looked generous -- but Sonnet 5 emits a thinking block before the
         // text, and those tokens count against max_tokens too. A measured
@@ -399,7 +434,7 @@ Québec French: use "vous", metric, and natural Québécois usage where it is ge
 
 ${JSON.stringify(slice.map((r) => ({ id: r.source_doc, french_question: part(fr.get(r.source_doc)).q, english_answer: part(r).a })), null, 1)}
 
-Respond with ONLY a JSON array: [{"id": "...", "answer": "..."}]`,
+Return one item per input: its id exactly as given, and the rewritten answer.`,
         // See the note in expand(): thinking tokens count against this too.
         slice.length * 1600
       );
