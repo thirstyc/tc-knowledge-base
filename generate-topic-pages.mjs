@@ -12,7 +12,8 @@
 // exits 1 — a network blip never ships an empty topic page.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { createClient } from '@supabase/supabase-js';
+import { readDocRows } from './lib/content-docs.mjs';
+import { readAnswerRows } from './lib/content-files.mjs';
 import { TOPICS, BASE_URL, effectiveKeywordPattern, TOPIC_ANSWER_LIMIT } from './topics.config.mjs';
 import { writeSitemap } from './lib/sitemap.mjs';
 import { topicSchema } from './lib/schema-markup-templates.js';
@@ -32,13 +33,6 @@ import {
   frenchSpacing,
 } from './lib/page-shell.mjs';
 
-// Same public anon key used by every other page (client-side, protected by
-// RLS's unconditional public-read policy on knowledge_chunks) -- read-only
-// generation doesn't need the service role key.
-const SUPABASE_URL = 'https://qcyzcjikyqnzvnvmfwtk.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXpjamlreXFuenZudm1md3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTc4NjIsImV4cCI6MjA5MjI5Mzg2Mn0.8Fp1wk_BxQ7NrEQRnMPKX6kdaz-0k7bNj94DN4cLP2U';
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function topicName(topic, lang) {
   return lang === 'fr' ? topic.topicNameFr ?? topic.topicName : topic.topicName;
@@ -93,23 +87,15 @@ function renderHeader(topic, lang) {
 
 // --- Supabase fetch -------------------------------------------------------
 
-function publishedChunks(lang) {
-  return supabase
-    .from('knowledge_chunks')
-    .select('id, content, source_doc, section_title, chunk_type')
-    .eq('status', 'published')
-    .eq('lang', lang);
-}
+// Content comes from content/docs/ and content/answers/, not Supabase.
+// See lib/content-docs.mjs and lib/content-files.mjs.
 
-// content.ilike matching against a single term or (for a topic like Oak,
-// where French rows use several different words for the same concept --
-// "chêne", but also "boisé"/"fût" when a row describes barrel ageing
-// without naming the wood itself) an array of alternative terms, OR'd.
-function matchingContent(query, term) {
-  const terms = Array.isArray(term) ? term : [term];
-  return terms.length > 1
-    ? query.or(terms.map((t) => `content.ilike.%${t}%`).join(','))
-    : query.ilike('content', `%${terms[0]}%`);
+// `content ILIKE %term%` for one term or, for a topic like Oak where French
+// uses several words for the same idea ("chêne", but also "boisé"/"fût" when a
+// row describes barrel ageing without naming the wood), any of a list.
+function matchesTerm(content, term) {
+  const haystack = content.toLowerCase();
+  return [].concat(term).some((t) => haystack.includes(String(t).toLowerCase()));
 }
 
 // Same queries the topic pages used to run in the browser. Most topics are
@@ -117,73 +103,51 @@ function matchingContent(query, term) {
 // English match term still finds French rows too; a few translate to a
 // different word entirely (Burgundy -> Bourgogne, Oak -> chêne, the
 // corrected "tanin" spelling) and set matchTermFr in topics.config.mjs.
+// async only because the caller drives all 44 topics through Promise.all.
 async function fetchTopicData(topic, lang) {
-  const overview = await publishedChunks(lang)
-    .eq('chunk_type', topic.kind)
-    .eq('source_doc', topic.sourceDoc)
-    .eq('section_title', 'Overview')
-    .limit(1);
-  if (overview.error) throw overview.error;
-  // Every topic in topics.config.mjs has real Overview content, so none
-  // here means something is wrong upstream, not an empty topic.
-  if (overview.data.length === 0) throw new Error(`no ${lang} Overview chunk for ${topic.sourceDoc}`);
+  const docRows = readDocRows({ lang }).filter((r) => r.source_doc === topic.sourceDoc);
+  const overviewRow = docRows.find((r) => r.section_title === 'Overview');
+  // Every topic in topics.config.mjs has real Overview content, so none here
+  // means something is wrong upstream, not an empty topic.
+  if (!overviewRow) throw new Error(`no ${lang} Overview for ${topic.sourceDoc} in content/docs/${lang}/`);
 
-  // The topic's own explainer sections (same source_doc, not the Overview),
-  // shown on the page itself.
-  const own = await publishedChunks(lang)
-    .eq('chunk_type', topic.kind)
-    .eq('source_doc', topic.sourceDoc)
-    .neq('section_title', 'Overview')
-    .order('id');
-  if (own.error) throw own.error;
-  const sections = topic.kind === 'enology' ? own.data : [];
+  // The topic's own explainer sections, shown on the page itself.
+  const sections = topic.kind === 'enology' ? docRows.filter((r) => r.section_title !== 'Overview') : [];
+
+  const answers = readAnswerRows()
+    .filter((r) => r.lang === lang)
+    .sort((a, b) => a.source_doc.localeCompare(b.source_doc));
+
+  // Answer rows whose page is retired in redirects.config.mjs aren't listed.
+  const retired = (r) => `${lang === 'fr' ? 'fr/' : ''}${answerPagePath(r.source_doc)}` in REDIRECTS;
 
   if (topic.sourceDocPrefixes) {
     // Membership by source_doc prefix (see topics.config.mjs), not keyword.
-    const byPrefix = await publishedChunks(lang)
-      .in('chunk_type', ['qa', 'region-qa'])
-      .or(topic.sourceDocPrefixes.map((prefix) => `source_doc.like.${prefix}*`).join(','))
-      .order('source_doc')
-      .order('id')
-      .limit(200);
-    if (byPrefix.error) throw byPrefix.error;
-    return { overview: parseOverview(overview.data[0].content), sections, qaRows: byPrefix.data };
+    const byPrefix = answers
+      .filter((r) => topic.sourceDocPrefixes.some((prefix) => r.source_doc.startsWith(prefix)))
+      .filter((r) => !retired(r))
+      .slice(0, 200);
+    return { overview: parseOverview(overviewRow.content), sections, qaRows: byPrefix };
   }
 
   const matchTerm = lang === 'fr' ? topic.matchTermFr ?? topic.matchTerm ?? topic.topicName : topic.matchTerm ?? topic.topicName;
-  // Both answer chunk types, for every topic kind. This used to take region-qa
-  // for region topics and qa for everything else, which assumed answers are
-  // filed by the same axis as the topic -- and they aren't. Burgundy's own
-  // answers (qa-burgundy-pinot-age, qa-white-burgundy-pairing, qa-burgundy-
-  // grapes) are plain qa rows, so topic-burgundy listed 12 answers, most of
-  // them region-qa rows that only name-check Burgundy while describing Austria,
-  // Jura, Languedoc or Willamette. Matching both types takes it to 77, and
-  // Rhône Valley from 5 to 52. It cuts the other way too: a region-qa row about
-  // the Mosel belongs on topic-riesling.
-  //
-  // This is the same definition of "an answer" that generate-catalog-pages.mjs
-  // (fetchAnswerRows) and answers.html already use.
-  let qa = matchingContent(publishedChunks(lang).in('chunk_type', ['qa', 'region-qa']), matchTerm);
-  if (topic.excludeTerm) qa = qa.not('content', 'ilike', `%${topic.excludeTerm}%`);
-  const queries = [qa];
-  if (topic.kind === 'enology') {
-    queries.push(
-      matchingContent(publishedChunks(lang).eq('chunk_type', 'enology'), matchTerm).neq('section_title', 'Overview')
-    );
-  }
-  // id as tiebreaker keeps output stable run to run, so regenerating
-  // unchanged content produces no diff.
-  const results = await Promise.all(queries.map((q) => q.order('source_doc').order('id').limit(TOPIC_ANSWER_LIMIT)));
-  const failed = results.find((r) => r.error);
-  if (failed) throw failed.error;
+  let qaRows = answers
+    .filter((r) => matchesTerm(r.content, matchTerm))
+    .filter((r) => !topic.excludeTerm || !matchesTerm(r.content, topic.excludeTerm))
+    .filter((r) => !retired(r));
 
-  // Answer rows whose page is retired in redirects.config.mjs aren't listed.
-  const isRetired = (r) =>
-    ['qa', 'region-qa'].includes(r.chunk_type) && `${lang === 'fr' ? 'fr/' : ''}${answerPagePath(r.source_doc)}` in REDIRECTS;
-  const qaRows = results
-    .flatMap((r) => r.data)
-    .filter((r) => !isRetired(r) && !(r.chunk_type === 'enology' && r.source_doc === topic.sourceDoc));
-  return { overview: parseOverview(overview.data[0].content), sections, qaRows };
+  // An enology topic also lists explainer sections from OTHER enology
+  // documents that mention its term -- never its own, which are rendered
+  // inline above.
+  if (topic.kind === 'enology') {
+    const others = readDocRows({ lang, chunkType: 'enology' })
+      .filter((r) => r.section_title !== 'Overview' && r.source_doc !== topic.sourceDoc)
+      .filter((r) => matchesTerm(r.content, matchTerm))
+      .sort((a, b) => a.source_doc.localeCompare(b.source_doc));
+    qaRows = qaRows.concat(others);
+  }
+
+  return { overview: parseOverview(overviewRow.content), sections, qaRows: qaRows.slice(0, TOPIC_ANSWER_LIMIT) };
 }
 
 // Overview content is "eyebrow\n\nname\n\nlede\n\nKey: value\nKey: value".
