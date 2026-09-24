@@ -1,5 +1,18 @@
 // Rebuilds knowledge_chunks rows from the generated pages in this repo.
 //
+// RETAINED DELIBERATELY. The website does not need this: it generates from
+// content/docs and content/answers, which hold the same text this script
+// would reconstruct, at full fidelity and without a database. This is kept
+// for the AI sommelier, which needs rows with embeddings to retrieve against.
+// Run it only if that work resumes, and apply
+// drafts/20260923190000_restore_knowledge_chunks_pipeline_columns.sql first —
+// the columns it inserts into do not exist until then.
+//
+// If you reach for this, prefer re-ingesting from content/answers over the
+// HTML: those files ARE the source now, so the "approximate" fidelity tier
+// below only still applies to atlas and producer content, which has no file
+// representation and no page to read back either. That content is gone.
+//
 // Run: node scripts/reingest-from-pages.mjs            (dry run, writes a manifest)
 //      node scripts/reingest-from-pages.mjs --write    (actually inserts)
 //
